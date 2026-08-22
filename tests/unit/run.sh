@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-unit_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-repo_dir=$(CDPATH= cd -- "$unit_dir/../.." && pwd)
+unit_dir=$(cd -- "$(dirname -- "$0")" && pwd)
+repo_dir=$(cd -- "$unit_dir/../.." && pwd)
 test_source="$unit_dir/test_orchestra_paper_cpu.c"
 publication_stress_source="$unit_dir/test_signal_publication_stress.c"
 bridge_test_source="$unit_dir/test_orchestra_bridge.c"

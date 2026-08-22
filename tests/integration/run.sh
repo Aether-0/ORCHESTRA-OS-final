@@ -31,7 +31,6 @@ trap cleanup EXIT
 BIN="$TEST_DIR/orchestra_paper_cpu"
 SRC="$REPO_DIR/orchestra_paper_cpu_demo/orchestra_paper_cpu.c"
 VALIDATE="$SCRIPT_DIR/validate_paper_cpu_csv.py"
-SCHEMA_V4="orchestra.paper_cpu.metrics/v4"
 SCHEMA_V7="orchestra.paper_cpu.metrics/v7"
 PUBLICATION_INTEGRATION_SOURCE="$SCRIPT_DIR/test_signal_publication_integration.c"
 PUBLICATION_INTEGRATION_BIN="$TEST_DIR/test_signal_publication_integration"
