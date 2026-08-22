@@ -28,4 +28,21 @@ if [ "$found" -ne 0 ]; then
     echo "SECURITY_SCAN_FAIL" >&2
     exit 1
 fi
+
+if tracked_runtime=$(git ls-files | rg -n \
+    '(^|/)(vmlinux\.h|orchestra_(bridge|loader)|fixed_work|.*\.bpf\.o|.*\.skel\.h)$' \
+    2>/dev/null); then
+    echo "tracked-runtime-artifact: $tracked_runtime" >&2
+    echo "SECURITY_SCAN_FAIL" >&2
+    exit 1
+fi
+
+if tracked_secret_file=$(git ls-files | rg -n \
+    '(^|/)(\.env($|\.)|.*\.(pem|key|p12|pfx|kdbx)$|id_(rsa|ed25519)(\.pub)?$)' \
+    2>/dev/null); then
+    echo "tracked-secret-file: $tracked_secret_file" >&2
+    echo "SECURITY_SCAN_FAIL" >&2
+    exit 1
+fi
+
 echo "SECURITY_SCAN_PASS"

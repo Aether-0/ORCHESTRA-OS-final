@@ -1,94 +1,43 @@
-name: Build ORCHESTRA sched_ext BPF
+name: Target-matched ORCHESTRA sched_ext build
 
 on:
-  push:
-    branches: [main, integration/*]
   workflow_dispatch:
+    inputs:
+      kernel_source:
+        description: Exact source tree for the running kernel (must match uname -r)
+        required: true
+        type: string
+      build_dir:
+        description: External output directory on the self-hosted runner
+        required: false
+        default: /tmp/orchestra-os-ci-build
+        type: string
 
+# GitHub-hosted runners are deliberately not used here. The BPF object and
+# libbpf adapter must be built against the exact target kernel, while verifier
+# and attach evidence still belongs to the separate privileged validation gate.
 jobs:
-  build-bpf:
-    runs-on: ubuntu-24.04
+  build-sched-ext:
+    runs-on: [self-hosted, linux, sched-ext]
     steps:
-      - name: Checkout ORCHESTRA-OS
+      - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Install toolchain
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq clang llvm libelf-dev libzstd-dev pkg-config
+      - name: Check target capability
+        run: ./scripts/check-system.sh --strict
 
-      - name: Clone Linux 6.12 source
-        run: |
-          git clone --depth 1 --branch v6.12 \
-            https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git \
-            /tmp/linux
-          echo "kernel-commit=$(git -C /tmp/linux rev-parse HEAD)" >> $GITHUB_OUTPUT
-        id: kernel
+      - name: Build target-matched kernel artifacts
+        env:
+          ORCHESTRA_KERNEL_SRC: ${{ inputs.kernel_source }}
+          ORCHESTRA_BUILD_DIR: ${{ inputs.build_dir }}
+        run: ./scripts/build.sh --kernel
 
-      - name: Build bpftool from kernel source
-        run: |
-          make -C /tmp/linux/tools/bpf/bpftool -j$(nproc)
-          sudo make -C /tmp/linux/tools/bpf/bpftool install
-          bpftool version
-
-      - name: Generate vmlinux.h
-        run: |
-          sudo bpftool btf dump file /sys/kernel/btf/vmlinux format c \
-            > kernel/sched_ext/include/vmlinux.h
-          wc -l kernel/sched_ext/include/vmlinux.h
-          echo "--- runner kernel ---"
-          uname -r
-
-      - name: Compile orchestra_scx.bpf.o
-        run: |
-          set -e
-          clang -O2 -target bpf -g -nostdinc \
-            -D__BPF__ \
-            -I kernel/sched_ext/include \
-            -I /tmp/linux/tools/lib \
-            -I /tmp/linux/tools/bpf/bpftool/libbpf \
-            -I /tmp/linux/include \
-            -I /tmp/linux/include/uapi \
-            -I /tmp/linux/arch/x86/include \
-            -I /tmp/linux/arch/x86/include/generated \
-            -I /tmp/linux/tools/sched_ext/include \
-            -Wno-missing-declarations \
-            -Wno-visibility \
-            -c kernel/sched_ext/orchestra_scx.bpf.c \
-            -o kernel/sched_ext/orchestra_scx.bpf.o
-
-          echo "--- build ok ---"
-          ls -lh kernel/sched_ext/orchestra_scx.bpf.o
-          file kernel/sched_ext/orchestra_scx.bpf.o
-
-      - name: BPF verifier check
-        run: |
-          echo "--- kernel info ---"
-          uname -r
-          echo "--- sched ext state ---"
-          cat /sys/kernel/sched_ext/state 2>&1 || true
-          echo "--- verifier ---"
-          sudo bpftool prog load \
-            kernel/sched_ext/orchestra_scx.bpf.o \
-            /sys/fs/bpf/orchestra_scx \
-            type sched_ext 2>&1 || echo "NOTE: runner kernel may not support sched_ext; file still valid for target 6.12"
-          sudo rm -f /sys/fs/bpf/orchestra_scx 2>/dev/null || true
-          echo "--- done ---"
-
-      - name: Upload BPF object
+      - name: Archive reproducibility evidence
         uses: actions/upload-artifact@v4
         with:
-          name: orchestra_scx.bpf.o
-          path: kernel/sched_ext/orchestra_scx.bpf.o
-          retention-days: 14
-
-      - name: Upload sources for guest rebuild
-        uses: actions/upload-artifact@v4
-        with:
-          name: orchestra_scx_sources
+          name: orchestra-sched-ext-build-evidence
           path: |
-            kernel/sched_ext/include/orchestra_scx.h
-            kernel/sched_ext/orchestra_scx.bpf.c
-            kernel/sched_ext/orchestra_scx.c
-            kernel/sched_ext/scripts/check_kernel_config.sh
+            ${{ inputs.build_dir }}/build-manifest.txt
+            ${{ inputs.build_dir }}/build.log
+          if-no-files-found: error
           retention-days: 14

@@ -30,6 +30,10 @@
 - loader-scoped map schema validation, pinning, attach, unload, and cleanup;
 - observer-safe compatibility checker, build workflow, CLI, policy loader,
   install/uninstall tooling, configuration examples, and documentation.
+- foreground `run`/`monitor` lifecycle commands and an opt-in systemd unit;
+- ownership-checked unload plus root-safe artifact and build-manifest
+  integrity gates; tracked host binaries are excluded from the source
+  repository.
 
 ## Capability and architecture status
 
@@ -41,6 +45,7 @@
 | sched_ext attach and ownership | Kernel-prototyped; current-host live gate blocked |
 | RUN/YIELD/MIGRATE/THROTTLE/SLEEP backend semantics | Implemented in prototype; effective hardware matrix pending |
 | Signal integrity | Generation/freshness/schema/identity checks implemented; kernel cryptographic verification not claimed |
+| Privileged artifact integrity | Root-owned/non-symlink/non-writable checks and build-manifest hashes; signed provenance not claimed |
 | Prediction | Bounded fixed-point consumption and fallback implemented; hardware convergence pending |
 | S1/S2/S3/S4/Q | Native source/controller contract implemented; real-machine report pending |
 | Controller | Bounded source contract implemented; live causal response/rollback pending |
@@ -70,7 +75,8 @@ deployment-ready.
 5. No universal performance advantage over CFS/EEVDF is claimed; comparisons
    require ownership proof and workload-specific controlled evidence.
 6. Distributed scheduling, package signing/SBOM provenance, and production
-   security review remain release work beyond this candidate.
+   security review, fuzzing, and dependency/SCA review remain release work
+   beyond this candidate.
 
 ## Next release gates
 

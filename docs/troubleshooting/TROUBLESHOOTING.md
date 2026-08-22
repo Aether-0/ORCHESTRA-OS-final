@@ -196,3 +196,88 @@ sudo dmesg --ctime | tail -200
 **Fix:** preserve evidence and do not remove all bpffs contents. Only the
 loader-owned path may be cleaned after state is safe. Escalate a repeatable
 unload failure as a high-severity runtime finding.
+
+## Foreign sched_ext owner or unsafe lifecycle state
+
+**Symptoms:** `enable`, `run`, or `disable` reports that ORCHESTRA does not
+own the active sched_ext instance, or refuses an unknown state.
+
+**Cause:** another scheduler is active, the state interface is inconsistent,
+or the scheduler owner cannot be identified safely.
+
+**Diagnose:**
+
+```bash
+cat /sys/kernel/sched_ext/state
+cat /sys/kernel/sched_ext/root/ops
+sudo bpftool link list
+sudo bpftool prog list
+```
+
+**Fix:** stop the scheduler that owns the machine through its own documented
+control path. Do not call ORCHESTRA's loader against it and do not remove all
+of `/sys/fs/bpf`. If ownership cannot be proven, leave conventional Linux
+scheduling in control and classify the runtime test as blocked.
+
+## Untrusted or tampered kernel artifact
+
+**Symptoms:** activation reports an untrusted artifact or a build-manifest
+hash mismatch.
+
+**Cause:** the loader/BPF object is user-owned, a symlink, group/world
+writable, or no longer matches the target build manifest.
+
+**Diagnose:**
+
+```bash
+stat -c '%U %A %n' /usr/local/lib/orchestra-os/build/orchestra_loader /usr/local/lib/orchestra-os/build/orchestra_scx_stage7.bpf.o /usr/local/lib/orchestra-os/build/build-manifest.txt
+grep -E '^(loader|bpf_object)_sha256=' /usr/local/lib/orchestra-os/build/build-manifest.txt
+```
+
+**Fix:** rebuild against the exact running kernel and reinstall with
+`--with-kernel`. Do not edit the manifest to make a mismatch disappear. This
+check detects local tampering after build but is not a cryptographic signature
+verification; signed release provenance is still required for production.
+
+## Foreground run exits without unloading
+
+**Symptoms:** `orchestra run` stops reporting, but sched_ext remains enabled.
+
+**Cause:** cleanup could not prove ownership, the loader rejected its pinned
+map/link schema, or the kernel did not reach `disabled` within the bounded
+wait.
+
+**Diagnose:**
+
+```bash
+cat /sys/kernel/sched_ext/state
+cat /sys/kernel/sched_ext/root/ops
+sudo bpftool link list
+sudo dmesg --ctime | tail -100
+```
+
+**Fix:** do not broad-delete bpffs state. Preserve the first error and use
+`sudo orchestra disable` only if the ops name is an ORCHESTRA name and the
+installed loader is intact. Otherwise recover through the owning scheduler's
+documented path or the dedicated host's approved recovery procedure.
+
+## systemd unit will not install or start
+
+**Symptoms:** installation refuses an existing unit, or systemd repeatedly
+restarts the service.
+
+**Cause:** an existing `/usr/local/lib/systemd/system/orchestra.service` was
+modified, or the strict capability/artifact/ownership gate failed.
+
+**Diagnose:**
+
+```bash
+sudo systemctl status orchestra.service --no-pager
+sudo journalctl -u orchestra.service -n 100 --no-pager
+sudo orchestra check-system --strict
+```
+
+**Fix:** preserve and review a locally modified unit instead of overwriting
+it. For the managed unit, rebuild/install target-matched artifacts, then run
+`sudo systemctl daemon-reload` and start it again. The service is intentionally
+not enabled by the installer.

@@ -1,15 +1,40 @@
 # ORCHESTRA-OS verified current state
 
-- Audit date: 2026-08-22
-- Repository commit: `85c500afed8cb6f4e8ac480e536b439af870ec2f`
-- Branch: `main` (`origin/main` at the same commit)
-- Current milestone: Stage 7 sched_ext bridge prototype with the P0 ownership fix, bounded VirtualBox runtime gate, fixed-point signal gate, and additive kernel-ABI-v8 adaptive core implemented; no bare-metal v8 sched_ext acceptance has been run
+- Audit date: 2026-08-23
+- Repository commit: use `git rev-parse HEAD` for the exact handoff commit
+- Branch: `codex/final-integrated-product` (publication branch is separate)
+- Current milestone: ORCHESTRA-OS `1.0.0-rc1` product integration with a
+  foreground sched_ext lifecycle, ownership-checked loader, target-matched
+  build/install path, and explicit security boundary; no new bare-metal v8
+  sched_ext acceptance has been run
 - Active work-package boundary: WP1 kernel foundation plus a source/build-validated v8 policy/runtime path, with userspace precursors for WP2-WP6
 - Overall claim class: mixed; see the component boundaries below
 
 This file is a handoff index. The paper, ADRs, experiment contracts, raw
 artifacts, and test protocols remain authoritative for their respective
 decisions and evidence.
+
+## 2026-08-23 product integration and security follow-up
+
+The product control plane now provides `orchestra run` (foreground attach,
+monitor, and bounded cleanup), `orchestra monitor`, explicit scheduler-owner
+checks, and an opt-in systemd unit. `enable` and `disable` refuse a foreign or
+ambiguous sched_ext owner. The loader verifies the expected struct_ops link,
+pin directory, and every exact map schema before unlinking anything.
+
+Kernel activation additionally requires root-owned, non-symlink,
+non-group/world-writable installed artifacts and a build-manifest hash match;
+the target-matched builder normalizes artifact permissions and the installer
+does not install kernel files unless `--with-kernel` is requested. Generated
+host binaries and `vmlinux.h` files are excluded from Git while raw research
+evidence remains archived.
+
+The security boundary is intentionally explicit: local schema, generation,
+freshness, identity, fallback, and artifact-integrity checks are implemented;
+cryptographic authentication of the kernel signal frame, signed release
+provenance/SBOM, fuzzing/SCA review, and privileged runtime security gates are
+not claimed by this release candidate. See
+`docs/security/SECURITY.md` and `FINAL_PRODUCT_STATUS.md`.
 
 ## 2026-08-21 working-tree follow-up
 

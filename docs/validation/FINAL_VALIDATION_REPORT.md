@@ -25,6 +25,8 @@ measurement; a request counter is not effective action evidence.
 | S1/S2/S3/S4/Q real-machine report | BLOCKED | coordination window ownership gate | Source/unit contract exists; no fabricated Q |
 | Controller response/rollback | BLOCKED | controller telemetry under attached load | Source/unit contract exists; live causality pending |
 | Clean unload/recovery | BLOCKED | loader detach and state verification | Requires privileged attach on an authorized host |
+| Lifecycle ownership/foreign-owner refusal | PASS | source invariants; `orchestra` ownership gates; loader pin/link/schema checks | Live foreign-scheduler exercise remains part of the privileged gate |
+| Privileged artifact integrity | PASS | installer/CLI source checks; build-manifest hash contract | Signed provenance and live install on the target matrix remain pending |
 | Paper exact gate | BLOCKED | N=40, 4 exempt, 3000 ticks, 500 warm-up, seed 42, five seeds | No exact canonical runner currently established |
 | Production soak/release | BLOCKED | 1 h/24 h, upgrade/rollback/recovery matrix | Release candidate only |
 
@@ -68,3 +70,14 @@ On a separately authorized compatible host, add the exact-kernel build,
 strict check, loader attach, ownership gate, per-action matrix, telemetry,
 fault/recovery, unload, and soak procedures from the installation,
 troubleshooting, and archived real-machine checklist documents.
+
+The security-specific source and documentation checks are:
+
+```bash
+scripts/security-scan.sh
+python3 tests/unit/test_orchestra_scx_source.py
+```
+
+These checks cover source contracts and local artifact handling. They do not
+replace cryptographic review, signed release verification, fuzzing, or a
+privileged verifier/attach/ownership test.

@@ -45,10 +45,13 @@ workload is owned by ORCHESTRA. It provides:
 
 ## Prerequisites
 
-- Linux 6.12+ with `CONFIG_SCHED_CLASS_EXT=y`
+- Linux with sched_ext; the running kernel's API family must match the
+  target-matched build (sched_ext is upstream from Linux 6.12, but vendors
+  may backport or change interfaces)
 - `CONFIG_DEBUG_INFO_BTF=y`
-- clang/LLVM 15+ for BPF compilation
-- bpftool, libbpf
+- clang/LLVM 16+ for BPF compilation
+- bpftool, libbpf >= 1.2.2, libelf, zlib, zstd, and pkg-config as required by
+  the target build
 - Root or `CAP_BPF`+`CAP_SYS_ADMIN` for scheduler load
 
 ## Build
@@ -106,16 +109,34 @@ cc -O2 -Wall -Wextra -Werror -I include \
 
 ## Load and Test
 
+The normal product workflow is the foreground control plane. It verifies the
+strict capability gate, root-safe artifact ownership, build-manifest hashes,
+and exact scheduler ownership before it begins reporting:
+
 ```bash
-# Run the loader (requires root):
-sudo ./bridge/orchestra_loader --load ./orchestra_scx_stage7.bpf.o
+sudo ./scripts/install.sh --with-kernel \
+  --build-dir /var/tmp/orchestra-os-build-$(id -u)
+sudo /usr/local/bin/orchestra run --interval 5
+# Ctrl-C returns to conventional scheduling.
+```
+
+For a detached/manual lifecycle:
+
+```bash
+sudo /usr/local/bin/orchestra enable
 
 # Verify sched_ext is active:
 cat /sys/kernel/sched_ext/state
+cat /sys/kernel/sched_ext/root/ops
 
 # Should show "enabled"; task ownership still requires explicit opt-in.
-sudo ./bridge/orchestra_bridge --status
+sudo /usr/local/bin/orchestra status
 ```
+
+The direct loader remains an advanced diagnostic interface. It refuses to
+unload unless the active ops name, pinned struct_ops link, pin directory, and
+every expected map schema match ORCHESTRA. It never performs broad bpffs
+cleanup.
 
 ## Telemetry
 
@@ -152,8 +173,8 @@ real-time, but it is not a kernel RT bypass/coexistence implementation.
 ## Unload
 
 ```bash
-# Use the loader so only its exact link and map pins are removed:
-sudo ./bridge/orchestra_loader --unload
+# Use the ownership-checked product control plane:
+sudo /usr/local/bin/orchestra disable
 ```
 
 All opted-in tasks return to CFS/EEVDF safely.

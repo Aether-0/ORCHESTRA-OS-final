@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 /* Load ORCHESTRA with every runtime map pinned before struct_ops attach. */
 #define _GNU_SOURCE
+#include <bpf/bpf.h>
 #include <bpf/libbpf.h>
 #include <errno.h>
 #include <linux/bpf.h>
@@ -15,6 +16,11 @@
 
 #define PIN_DIR  "/sys/fs/bpf/orchestra"
 #define LINK_PATH PIN_DIR "/orchestra_sched"
+#define SCHED_EXT_STATE_PATH "/sys/kernel/sched_ext/state"
+#define SCHED_EXT_OPS_PATH "/sys/kernel/sched_ext/root/ops"
+#define ORCHESTRA_OPS_NAME "orchestra_scx_v8"
+#define ORCHESTRA_LEGACY_OPS_NAME "orchestra_scx_stage7"
+#define ORCHESTRA_OPS_MAP_NAME "orchestra_sched_ops"
 
 struct loader_map_spec {
     const char *name;
@@ -100,6 +106,107 @@ static int ensure_pin_dir(void)
         (state.st_mode & (S_IWGRP | S_IWOTH)) != 0)
         return -EPERM;
     return 0;
+}
+
+static bool read_sysfs_line(const char *path, char *buffer, size_t size)
+{
+    FILE *file;
+
+    if (size == 0)
+        return false;
+    file = fopen(path, "re");
+    if (!file)
+        return false;
+    if (!fgets(buffer, (int)size, file)) {
+        fclose(file);
+        return false;
+    }
+    if (fclose(file) != 0)
+        return false;
+    buffer[strcspn(buffer, "\r\n")] = '\0';
+    return true;
+}
+
+static bool scheduler_owned(void)
+{
+    char state[32];
+    char ops[64];
+
+    if (!read_sysfs_line(SCHED_EXT_STATE_PATH, state, sizeof(state)) ||
+        !read_sysfs_line(SCHED_EXT_OPS_PATH, ops, sizeof(ops)))
+        return false;
+    return strcmp(state, "enabled") == 0 &&
+           (strcmp(ops, ORCHESTRA_OPS_NAME) == 0 ||
+            strcmp(ops, ORCHESTRA_LEGACY_OPS_NAME) == 0);
+}
+
+static bool pinned_map_matches(const struct loader_map_spec *spec)
+{
+    struct bpf_map_info info;
+    __u32 info_len = sizeof(info);
+    int fd;
+    bool matches;
+
+    fd = bpf_obj_get(spec->path);
+    if (fd < 0)
+        return false;
+    memset(&info, 0, sizeof(info));
+    matches = bpf_map_get_info_by_fd(fd, &info, &info_len) == 0 &&
+              strncmp((const char *)info.name, spec->name, BPF_OBJ_NAME_LEN) == 0 &&
+              info.type == (__u32)spec->type &&
+              info.key_size == spec->key_size &&
+              info.value_size == spec->value_size &&
+              info.max_entries == spec->max_entries;
+    close(fd);
+    return matches;
+}
+
+static bool pinned_link_matches(void)
+{
+    struct bpf_link_info link_info;
+    struct bpf_map_info map_info;
+    __u32 link_info_len = sizeof(link_info);
+    __u32 map_info_len = sizeof(map_info);
+    int link_fd;
+    int map_fd;
+    bool matches = false;
+
+    link_fd = bpf_obj_get(LINK_PATH);
+    if (link_fd < 0)
+        return false;
+    memset(&link_info, 0, sizeof(link_info));
+    if (bpf_link_get_info_by_fd(link_fd, &link_info, &link_info_len) != 0 ||
+        link_info.type != BPF_LINK_TYPE_STRUCT_OPS ||
+        link_info.struct_ops.map_id == 0) {
+        close(link_fd);
+        return false;
+    }
+    map_fd = bpf_map_get_fd_by_id(link_info.struct_ops.map_id);
+    if (map_fd >= 0) {
+        memset(&map_info, 0, sizeof(map_info));
+        matches = bpf_map_get_info_by_fd(map_fd, &map_info, &map_info_len) == 0 &&
+                  strncmp((const char *)map_info.name, ORCHESTRA_OPS_MAP_NAME,
+                          BPF_OBJ_NAME_LEN) == 0;
+        close(map_fd);
+    }
+    close(link_fd);
+    return matches;
+}
+
+static bool validate_existing_pins(void)
+{
+    struct stat directory;
+
+    if (lstat(PIN_DIR, &directory) != 0 || !S_ISDIR(directory.st_mode) ||
+        directory.st_uid != geteuid() ||
+        (directory.st_mode & (S_IWGRP | S_IWOTH)) != 0 ||
+        !pinned_link_matches())
+        return false;
+    for (size_t i = 0; i < sizeof(map_specs) / sizeof(map_specs[0]); i++) {
+        if (!pinned_map_matches(&map_specs[i]))
+            return false;
+    }
+    return true;
 }
 
 static bool map_schema_matches(const struct bpf_map *map,
@@ -215,6 +322,10 @@ static int unload_scheduler(void)
     int err = 0;
 
     if (geteuid() != 0)
+        return -EPERM;
+    if (!scheduler_owned())
+        return -EPERM;
+    if (!validate_existing_pins())
         return -EPERM;
     if (unlink(LINK_PATH) != 0 && errno != ENOENT)
         return -errno;

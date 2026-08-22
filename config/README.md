@@ -30,3 +30,9 @@ silently changing scheduler semantics.
 
 Use the examples as starting points, then verify the active state with
 `orchestra policy show` and `orchestra telemetry`.
+
+The policy files do not enable the scheduler. Kernel mode is an explicit
+administrator action through `orchestra run`/`orchestra enable`, and the
+optional `config/systemd/orchestra.service` is never enabled by the
+installer. Keep policy files reviewed and root-owned on systems where a root
+control process will publish them.

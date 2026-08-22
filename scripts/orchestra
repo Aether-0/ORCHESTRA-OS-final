@@ -29,11 +29,15 @@ BUILD_DIR=${ORCHESTRA_BUILD_DIR:-$DEFAULT_BUILD_DIR}
 BRIDGE=${ORCHESTRA_BRIDGE:-$BUILD_DIR/orchestra_bridge}
 LOADER=${ORCHESTRA_LOADER:-$BUILD_DIR/orchestra_loader}
 BPF_OBJECT=${ORCHESTRA_BPF:-$BUILD_DIR/orchestra_scx_stage7.bpf.o}
+BUILD_MANIFEST=${ORCHESTRA_BUILD_MANIFEST:-$BUILD_DIR/build-manifest.txt}
 CONFIG_ROOT=${ORCHESTRA_CONFIG_DIR:-$DEFAULT_CONFIG_ROOT}
 CHECK_SYSTEM="$TOOL_DIR/check-system.sh"
 BUILD_TOOL="$TOOL_DIR/build.sh"
 POLICY_TOOL="$TOOL_DIR/policy_load.py"
 STATE_FILE=/sys/kernel/sched_ext/state
+OPS_FILE=/sys/kernel/sched_ext/root/ops
+ORCHESTRA_OPS_NAME=orchestra_scx_v8
+ORCHESTRA_LEGACY_OPS_NAME=orchestra_scx_stage7
 
 usage() {
     cat <<'EOF'
@@ -47,8 +51,10 @@ commands:
   check-system [--json|--strict] discover host capability tiers
   build [--userspace|--bridge|--kernel|--all]
                                   build selected artifacts outside the source tree
-  install                         install userspace tools and documentation
+  install [--with-kernel]         install userspace tools/documentation (opt-in kernel files)
   enable                          attach the target-matched sched_ext object (root)
+  run [--interval SEC]            attach, monitor, and detach on exit (root)
+  monitor [--interval SEC]        stream scheduler telemetry until interrupted (root)
   disable                         detach ORCHESTRA and return to conventional scheduling (root)
   policy load FILE [--dry-run]    validate and publish a versioned policy
   policy show                     show policy and runtime state
@@ -74,12 +80,113 @@ require_tool_file() {
     fi
 }
 
+root_safe_directory_chain() {
+    local current=$1 permissions owner
+
+    [[ "$current" = /* ]] || return 1
+    while :; do
+        [ -d "$current" ] || return 1
+        [ ! -L "$current" ] || return 1
+        owner=$(stat -c '%u' -- "$current" 2>/dev/null) || return 1
+        [ "$owner" = 0 ] || return 1
+        permissions=$(stat -c '%A' -- "$current" 2>/dev/null) || return 1
+        [ "${permissions:5:1}" != w ] || return 1
+        [ "${permissions:8:1}" != w ] || return 1
+        [ "$current" = / ] && break
+        current=$(dirname -- "$current")
+    done
+}
+
+root_safe_artifact() {
+    local path=$1
+    local permissions owner
+
+    [ -f "$path" ] || return 1
+    [ ! -L "$path" ] || return 1
+    root_safe_directory_chain "$(dirname -- "$path")" || return 1
+    owner=$(stat -c '%u' -- "$path" 2>/dev/null) || return 1
+    [ "$owner" = 0 ] || return 1
+    permissions=$(stat -c '%A' -- "$path" 2>/dev/null) || return 1
+    [ "${permissions:5:1}" != w ] || return 1
+    [ "${permissions:8:1}" != w ] || return 1
+}
+
+require_root_safe_artifact() {
+    local label=$1 path=$2
+    if ! root_safe_artifact "$path"; then
+        echo "untrusted $label: expected a root-owned, non-symlink, non-group/world-writable regular file: $path" >&2
+        echo "install the target-matched artifacts with scripts/install.sh --with-kernel" >&2
+        exit 1
+    fi
+}
+
+manifest_hash_matches() {
+    local key=$1 path=$2 expected actual
+    [ -f "$BUILD_MANIFEST" ] || return 1
+    [ ! -L "$BUILD_MANIFEST" ] || return 1
+    expected=$(awk -F= -v wanted="$key" '$1 == wanted { print $2; exit }' \
+        "$BUILD_MANIFEST")
+    [[ "$expected" =~ ^[[:xdigit:]]{64}$ ]] || return 1
+    actual=$(sha256sum -- "$path" | awk '{print $1}')
+    [ "$actual" = "$expected" ]
+}
+
+require_kernel_artifact_set() {
+    require_root_safe_artifact "loader" "$LOADER"
+    require_root_safe_artifact "BPF object" "$BPF_OBJECT"
+    require_root_safe_artifact "build manifest" "$BUILD_MANIFEST"
+    if [ -e "$BRIDGE" ]; then
+        require_root_safe_artifact "bridge" "$BRIDGE"
+    fi
+    if ! manifest_hash_matches loader_sha256 "$LOADER" ||
+       ! manifest_hash_matches bpf_object_sha256 "$BPF_OBJECT" ||
+       { [ -e "$BRIDGE" ] && ! manifest_hash_matches bridge_sha256 "$BRIDGE"; }; then
+        echo "kernel artifact hash does not match the installed build manifest" >&2
+        echo "refusing scheduler activation" >&2
+        exit 1
+    fi
+}
+
 state_value() {
     if [ -r "$STATE_FILE" ]; then
         tr -d '\n' <"$STATE_FILE"
     else
         echo unavailable
     fi
+}
+
+ops_value() {
+    if [ -r "$OPS_FILE" ]; then
+        tr -d '\n' <"$OPS_FILE"
+    else
+        echo unavailable
+    fi
+}
+
+owns_scheduler() {
+    [ "$(state_value)" = enabled ] || return 1
+    case "$(ops_value)" in
+        "$ORCHESTRA_OPS_NAME"|"$ORCHESTRA_LEGACY_OPS_NAME") return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+require_scheduler_ownership() {
+    if ! owns_scheduler; then
+        echo "ORCHESTRA does not own the active sched_ext instance; refusing lifecycle operation" >&2
+        echo "state=$(state_value) ops=$(ops_value)" >&2
+        return 1
+    fi
+}
+
+validate_interval() {
+    local interval=${1:-5}
+    if [[ ! "$interval" =~ ^[0-9]+([.][0-9]+)?$ ]] ||
+       ! awk -v value="$interval" 'BEGIN { exit !(value > 0 && value <= 3600) }'; then
+        echo "interval must be a number greater than 0 and no greater than 3600 seconds" >&2
+        return 2
+    fi
+    printf '%s\n' "$interval"
 }
 
 run_status_bridge() {
@@ -91,7 +198,95 @@ run_status_bridge() {
         echo "telemetry=requires-root (run sudo orchestra telemetry)"
         return 0
     fi
+    if ! root_safe_artifact "$BRIDGE"; then
+        echo "telemetry=unavailable (bridge is not a trusted installed artifact)"
+        return 0
+    fi
     "$BRIDGE" --status || echo "telemetry=unavailable (maps are not active or schema validation failed)"
+}
+
+monitor_scheduler() {
+    local interval
+    interval=$(validate_interval "${1:-5}") || return $?
+    require_root
+    require_scheduler_ownership
+    while :; do
+        printf 'timestamp=%s state=%s ops=%s\n' "$(date -Iseconds)" "$(state_value)" "$(ops_value)"
+        run_status_bridge
+        sleep "$interval"
+    done
+}
+
+run_scheduler() {
+    local interval=5
+    local attached=0
+    local already_owned=0
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --interval)
+                [ "$#" -ge 2 ] || { echo "--interval requires a value" >&2; return 2; }
+                interval=$2
+                shift 2
+                ;;
+            --help|-h)
+                echo "usage: orchestra run [--interval SEC]"
+                return 0
+                ;;
+            *)
+                echo "unknown run option: $1" >&2
+                echo "usage: orchestra run [--interval SEC]" >&2
+                return 2
+                ;;
+        esac
+    done
+    interval=$(validate_interval "$interval") || return $?
+    require_root
+    require_root_safe_artifact "capability checker" "$CHECK_SYSTEM"
+    require_kernel_artifact_set
+    "$CHECK_SYSTEM" --strict
+
+    case "$(state_value)" in
+        disabled)
+            "$LOADER" --load "$BPF_OBJECT"
+            attached=1
+            ;;
+        enabled)
+            require_scheduler_ownership
+            already_owned=1
+            ;;
+        *)
+            echo "sched_ext state is not safely actionable: $(state_value)" >&2
+            return 1
+            ;;
+    esac
+    if ! owns_scheduler; then
+        echo "loader did not establish ORCHESTRA scheduler ownership" >&2
+        if [ "$attached" -eq 1 ]; then
+            "$LOADER" --unload >/dev/null 2>&1 || true
+        fi
+        return 1
+    fi
+    echo "ORCHESTRA running; interval=${interval}s; press Ctrl-C to return to conventional scheduling"
+
+    cleanup() {
+        local saved_status=$?
+        trap - EXIT INT TERM
+        if [ "$attached" -eq 1 ] && [ "$already_owned" -eq 0 ] && owns_scheduler; then
+            if ! "$LOADER" --unload; then
+                echo "WARNING: ORCHESTRA could not unload cleanly; inspect $STATE_FILE and kernel logs" >&2
+                saved_status=1
+            fi
+        fi
+        exit "$saved_status"
+    }
+    trap cleanup EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    while :; do
+        printf 'timestamp=%s state=%s ops=%s\n' "$(date -Iseconds)" "$(state_value)" "$(ops_value)"
+        run_status_bridge
+        sleep "$interval"
+    done
 }
 
 cmd=${1:-help}
@@ -118,6 +313,7 @@ case "$cmd" in
         echo "product=ORCHESTRA-OS"
         echo "version=$VERSION"
         echo "lifecycle_state=$(state_value)"
+        echo "scheduler_ops=$(ops_value)"
         echo "build_dir=$BUILD_DIR"
         echo "bpf_object=$BPF_OBJECT"
         echo "loader=$LOADER"
@@ -126,7 +322,7 @@ case "$cmd" in
         ;;
     telemetry)
         require_root
-        require_tool_file "$BRIDGE"
+        require_root_safe_artifact "bridge" "$BRIDGE"
         "$BRIDGE" --status
         ;;
     controller)
@@ -135,7 +331,7 @@ case "$cmd" in
         case "$subcommand" in
             status)
                 require_root
-                require_tool_file "$BRIDGE"
+                require_root_safe_artifact "bridge" "$BRIDGE"
                 "$BRIDGE" --status
                 ;;
             *) echo "usage: orchestra controller status" >&2; exit 2 ;;
@@ -147,15 +343,16 @@ case "$cmd" in
         case "$subcommand" in
             show)
                 require_root
-                require_tool_file "$BRIDGE"
+                require_root_safe_artifact "bridge" "$BRIDGE"
                 "$BRIDGE" --status
                 ;;
             load)
                 require_root
                 config=${1:-$CONFIG_ROOT/safe.json}
                 if [ "$#" -gt 0 ]; then shift; fi
-                require_tool_file "$BRIDGE"
-                require_tool_file "$POLICY_TOOL"
+                require_root_safe_artifact "bridge" "$BRIDGE"
+                require_root_safe_artifact "policy loader" "$POLICY_TOOL"
+                require_root_safe_artifact "policy file" "$config"
                 python3 "$POLICY_TOOL" --bridge "$BRIDGE" "$config" "$@"
                 ;;
             *) echo "usage: orchestra policy load FILE [--dry-run] | orchestra policy show" >&2; exit 2 ;;
@@ -163,12 +360,12 @@ case "$cmd" in
         ;;
     enable)
         require_root
-        require_tool_file "$CHECK_SYSTEM"
-        require_tool_file "$LOADER"
-        require_tool_file "$BPF_OBJECT"
+        require_root_safe_artifact "capability checker" "$CHECK_SYSTEM"
+        require_kernel_artifact_set
         "$CHECK_SYSTEM" --strict
         current_state=$(state_value)
         if [ "$current_state" = enabled ]; then
+            require_scheduler_ownership
             echo "ORCHESTRA is already enabled"
             exit 0
         fi
@@ -176,13 +373,39 @@ case "$cmd" in
             echo "sched_ext is unavailable on this kernel; refusing activation" >&2
             exit 1
         fi
+        if [ "$current_state" != disabled ]; then
+            echo "sched_ext is in an unknown state: $current_state" >&2
+            exit 1
+        fi
         "$LOADER" --load "$BPF_OBJECT"
         final_state=$(state_value)
-        if [ "$final_state" != enabled ]; then
+        if [ "$final_state" != enabled ] || ! owns_scheduler; then
             echo "activation did not reach enabled state: $final_state" >&2
+            "$LOADER" --unload >/dev/null 2>&1 || true
             exit 1
         fi
         echo "ORCHESTRA enabled; conventional scheduling remains the fallback for ineligible tasks"
+        ;;
+    run)
+        run_scheduler "$@"
+        ;;
+    monitor)
+        interval=5
+        while [ "$#" -gt 0 ]; do
+            case "$1" in
+                --interval)
+                    [ "$#" -ge 2 ] || { echo "--interval requires a value" >&2; exit 2; }
+                    interval=$2
+                    shift 2
+                    ;;
+                --help|-h)
+                    echo "usage: orchestra monitor [--interval SEC]"
+                    exit 0
+                    ;;
+                *) echo "unknown monitor option: $1" >&2; exit 2 ;;
+            esac
+        done
+        monitor_scheduler "$interval"
         ;;
     disable)
         require_root
@@ -195,7 +418,8 @@ case "$cmd" in
             echo "ORCHESTRA is already disabled"
             exit 0
         fi
-        require_tool_file "$LOADER"
+        require_scheduler_ownership
+        require_root_safe_artifact "loader" "$LOADER"
         "$LOADER" --unload
         final_state=$(state_value)
         if [ "$final_state" != disabled ]; then

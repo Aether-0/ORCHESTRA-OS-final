@@ -23,6 +23,9 @@ validated, kernel-prototyped, production-secure, or deployment-ready.
   kernel source/BTF environment; archived manifests retain the historical
   hashes and provenance without making this repository depend on a local
   source export.
+- Compiled host binaries, generated `vmlinux.h` files, and benchmark executables
+  are not retained in Git. Rebuild them into an external output directory and
+  retain only the command, manifest, hashes, and relevant raw measurements.
 
 The available 2026-08-03 evidence is indexed in
 [test-results/2026-08-03/README.md](test-results/2026-08-03/README.md).

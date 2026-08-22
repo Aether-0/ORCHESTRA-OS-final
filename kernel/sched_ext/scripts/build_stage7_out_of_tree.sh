@@ -215,6 +215,12 @@ cc -O2 -std=c11 -Wall -Wextra -Wpedantic \
     -o "$LOADER" -Wl,-rpath,/usr/lib/x86_64-linux-gnu \
     -l:"$LIBBPF_SONAME"
 
+# Keep root-facing artifacts non-writable by group/other even when the build
+# host uses a permissive umask. The installer performs the same checks before
+# copying them into a privileged prefix.
+chmod 0644 "$VMLINUX_H" "$BPF_OBJECT"
+chmod 0755 "$BRIDGE" "$LOADER"
+
 {
     echo "running_kernel=$RUNNING_KERNEL"
     echo "source_version=$SOURCE_VERSION"

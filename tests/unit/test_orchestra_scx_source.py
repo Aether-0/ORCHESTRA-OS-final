@@ -17,6 +17,11 @@ BRIDGE = (ROOT / "kernel/sched_ext/bridge/orchestra_bridge.c").read_text()
 LOADER = (ROOT / "kernel/sched_ext/bridge/orchestra_loader.c").read_text()
 LEGACY_LOADER = (ROOT / "kernel/sched_ext/orchestra_scx.c").read_text()
 ENGINE = (ROOT / "orchestra_paper_cpu_demo/orchestra_paper_cpu.c").read_text()
+CLI = (ROOT / "scripts/orchestra").read_text()
+INSTALL = (ROOT / "scripts/install.sh").read_text()
+UNINSTALL = (ROOT / "scripts/uninstall.sh").read_text()
+SYSTEMD = (ROOT / "config/systemd/orchestra.service").read_text()
+KERNEL_CI = (ROOT / ".github/workflows/build-sched-ext.yml").read_text()
 
 
 def require(condition: bool, message: str) -> None:
@@ -260,6 +265,36 @@ def main() -> None:
             "ORCHESTRA_ACTION_RUN" in BPF and
             "orchestra_controller_should_fallback_v10" in CONTROLLER_V10,
             "controller failure must retain a safe RUN fallback")
+    require("scheduler_owned" in LOADER and
+            "validate_existing_pins" in LOADER and
+            "pinned_link_matches" in LOADER and
+            "bpf_link_get_info_by_fd" in LOADER and
+            "BPF_LINK_TYPE_STRUCT_OPS" in LOADER,
+            "loader unload must verify scheduler ownership and its pinned link/schema")
+    require("ORCHESTRA_OPS_NAME=orchestra_scx_v8" in CLI and
+            "require_scheduler_ownership" in CLI and
+            "run_scheduler" in CLI and
+            "monitor_scheduler" in CLI,
+            "the user-facing lifecycle must have explicit ownership and foreground monitoring")
+    require("require_kernel_artifact_set" in CLI and
+            "manifest_hash_matches" in CLI and
+            "root_safe_artifact" in CLI,
+            "privileged lifecycle must reject untrusted or tampered kernel artifacts")
+    require("with_kernel" in INSTALL and
+            "build-manifest.txt" in INSTALL and
+            "safe_source_artifact" in INSTALL and
+            "cp -a" not in INSTALL,
+            "installation must use explicit target artifacts and root-safe file copying")
+    require("preserving non-matching systemd unit" in UNINSTALL and
+            "cmp -s" in UNINSTALL,
+            "uninstall must not remove a modified systemd unit")
+    require("ExecStart=/usr/local/bin/orchestra run" in SYSTEMD and
+            "ExecStop=/usr/local/bin/orchestra disable" in SYSTEMD,
+            "the optional service must own a foreground scheduler lifecycle")
+    require("self-hosted" in KERNEL_CI and
+            "ORCHESTRA_KERNEL_SRC" in KERNEL_CI and
+            "--strict" in KERNEL_CI,
+            "kernel CI must be target-matched and explicit about the privileged host")
     print("PASS sched_ext source safety invariants")
 
 

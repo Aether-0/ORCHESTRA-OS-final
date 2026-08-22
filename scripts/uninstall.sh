@@ -57,6 +57,13 @@ fi
 
 BIN="$PREFIX/bin/orchestra"
 LIB="$PREFIX/lib/orchestra-os"
+SERVICE_TARGET="$PREFIX/lib/systemd/system/orchestra.service"
+
+if [ "$PREFIX" = /usr/local ] && command -v systemctl >/dev/null 2>&1 &&
+   systemctl is-active --quiet orchestra.service 2>/dev/null; then
+    echo "stopping orchestra.service before removal"
+    systemctl disable --now orchestra.service
+fi
 
 if [ -x "$BIN" ] && [ -r /sys/kernel/sched_ext/state ]; then
     state=$(tr -d '\n' </sys/kernel/sched_ext/state)
@@ -67,6 +74,14 @@ if [ -x "$BIN" ] && [ -r /sys/kernel/sched_ext/state ]; then
 fi
 
 rm -f -- "$BIN"
+if [ "$PREFIX" = /usr/local ] && [ -e "$SERVICE_TARGET" ]; then
+    if [ -f "$LIB/config/systemd/orchestra.service" ] &&
+       cmp -s "$LIB/config/systemd/orchestra.service" "$SERVICE_TARGET"; then
+        rm -f -- "$SERVICE_TARGET"
+    else
+        echo "preserving non-matching systemd unit: $SERVICE_TARGET" >&2
+    fi
+fi
 case "$LIB" in
     "$PREFIX/lib/orchestra-os") rm -rf -- "$LIB" ;;
     *) echo "refusing unexpected installation path: '$LIB'" >&2; exit 2 ;;

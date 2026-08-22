@@ -7,6 +7,14 @@ tools/benchmark/signal_publication_microbenchmark
 *.so
 *.bpf.o
 *.bpf.skel.h
+kernel/sched_ext/bridge/orchestra_bridge
+kernel/sched_ext/bridge/orchestra_loader
+kernel/sched_ext/scripts/fixed_work
+**/build/orchestra_bridge
+**/build/orchestra_loader
+**/build/fixed_work
+**/build/include/vmlinux.h
+**/build/signal_publication_microbenchmark_*
 
 # External product outputs
 /build/

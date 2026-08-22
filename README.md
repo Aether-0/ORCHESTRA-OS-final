@@ -108,7 +108,7 @@ artifact hashes in `ORCHESTRA_BUILD_DIR/build-manifest.txt`. It refuses a
 kernel-version mismatch and never writes generated files into the source
 tree.
 
-## Install, enable, inspect, disable
+## Install, run, inspect, disable
 
 The installer preserves existing configuration and never enables a scheduler
 implicitly:
@@ -118,20 +118,43 @@ sudo ./scripts/install.sh
 sudo /usr/local/bin/orchestra status
 ```
 
-After a successful target-matched kernel build and an administrator-approved
-runtime gate:
+The command above installs the observer/control-plane package. Kernel files
+are installed only when explicitly requested with a target-matched build:
 
 ```bash
-sudo /usr/local/bin/orchestra enable
+ORCHESTRA_BUILD_DIR=/var/tmp/orchestra-os-build-$(id -u)
+sudo ./scripts/install.sh --with-kernel --build-dir "$ORCHESTRA_BUILD_DIR"
+```
+
+After an administrator-approved runtime gate, the scx-style foreground
+workflow is:
+
+```bash
+sudo /usr/local/bin/orchestra run --interval 5
+# Ctrl-C verifies the foreground cleanup path and returns to conventional scheduling
+```
+
+For a persistent service, install the optional unit and enable it explicitly:
+
+```bash
+sudo systemctl enable --now orchestra.service
 sudo /usr/local/bin/orchestra status
 sudo /usr/local/bin/orchestra telemetry
 sudo /usr/local/bin/orchestra disable
 sudo /usr/local/bin/orchestra uninstall --keep-config
 ```
 
-`enable` performs a strict capability check, schema-checked loader attach,
-and state verification. `disable` waits for the kernel to report
-`disabled`; the loader removes only its own `/sys/fs/bpf/orchestra` pins.
+`run` owns the foreground attach and detaches only an instance it attached.
+`enable` is the detached/manual equivalent. Both perform a strict capability
+check, require root-owned non-symlink kernel artifacts whose hashes match the
+build manifest, use schema-checked loader attach, and verify scheduler
+ownership. `disable` refuses to detach a foreign sched_ext owner, waits for
+the kernel to report `disabled`, and the loader removes only its own
+`/sys/fs/bpf/orchestra` pins.
+
+If the host or build cannot pass these gates, stay in observer mode. Do not
+copy a BPF object from another kernel and do not use a generic `kill` or broad
+bpffs cleanup as a scheduler recovery mechanism.
 
 ## Policies and telemetry
 
@@ -165,6 +188,8 @@ sudo orchestra telemetry
 - [Final validation report](docs/validation/FINAL_VALIDATION_REPORT.md)
 - [Final product status](FINAL_PRODUCT_STATUS.md)
 - [Maintained diagrams](docs/diagrams/README.md)
+- [Security model and operator checklist](docs/security/SECURITY.md)
+- [Foreground runtime example](examples/runtime/README.md)
 
 ## Research and claim discipline
 

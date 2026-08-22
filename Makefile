@@ -27,6 +27,8 @@ bridge:
 	else \
 		echo "BLOCKED_MISSING_LIBBPF_HEADERS: bridge built; loader deferred"; \
 	fi
+	@chmod 0755 "$(ORCHESTRA_BUILD_DIR)/orchestra_bridge"
+	@if [ -e "$(ORCHESTRA_BUILD_DIR)/orchestra_loader" ]; then chmod 0755 "$(ORCHESTRA_BUILD_DIR)/orchestra_loader"; fi
 
 product: userspace bridge
 

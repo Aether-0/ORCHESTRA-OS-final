@@ -49,6 +49,7 @@ check_tool() {
         record "tool:$1" PASS "$(command -v "$1")"
     else
         record "tool:$1" WARNING "not installed; observer mode remains available"
+        kernel_status=WARNING
     fi
 }
 
@@ -73,8 +74,26 @@ for key in CONFIG_SCHED_CLASS_EXT CONFIG_DEBUG_INFO_BTF CONFIG_BPF_SYSCALL CONFI
     esac
 done
 for tool in cc clang make python3 bpftool; do check_tool "$tool"; done
-if printf '#include <bpf/libbpf.h>\n' | cc -E - >/dev/null 2>&1; then record libbpf-header PASS "compiler can include bpf/libbpf.h"; else record libbpf-header WARNING "libbpf development headers unavailable"; fi
-if have_command pkg-config && pkg-config --exists libbpf 2>/dev/null; then record libbpf-library PASS "pkg-config libbpf"; else record libbpf-library WARNING "libbpf pkg-config metadata unavailable"; fi
+if printf '#include <bpf/libbpf.h>\n' | cc -E - >/dev/null 2>&1; then
+    record libbpf-header PASS "compiler can include bpf/libbpf.h"
+else
+    record libbpf-header WARNING "libbpf development headers unavailable"
+    kernel_status=WARNING
+fi
+if have_command pkg-config && pkg-config --exists libbpf 2>/dev/null; then
+    record libbpf-library PASS "pkg-config libbpf"
+else
+    record libbpf-library WARNING "libbpf pkg-config metadata unavailable"
+    kernel_status=WARNING
+fi
+for library in libelf libzstd; do
+    if have_command pkg-config && pkg-config --exists "$library" 2>/dev/null; then
+        record "${library}-library" PASS "pkg-config $library"
+    else
+        record "${library}-library" WARNING "development metadata unavailable"
+        kernel_status=WARNING
+    fi
+done
 if [ "$cpu_count" -ge 1 ] 2>/dev/null; then record cpu-count PASS "$cpu_count online CPUs"; else record cpu-count FAIL "unable to determine online CPUs"; observer_status=FAIL; fi
 if [ "$(id -u)" -eq 0 ]; then record privilege PASS "effective uid 0"; else record privilege WARNING "run lifecycle commands as root"; kernel_status=WARNING; fi
 if mountpoint -q /sys/fs/bpf 2>/dev/null; then record bpffs PASS /sys/fs/bpf; else record bpffs WARNING "bpffs is not mounted"; kernel_status=WARNING; fi

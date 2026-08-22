@@ -17,6 +17,35 @@ observer-only until separately certified.
 The kernel source must match `uname -r` exactly. One BPF object must not be
 copied between unrelated kernels.
 
+## 1.1 Install build dependencies
+
+The project never installs packages automatically. Choose the command for the
+distribution and review it before running it. The portable observer build
+needs the C toolchain and Python; kernel artifacts additionally need clang,
+bpftool, libbpf development headers/runtime, libelf, zlib, zstd, pkg-config,
+and kernel/sched_ext headers from the exact target source export.
+
+Debian, Ubuntu, and Kali example:
+
+```bash
+sudo apt-get update
+sudo apt-get install build-essential clang llvm bpftool libbpf-dev \
+  libelf-dev zlib1g-dev libzstd-dev pkg-config python3 dwarves
+```
+
+Fedora example:
+
+```bash
+sudo dnf install gcc gcc-c++ make clang llvm bpftool libbpf-devel \
+  elfutils-libelf-devel zlib-devel libzstd-devel pkgconf-pkg-config \
+  python3 dwarves
+```
+
+If the distribution's libbpf is older or its kernel headers omit sched_ext
+inputs, do not mix headers from a different kernel. Use the compatibility
+report and remain in observer mode until an exact target source export is
+available.
+
 ## 2. Check the host
 
 ```bash
@@ -84,6 +113,20 @@ The installer copies the bridge, loader, BPF object when present, CLI,
 configuration examples, and documentation. Existing files under
 `/etc/orchestra-os` are preserved. The scheduler remains disabled.
 
+The default command is intentionally observer-only. To install kernel-mode
+artifacts, opt in explicitly:
+
+```bash
+sudo ./scripts/install.sh --with-kernel --build-dir "$ORCHESTRA_BUILD_DIR"
+```
+
+`--with-kernel` requires `orchestra_bridge`, `orchestra_loader`, the
+target-matched BPF object, and `build-manifest.txt`. It rejects symlinked or
+group/world-writable artifacts and unsafe installation paths, and checks the recorded SHA-256 values before
+copying them into the root-owned installation. This is an integrity check,
+not a signature or proof of publisher authenticity; signed release artifacts
+remain a production gate.
+
 For a reversible non-system rehearsal:
 
 ```bash
@@ -97,13 +140,26 @@ The current installer intentionally exposes configuration through the
 `ORCHESTRA_CONFIG_DIR` environment variable; if a custom directory is used,
 set it for both install and uninstall.
 
-## 6. Enable only after the runtime gate
+## 6. Run or enable only after the runtime gate
 
 On a dedicated test system with authorized root access and an artifact built
 for the running kernel:
 
 ```bash
 sudo /usr/local/bin/orchestra check-system --strict
+sudo /usr/local/bin/orchestra run --interval 5
+```
+
+`run` is the recommended first kernel-mode workflow: it attaches in the
+foreground, prints ownership and telemetry status, and detaches the instance
+it attached when interrupted with Ctrl-C. The loader and CLI refuse to
+operate on a foreign sched_ext owner. If the scheduler is already owned by
+ORCHESTRA, `run` observes it and leaves that existing owner active when it
+exits.
+
+For a detached/manual lifecycle:
+
+```bash
 sudo /usr/local/bin/orchestra enable
 cat /sys/kernel/sched_ext/state
 sudo /usr/local/bin/orchestra status
@@ -113,7 +169,25 @@ Expected state is `enabled`. The loader performs exact map schema negotiation,
 scoped pinning, and struct_ops attach. A successful loader return alone is
 insufficient; verify the sysfs state and scheduler ownership telemetry.
 
-## 7. First workload and telemetry
+## 7. Optional systemd service
+
+The `--with-kernel` install places an opt-in unit at
+`/usr/local/lib/systemd/system/orchestra.service`; it is not enabled by the
+installer. On a dedicated authorized test machine, start it explicitly:
+
+```bash
+sudo systemctl enable --now orchestra.service
+sudo systemctl status orchestra.service --no-pager
+sudo journalctl -u orchestra.service -n 100 --no-pager
+```
+
+Stop it through systemd, which invokes the ownership-checked disable path:
+
+```bash
+sudo systemctl disable --now orchestra.service
+```
+
+## 8. First workload and telemetry
 
 Start with observer evidence:
 
@@ -130,7 +204,7 @@ sudo /usr/local/bin/orchestra telemetry
 sudo /usr/local/bin/orchestra controller status
 ```
 
-## 8. Disable and uninstall
+## 9. Disable and uninstall
 
 Return to conventional scheduling first:
 
@@ -153,4 +227,8 @@ sudo ORCHESTRA_CONFIG_DIR=/etc/orchestra-os \
   ./scripts/uninstall.sh
 ```
 
-Uninstall is loader-scoped and never removes unrelated bpffs pins.
+Uninstall is loader-scoped and never removes unrelated bpffs pins. It also
+preserves a systemd unit if it no longer matches the ORCHESTRA-managed unit,
+so a locally modified service file is not silently deleted. When the managed
+service is active, the uninstall script first asks systemd to stop and disable
+that exact unit; a failure stops removal.

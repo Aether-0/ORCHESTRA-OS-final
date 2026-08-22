@@ -34,9 +34,36 @@ sudo orchestra status
 sudo orchestra disable
 ```
 
-Enable requires the strict host check and a target-matched BPF object. Disable
-is idempotent when sched_ext is already disabled and verifies the kernel's
-disabled state after unloading.
+Enable requires the strict host check, root-safe target-matched artifacts,
+and a build-manifest hash match. Disable is idempotent when sched_ext is
+already disabled, refuses a foreign sched_ext owner, and verifies the
+kernel's disabled state after unloading.
+
+For a scx-style foreground lifecycle, use:
+
+```bash
+sudo orchestra run --interval 5
+```
+
+The command attaches only when sched_ext is disabled, prints the active ops
+name and bridge telemetry, and detaches only the instance it attached when
+interrupted. If ORCHESTRA is already the owner, it observes that instance and
+does not detach someone else's lifecycle. To observe an already-running
+ORCHESTRA instance without changing it:
+
+```bash
+sudo orchestra monitor --interval 5
+```
+
+An optional systemd unit provides the same foreground ownership model:
+
+```bash
+sudo systemctl enable --now orchestra.service
+sudo systemctl status orchestra.service --no-pager
+sudo systemctl disable --now orchestra.service
+```
+
+The installer never enables this unit automatically.
 
 ## Policy lifecycle
 
@@ -124,3 +151,14 @@ sudo orchestra disable
 ```
 
 The conventional Linux scheduler remains the intended safe destination.
+
+## Security operating rules
+
+Treat kernel-mode artifacts and policy files as privileged inputs. Install
+target-matched artifacts through the installer, review policy changes, keep
+the default observer mode on non-dedicated systems, and preserve the build
+manifest with experiment evidence. ORCHESTRA currently validates schema,
+generation, freshness, identity, ownership, and artifact integrity; it does
+not claim cryptographic authentication of the kernel signal frame or signed
+release provenance. See [the security model](../security/SECURITY.md) for the
+threat boundary and reporting process.
