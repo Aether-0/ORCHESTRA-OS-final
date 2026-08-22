@@ -3,6 +3,8 @@ set -euo pipefail
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+# shellcheck source=/dev/null
+. "$SCRIPT_DIR/path_safety.sh"
 PREFIX=${ORCHESTRA_PREFIX:-/usr/local}
 BUILD_DIR=${ORCHESTRA_BUILD_DIR:-/var/tmp/orchestra-os-build-$(id -u)}
 CONFIG_DIR=${ORCHESTRA_CONFIG_DIR:-/etc/orchestra-os}
@@ -40,10 +42,13 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 safe_source_artifact() {
-    local path=$1 permissions
+    local path=$1 permissions owner
 
     [ -f "$path" ] || return 1
     [ ! -L "$path" ] || return 1
+    orchestra_safe_path_chain "$(dirname -- "$path")" || return 1
+    owner=$(stat -c '%u' -- "$path" 2>/dev/null) || return 1
+    [ "$owner" = "$(id -u)" ] || return 1
     permissions=$(stat -c '%A' -- "$path" 2>/dev/null) || return 1
     [ "${permissions:5:1}" != w ] || return 1
     [ "${permissions:8:1}" != w ] || return 1
@@ -77,6 +82,56 @@ manifest_hash_matches() {
 
 BIN_DIR="$PREFIX/bin"
 LIB_ROOT="$PREFIX/lib/orchestra-os"
+INSTALL_MARKER="$LIB_ROOT/.orchestra-install"
+
+safe_install_file() {
+    local source=$1 destination=$2 mode=$3
+
+    require_plain_source "installation" "$source"
+    orchestra_safe_destination_file "$destination" || {
+        echo "unsafe installation destination: $destination" >&2
+        exit 1
+    }
+    install -m "$mode" "$source" "$destination"
+}
+
+if ! orchestra_safe_path_chain "$PREFIX"; then
+    echo "unsafe installation prefix path (symlink or writable parent): $PREFIX" >&2
+    exit 1
+fi
+if [ -e "$INSTALL_MARKER" ] || [ -L "$INSTALL_MARKER" ]; then
+    if [ ! -f "$INSTALL_MARKER" ] || [ -L "$INSTALL_MARKER" ] ||
+       ! orchestra_safe_existing_dir "$LIB_ROOT" ||
+       [ "$(stat -c '%u' -- "$INSTALL_MARKER" 2>/dev/null)" != "$(id -u)" ] ||
+       [ "$(stat -c '%a' -- "$INSTALL_MARKER" 2>/dev/null)" != 644 ] ||
+       ! grep -qx 'ORCHESTRA_INSTALL_MANIFEST_V1' "$INSTALL_MARKER"; then
+        echo "refusing to overwrite an unverified ORCHESTRA installation: $LIB_ROOT" >&2
+        exit 1
+    fi
+elif [ -e "$LIB_ROOT" ] || [ -L "$LIB_ROOT" ]; then
+    echo "existing installation has no trusted ORCHESTRA marker: $LIB_ROOT" >&2
+    echo "refusing to overwrite or adopt unrelated files" >&2
+    exit 1
+fi
+if [ -e "$BIN_DIR/orchestra" ] || [ -L "$BIN_DIR/orchestra" ]; then
+    if [ ! -f "$BIN_DIR/orchestra" ] || [ -L "$BIN_DIR/orchestra" ]; then
+        echo "refusing to overwrite an unsafe existing command: $BIN_DIR/orchestra" >&2
+        exit 1
+    fi
+    if [ -f "$INSTALL_MARKER" ]; then
+        expected_bin=$(awk -F= '$1 == "bin_sha256" { print $2; exit }' "$INSTALL_MARKER")
+        actual_bin=$(sha256sum -- "$BIN_DIR/orchestra" | awk '{print $1}')
+        if [[ ! "$expected_bin" =~ ^[[:xdigit:]]{64}$ ]] ||
+           [ "$actual_bin" != "$expected_bin" ]; then
+            echo "refusing to overwrite a modified command: $BIN_DIR/orchestra" >&2
+            exit 1
+        fi
+    else
+        echo "refusing to overwrite an unowned existing command: $BIN_DIR/orchestra" >&2
+        exit 1
+    fi
+fi
+
 if [ "$no_build" -eq 0 ]; then
     build_args=(--userspace --bridge)
     if [ "$with_kernel" -eq 1 ]; then
@@ -110,50 +165,71 @@ if [ -f "$BUILD_DIR/orchestra_bridge" ]; then
     require_source_artifact "bridge" "$BUILD_DIR/orchestra_bridge"
 fi
 
-install -d -m 0755 "$BIN_DIR" "$LIB_ROOT/scripts" "$LIB_ROOT/build" \
-    "$LIB_ROOT/config/examples" "$LIB_ROOT/config/systemd" "$LIB_ROOT/docs" "$CONFIG_DIR"
-install -m 0755 "$REPO_ROOT/scripts/orchestra" "$BIN_DIR/orchestra"
-install -m 0755 "$REPO_ROOT/scripts/orchestra" "$LIB_ROOT/scripts/orchestra"
-install -m 0755 "$REPO_ROOT/scripts/check-system.sh" "$LIB_ROOT/scripts/check-system.sh"
-install -m 0755 "$REPO_ROOT/scripts/build.sh" "$LIB_ROOT/scripts/build.sh"
-install -m 0755 "$REPO_ROOT/scripts/install.sh" "$LIB_ROOT/scripts/install.sh"
-install -m 0755 "$REPO_ROOT/scripts/uninstall.sh" "$LIB_ROOT/scripts/uninstall.sh"
-install -m 0755 "$REPO_ROOT/scripts/policy_load.py" "$LIB_ROOT/scripts/policy_load.py"
-install -m 0644 "$REPO_ROOT/VERSION" "$LIB_ROOT/VERSION"
+# Validate all externally supplied kernel artifacts before creating any
+# destination directories. A failed --no-build/--with-kernel install must not
+# leave a partially initialized prefix behind.
+if ! orchestra_ensure_private_dir "$BIN_DIR"; then
+    echo "unsafe installation destination directory" >&2
+    exit 1
+fi
+for destination_dir in "$LIB_ROOT/scripts" "$LIB_ROOT/build" \
+    "$LIB_ROOT/config" "$LIB_ROOT/config/examples" \
+    "$LIB_ROOT/config/systemd" "$LIB_ROOT/docs" "$CONFIG_DIR"; do
+    if ! orchestra_ensure_private_dir "$destination_dir"; then
+        echo "unsafe installation directory: $destination_dir" >&2
+        exit 1
+    fi
+done
+
+safe_install_file "$REPO_ROOT/scripts/orchestra" "$BIN_DIR/orchestra" 0755
+safe_install_file "$REPO_ROOT/scripts/orchestra" "$LIB_ROOT/scripts/orchestra" 0755
+safe_install_file "$REPO_ROOT/scripts/check-system.sh" "$LIB_ROOT/scripts/check-system.sh" 0755
+safe_install_file "$REPO_ROOT/scripts/path_safety.sh" "$LIB_ROOT/scripts/path_safety.sh" 0755
+safe_install_file "$REPO_ROOT/scripts/build.sh" "$LIB_ROOT/scripts/build.sh" 0755
+safe_install_file "$REPO_ROOT/scripts/install.sh" "$LIB_ROOT/scripts/install.sh" 0755
+safe_install_file "$REPO_ROOT/scripts/uninstall.sh" "$LIB_ROOT/scripts/uninstall.sh" 0755
+safe_install_file "$REPO_ROOT/scripts/policy_load.py" "$LIB_ROOT/scripts/policy_load.py" 0755
+safe_install_file "$REPO_ROOT/VERSION" "$LIB_ROOT/VERSION" 0644
 if [ -f "$BUILD_DIR/orchestra_bridge" ]; then
-    install -m 0755 "$BUILD_DIR/orchestra_bridge" "$LIB_ROOT/build/orchestra_bridge"
+    safe_install_file "$BUILD_DIR/orchestra_bridge" "$LIB_ROOT/build/orchestra_bridge" 0755
 fi
 if [ "$with_kernel" -eq 1 ] && [ -f "$BUILD_DIR/orchestra_loader" ]; then
-    install -m 0755 "$BUILD_DIR/orchestra_loader" "$LIB_ROOT/build/orchestra_loader"
+    safe_install_file "$BUILD_DIR/orchestra_loader" "$LIB_ROOT/build/orchestra_loader" 0755
 fi
 if [ "$with_kernel" -eq 1 ] && [ -f "$BUILD_DIR/orchestra_scx_stage7.bpf.o" ]; then
-    install -m 0644 "$BUILD_DIR/orchestra_scx_stage7.bpf.o" "$LIB_ROOT/build/orchestra_scx_stage7.bpf.o"
+    safe_install_file "$BUILD_DIR/orchestra_scx_stage7.bpf.o" \
+        "$LIB_ROOT/build/orchestra_scx_stage7.bpf.o" 0644
 fi
 if [ "$with_kernel" -eq 1 ] && [ -f "$BUILD_DIR/build-manifest.txt" ]; then
-    install -m 0644 "$BUILD_DIR/build-manifest.txt" "$LIB_ROOT/build/build-manifest.txt"
+    safe_install_file "$BUILD_DIR/build-manifest.txt" \
+        "$LIB_ROOT/build/build-manifest.txt" 0644
 fi
 if [ -d "$REPO_ROOT/config/examples" ]; then
     for config_file in "$REPO_ROOT"/config/examples/*.json; do
         [ -f "$config_file" ] || continue
         require_plain_source "configuration" "$config_file"
-        install -m 0644 "$config_file" "$LIB_ROOT/config/examples/$(basename "$config_file")"
+        safe_install_file "$config_file" \
+            "$LIB_ROOT/config/examples/$(basename "$config_file")" 0644
         target="$CONFIG_DIR/$(basename "$config_file")"
         if [ -L "$target" ]; then
             echo "refusing to follow a symlinked configuration target: $target" >&2
             exit 1
         fi
-        if [ ! -e "$target" ]; then install -m 0644 "$config_file" "$target"; fi
+        if [ ! -e "$target" ]; then safe_install_file "$config_file" "$target" 0644; fi
     done
 fi
 if [ -f "$REPO_ROOT/README.md" ]; then
-    install -m 0644 "$REPO_ROOT/README.md" "$LIB_ROOT/README.md"
+    safe_install_file "$REPO_ROOT/README.md" "$LIB_ROOT/README.md" 0644
 fi
 if [ -d "$REPO_ROOT/docs" ]; then
     while IFS= read -r -d '' document; do
         relative=${document#"$REPO_ROOT/docs/"}
         destination="$LIB_ROOT/docs/$relative"
-        install -d -m 0755 "$(dirname -- "$destination")"
-        install -m 0644 "$document" "$destination"
+        orchestra_ensure_private_dir "$(dirname -- "$destination")" || {
+            echo "unsafe documentation destination: $destination" >&2
+            exit 1
+        }
+        safe_install_file "$document" "$destination" 0644
     done < <(find "$REPO_ROOT/docs" -type f -print0)
 fi
 if [ "$PREFIX" = /usr/local ] && [ -f "$REPO_ROOT/config/systemd/orchestra.service" ]; then
@@ -167,12 +243,45 @@ if [ "$PREFIX" = /usr/local ] && [ -f "$REPO_ROOT/config/systemd/orchestra.servi
         echo "refusing to overwrite an existing non-ORCHESTRA systemd unit: $service_target" >&2
         exit 1
     fi
-    install -d -m 0755 "$PREFIX/lib/systemd/system"
-    install -m 0644 "$REPO_ROOT/config/systemd/orchestra.service" \
-        "$LIB_ROOT/config/systemd/orchestra.service"
-    install -m 0644 "$REPO_ROOT/config/systemd/orchestra.service" \
-        "$service_target"
+    orchestra_ensure_private_dir "$PREFIX/lib/systemd/system" || {
+        echo "unsafe systemd directory" >&2
+        exit 1
+    }
+    safe_install_file "$REPO_ROOT/config/systemd/orchestra.service" \
+        "$LIB_ROOT/config/systemd/orchestra.service" 0644
+    safe_install_file "$REPO_ROOT/config/systemd/orchestra.service" \
+        "$service_target" 0644
 fi
+
+marker_tmp="$INSTALL_MARKER.tmp.$$"
+entries_tmp="$INSTALL_MARKER.entries.$$"
+if ! orchestra_safe_destination_file "$marker_tmp"; then
+    echo "unsafe installation marker destination: $INSTALL_MARKER" >&2
+    exit 1
+fi
+if ! orchestra_safe_destination_file "$entries_tmp"; then
+    echo "unsafe installation manifest destination: $INSTALL_MARKER" >&2
+    exit 1
+fi
+install -m 0600 /dev/null "$entries_tmp"
+find "$LIB_ROOT" -mindepth 1 \
+    ! -path "$INSTALL_MARKER" ! -path "$marker_tmp" ! -path "$entries_tmp" \
+    -printf '%y\t%P\n' | LC_ALL=C sort > "$entries_tmp"
+install -m 0600 /dev/null "$marker_tmp"
+{
+    echo "ORCHESTRA_INSTALL_MANIFEST_V1"
+    echo "product=ORCHESTRA-OS"
+    echo "version=$(tr -d '\n' < "$REPO_ROOT/VERSION")"
+    echo "bin_sha256=$(sha256sum -- "$BIN_DIR/orchestra" | awk '{print $1}')"
+    echo "script_sha256=$(sha256sum -- "$LIB_ROOT/scripts/orchestra" | awk '{print $1}')"
+    echo "entries_begin"
+    cat "$entries_tmp"
+    echo "entries_end"
+} > "$marker_tmp"
+chmod 0600 "$marker_tmp"
+mv -f -- "$marker_tmp" "$INSTALL_MARKER"
+chmod 0644 "$INSTALL_MARKER"
+rm -f -- "$entries_tmp"
 
 echo "installed ORCHESTRA-OS into $LIB_ROOT"
 echo "command=$BIN_DIR/orchestra"

@@ -90,8 +90,14 @@ root_safe_directory_chain() {
         owner=$(stat -c '%u' -- "$current" 2>/dev/null) || return 1
         [ "$owner" = 0 ] || return 1
         permissions=$(stat -c '%A' -- "$current" 2>/dev/null) || return 1
-        [ "${permissions:5:1}" != w ] || return 1
-        [ "${permissions:8:1}" != w ] || return 1
+        if [ "${permissions:5:1}" = w ] || [ "${permissions:8:1}" = w ]; then
+            # Root-owned sticky directories such as /var/tmp prevent an
+            # unprivileged user from replacing a root-owned artifact.  They
+            # are safe parents for the target file; non-sticky writable
+            # parents remain rejected.
+            [ "${permissions:0:1}" = d ] || return 1
+            [ "${permissions:9:1}" = t ] || return 1
+        fi
         [ "$current" = / ] && break
         current=$(dirname -- "$current")
     done

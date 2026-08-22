@@ -3,6 +3,13 @@ set -euo pipefail
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+if [ -r "$SCRIPT_DIR/path_safety.sh" ]; then
+    # shellcheck source=/dev/null
+    . "$SCRIPT_DIR/path_safety.sh"
+else
+    echo "missing path-safety helper: $SCRIPT_DIR/path_safety.sh" >&2
+    exit 1
+fi
 BUILD_DIR=${ORCHESTRA_BUILD_DIR:-/var/tmp/orchestra-os-build-$(id -u)}
 want_userspace=0
 want_bridge=0
@@ -31,6 +38,21 @@ done
 if [ "$want_userspace$want_bridge$want_kernel" = 000 ]; then
     want_userspace=1
     want_bridge=1
+fi
+
+case "$BUILD_DIR" in
+    /var/tmp/orchestra-os-build-*|/tmp/orchestra-os-build-*|/*) ;;
+    *) echo "build directory must be an absolute path" >&2; exit 2 ;;
+esac
+case "$BUILD_DIR" in
+    "$REPO_ROOT"|"$REPO_ROOT"/*)
+        echo "refusing a build directory inside the repository: $BUILD_DIR" >&2
+        exit 2
+        ;;
+esac
+if ! orchestra_ensure_private_dir "$BUILD_DIR"; then
+    echo "refusing unsafe build directory (symlink, ownership, or writable-parent check failed): $BUILD_DIR" >&2
+    exit 1
 fi
 
 if [ "$want_userspace" -eq 1 ]; then

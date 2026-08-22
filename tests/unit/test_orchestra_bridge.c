@@ -45,6 +45,7 @@ static void test_proc_stat_parser(void)
 static void test_action_translation(void)
 {
     uint32_t wire = UINT32_MAX;
+    uint64_t generation;
     enum orchestra_action_id parsed;
 
     for (uint32_t action = 0; action < ORCHESTRA_ACTION_COUNT; action++) {
@@ -54,6 +55,10 @@ static void test_action_translation(void)
     assert(!canonical_to_wire(ORCHESTRA_ACTION_COUNT, &wire));
     assert(parse_action("sleep", &parsed));
     assert(parsed == ORCHESTRA_ACTION_SLEEP);
+    assert(!parse_action(NULL, &parsed));
+    assert(!parse_action("RUN", NULL));
+    assert(next_policy_generation(41, &generation) && generation == 42);
+    assert(!next_policy_generation(UINT64_MAX, &generation));
 }
 
 static void test_abi_and_snapshot_comparison(void)
@@ -81,6 +86,10 @@ static void test_abi_and_snapshot_comparison(void)
     assert(valid_control(&control));
     control.value_size--;
     assert(!valid_control(&control));
+    control.value_size = sizeof(struct bridge_control);
+    control.publication_status = BRIDGE_PUB_MAP_FULL + 1u;
+    assert(!valid_control(&control));
+    control.publication_status = BRIDGE_PUB_OK;
     assert(directive_equal(&first, &second));
     second.identity.start_boottime_ns++;
     assert(!directive_equal(&first, &second));
@@ -260,6 +269,10 @@ static void test_cli_validation(void)
                           &options));
     assert(!parse_options((int)(sizeof(two_commands) / sizeof(two_commands[0])),
                           two_commands, &options));
+    char *policy_abort[] = { "bridge", "--policy-abort" };
+    assert(parse_options((int)(sizeof(policy_abort) / sizeof(policy_abort[0])),
+                         policy_abort, &options));
+    assert(options.policy_abort);
 }
 
 int main(void)

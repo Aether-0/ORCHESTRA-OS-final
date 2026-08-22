@@ -86,6 +86,21 @@ static __always_inline void orchestra_controller_copy_bank(
         destination->actuators[index] = source->actuators[index];
 }
 
+static __always_inline int orchestra_controller_next_generation_v10(
+    uint64_t current, uint64_t *next)
+{
+    if (!next || current == UINT64_MAX)
+        return 0;
+    *next = current + 1u;
+    return *next != 0;
+}
+
+static __always_inline uint64_t orchestra_controller_deadline_v10(
+    uint64_t now, uint64_t duration)
+{
+    return UINT64_MAX - now < duration ? UINT64_MAX : now + duration;
+}
+
 /* Pure actuator transition helpers are shared with deterministic userspace
  * contract tests.  The BPF controller wraps these transitions with map locks
  * and publication logic, but the bound/step semantics are ABI-level behavior. */
@@ -119,6 +134,10 @@ static __always_inline int orchestra_controller_step_actuator_v10(
             actuator->flags |= ORCHESTRA_CONTROLLER_ACTUATOR_F_SATURATED;
         return 0;
     }
+    if (actuator->generation == UINT64_MAX) {
+        actuator->flags |= ORCHESTRA_CONTROLLER_ACTUATOR_F_SATURATED;
+        return 0;
+    }
     actuator->previous_value = old_value;
     actuator->rollback_value = old_value;
     actuator->current_value = next;
@@ -135,6 +154,82 @@ static __always_inline int orchestra_controller_restore_actuator_v10(
         (actuator->current_value > actuator->default_value ? -1 : 0);
 
     return orchestra_controller_step_actuator_v10(actuator, direction, epoch);
+}
+
+/* Pure state validation is shared by BPF and userspace contract tests. */
+static __always_inline int orchestra_controller_state_valid_v10(
+    const struct orchestra_controller_state_v10 *controller)
+{
+    int banks_valid = 1;
+
+    if (!controller)
+        return 0;
+
+#ifdef __BPF__
+#pragma unroll
+#endif
+    for (int bank_index = 0; bank_index < 3; bank_index++) {
+        const struct orchestra_controller_bank_v10 *bank =
+            bank_index == 0 ? &controller->active :
+            (bank_index == 1 ? &controller->staging :
+                               &controller->previous_good);
+
+        if (bank->state >= ORCHESTRA_CTRL_COUNT ||
+            bank->primary_deficit >= ORCH_DEFICIT_COUNT ||
+            bank->secondary_deficit >= ORCH_DEFICIT_COUNT ||
+            bank->severity > ORCHESTRA_V10_FIXED_POINT_SCALE ||
+            bank->persistence > 255u ||
+            bank->last_q_permille > ORCHESTRA_V10_FIXED_POINT_SCALE ||
+            bank->generation == 0)
+            banks_valid = 0;
+#ifdef __BPF__
+#pragma unroll
+#endif
+        for (int actuator_index = 0;
+             actuator_index < ORCH_ACTUATOR_COUNT; actuator_index++) {
+            const struct orchestra_actuator_v10 *actuator =
+                &bank->actuators[actuator_index];
+
+            if (actuator->minimum > actuator->maximum ||
+                actuator->default_value < actuator->minimum ||
+                actuator->default_value > actuator->maximum ||
+                actuator->current_value < actuator->minimum ||
+                actuator->current_value > actuator->maximum ||
+                actuator->previous_value < actuator->minimum ||
+                actuator->previous_value > actuator->maximum ||
+                actuator->rollback_value < actuator->minimum ||
+                actuator->rollback_value > actuator->maximum ||
+                actuator->generation == 0 || actuator->maximum_step == 0)
+                banks_valid = 0;
+        }
+    }
+    return controller->magic == ORCHESTRA_ABI_MAGIC &&
+           controller->abi_version == ORCHESTRA_CONTROL_ABI_VERSION &&
+           controller->value_size == sizeof(*controller) &&
+           controller->schema_version == ORCHESTRA_CONTROLLER_SCHEMA_VERSION &&
+           controller->active_state < ORCHESTRA_CTRL_COUNT &&
+           controller->active_primary_deficit < ORCH_DEFICIT_COUNT &&
+           controller->active_secondary_deficit < ORCH_DEFICIT_COUNT &&
+           controller->active_deficit_class < ORCH_DEFICIT_COUNT &&
+           controller->active_severity <= ORCHESTRA_V10_FIXED_POINT_SCALE &&
+           controller->active_persistence <= 255u &&
+           controller->active_generation != 0 &&
+           controller->active_generation == controller->active.generation &&
+           controller->staging_generation != 0 &&
+           controller->staging_generation == controller->staging.generation &&
+           controller->previous_good_generation != 0 &&
+           controller->previous_good_generation ==
+               controller->previous_good.generation &&
+           controller->scheduler_epoch != 0 &&
+           controller->controller_epoch != 0 &&
+           controller->update_period_ns != 0 &&
+           controller->update_period_ns <= UINT64_C(60000000000) &&
+           controller->minimum_hold_ns <= UINT64_C(60000000000) &&
+           controller->evaluation_baseline_q_permille <=
+               ORCHESTRA_V10_FIXED_POINT_SCALE &&
+           controller->last_q_permille <= ORCHESTRA_V10_FIXED_POINT_SCALE &&
+           controller->best_q_permille <= ORCHESTRA_V10_FIXED_POINT_SCALE &&
+           banks_valid;
 }
 
 #ifdef __BPF__
@@ -213,12 +308,7 @@ static __always_inline void orchestra_controller_note_actuator_changes(
 static __always_inline int orchestra_controller_valid(
     const struct orchestra_controller_state_v10 *controller)
 {
-    return controller->magic == ORCHESTRA_ABI_MAGIC &&
-           controller->abi_version == ORCHESTRA_CONTROL_ABI_VERSION &&
-           controller->value_size == sizeof(*controller) &&
-           controller->schema_version == ORCHESTRA_CONTROLLER_SCHEMA_VERSION &&
-           controller->active_state < ORCHESTRA_CTRL_COUNT &&
-           controller->active_generation != 0;
+    return orchestra_controller_state_valid_v10(controller);
 }
 
 static __always_inline void orchestra_controller_init_v10(uint64_t epoch)
@@ -373,6 +463,20 @@ static __always_inline int orchestra_controller_publish_staging(
     uint32_t first_actuator = ORCH_ACTUATOR_COUNT;
     uint32_t first_direction = 0;
     uint64_t previous_generation = controller->active_generation;
+    uint64_t next_generation;
+
+    if (!orchestra_controller_next_generation_v10(previous_generation,
+                                                   &next_generation)) {
+        /* Generation exhaustion is an explicit fail-safe transition.  Do not
+         * publish generation zero, which could make an old controller bank
+         * appear current after wraparound. */
+        controller->active_state = ORCHESTRA_CTRL_DISABLED;
+        controller->flags |= ORCHESTRA_CONTROLLER_F_VALID;
+        controller->flags &= ~(ORCHESTRA_CONTROLLER_F_STAGING |
+                               ORCHESTRA_CONTROLLER_F_EVALUATING);
+        controller->no_op_count++;
+        return 0;
+    }
 
     orchestra_controller_copy_bank(&controller->previous_good,
                                    &controller->active);
@@ -385,7 +489,7 @@ static __always_inline int orchestra_controller_publish_staging(
     controller->staging.persistence = persistence;
     controller->staging.last_window_generation = window_generation;
     controller->staging.last_q_permille = q;
-    controller->staging.generation = previous_generation + 1u;
+    controller->staging.generation = next_generation;
 
 #pragma unroll
     for (int index = 0; index < ORCH_ACTUATOR_COUNT; index++) {
@@ -459,10 +563,22 @@ static __always_inline void orchestra_controller_rollback_locked(
     struct orchestra_controller_state_v10 *controller, uint64_t now,
     const struct orchestra_coordination_metrics_v10 *metrics)
 {
+    uint64_t next_generation;
+
+    if (!orchestra_controller_next_generation_v10(
+            controller->active_generation, &next_generation)) {
+        controller->active_state = ORCHESTRA_CTRL_DISABLED;
+        controller->flags |= ORCHESTRA_CONTROLLER_F_VALID;
+        controller->flags &= ~(ORCHESTRA_CONTROLLER_F_ROLLBACK |
+                               ORCHESTRA_CONTROLLER_F_EVALUATING |
+                               ORCHESTRA_CONTROLLER_F_STAGING);
+        controller->rollback_count++;
+        return;
+    }
     orchestra_controller_copy_bank(&controller->staging,
                                    &controller->previous_good);
     controller->staging.state = ORCHESTRA_CTRL_ROLLBACK;
-    controller->staging.generation = controller->active_generation + 1u;
+    controller->staging.generation = next_generation;
     orchestra_controller_copy_bank(&controller->active,
                                    &controller->staging);
     controller->active_generation = controller->staging.generation;
@@ -479,7 +595,8 @@ static __always_inline void orchestra_controller_rollback_locked(
     controller->flags &= ~(ORCHESTRA_CONTROLLER_F_EVALUATING |
                            ORCHESTRA_CONTROLLER_F_STAGING);
     controller->rollback_count++;
-    controller->cooldown_until_ns = now + ORCHESTRA_CONTROLLER_COOLDOWN_NS;
+    controller->cooldown_until_ns = orchestra_controller_deadline_v10(
+        now, ORCHESTRA_CONTROLLER_COOLDOWN_NS);
     controller->next_update_ns = controller->cooldown_until_ns;
     controller->evaluation_until_ns = 0;
 }
@@ -616,7 +733,7 @@ static __always_inline void orchestra_controller_update_from_coord(
         changed = orchestra_controller_publish_staging(
             controller, state, ORCH_DEFICIT_NONE, ORCH_DEFICIT_NONE, 0,
             controller->active_persistence, metrics->window_generation,
-            metrics->q_permille, controller->active_generation + 1u,
+            metrics->q_permille, now,
             ORCH_DEFICIT_NONE, state == ORCHESTRA_CTRL_RECOVERY);
         if (!changed && state == controller->active_state)
             no_op = 1;
@@ -636,7 +753,7 @@ static __always_inline void orchestra_controller_update_from_coord(
                 controller, state, metrics->primary_deficit,
                 metrics->secondary_deficit, metrics->deficit_severity,
                 persistence, metrics->window_generation, metrics->q_permille,
-                controller->active_generation + 1u,
+                now,
                 metrics->deficit_class, 0);
             if (!changed)
                 no_op = 1;
@@ -653,7 +770,7 @@ static __always_inline void orchestra_controller_update_from_coord(
                     metrics->primary_deficit, metrics->secondary_deficit,
                     metrics->deficit_severity, persistence,
                     metrics->window_generation, metrics->q_permille,
-                    controller->active_generation + 1u,
+                    now,
                     metrics->deficit_class, 0))
                 changed = 1;
         }
@@ -664,13 +781,14 @@ static __always_inline void orchestra_controller_update_from_coord(
         }
     }
     controller->last_update_ns = now;
-    controller->next_update_ns = now + controller->update_period_ns;
+    controller->next_update_ns = orchestra_controller_deadline_v10(
+        now, controller->update_period_ns);
     controller->active.last_window_generation = metrics->window_generation;
     controller->active.last_q_permille = metrics->q_permille;
     if (changed) {
         controller->evaluation_baseline_q_permille = metrics->q_permille;
-        controller->evaluation_until_ns = now +
-            ORCHESTRA_CONTROLLER_EVALUATION_NS;
+        controller->evaluation_until_ns = orchestra_controller_deadline_v10(
+            now, ORCHESTRA_CONTROLLER_EVALUATION_NS);
         controller->flags |= ORCHESTRA_CONTROLLER_F_EVALUATING;
     }
     if (telemetry)

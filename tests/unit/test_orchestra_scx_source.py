@@ -15,6 +15,8 @@ COORD_V10 = (ROOT / "kernel/sched_ext/include/orchestra_coord.h").read_text()
 CONTROLLER_V10 = (ROOT / "kernel/sched_ext/include/orchestra_controller.h").read_text()
 BRIDGE = (ROOT / "kernel/sched_ext/bridge/orchestra_bridge.c").read_text()
 LOADER = (ROOT / "kernel/sched_ext/bridge/orchestra_loader.c").read_text()
+POLICY = (ROOT / "scripts/policy_load.py").read_text()
+PATH_SAFETY = (ROOT / "scripts/path_safety.sh").read_text()
 LEGACY_LOADER = (ROOT / "kernel/sched_ext/orchestra_scx.c").read_text()
 ENGINE = (ROOT / "orchestra_paper_cpu_demo/orchestra_paper_cpu.c").read_text()
 CLI = (ROOT / "scripts/orchestra").read_text()
@@ -61,6 +63,11 @@ def main() -> None:
     require("deferred_timer_tick_count" in BPF and
             "deferred_release_failure_count" in BPF,
             "deferred progress diagnostics must remain observable")
+    require("deferred_directive_is_current" in BPF and
+            "load_directive(p, &current" in BPF and
+            "BRIDGE_FALLBACK_UNSTABLE_PUBLICATION" in BPF and
+            "SCX_DSQ_GLOBAL" in BPF,
+            "deferred release must revalidate the current directive and fail safe to RUN")
     require("BRIDGE_DEFER_MAP_NAME" in ABI and
             '"--defer-timer-map-id"' in BRIDGE,
             "the deferred timer map must remain in the exact pin contract")
@@ -82,6 +89,26 @@ def main() -> None:
             "sched_getscheduler" in BRIDGE and
             "refusing adaptive directive for RT policy" in BRIDGE,
             "bridge directives must fail closed for RT scheduling policies")
+    require("orchestra_bridge must run as root" in BRIDGE and
+            "if (geteuid() != 0)" in BRIDGE,
+            "direct bridge invocation must enforce its privileged boundary")
+    require("if (!text || !action)" in BRIDGE,
+            "bridge parser helpers must reject null output/input pointers")
+    require("refresh_policy_bank_generation" in BRIDGE and
+            "next_policy_generation" in BRIDGE and
+            "meta.policy_generation = next_generation" in BRIDGE and
+            "intentionally rewinds the active generation" not in BRIDGE,
+            "policy rollback must relabel the retained bank without generation replay")
+    require("publication_status = BRIDGE_PUB_MAP_ERROR" in BRIDGE and
+            "POLICY_PUBLISH_TIMEOUT_SECONDS" in POLICY and
+            "duplicate JSON object key" in POLICY and
+            "BRIDGE_COMMAND_TIMEOUT_SECONDS" in POLICY,
+            "policy and publication controls must reject ambiguity and bound control-plane waits")
+    require("Invalidate readers before exposing the new control generation" in BRIDGE and
+            "Signal readers must remain fail-closed" in BRIDGE and
+            "Invalidate scheduler readers before flipping the policy bank" in BRIDGE and
+            "final control publication readback failed" in BRIDGE,
+            "multi-map publication must stage as non-OK until payload readback succeeds")
     require(LOADER.index("bpf_map__pin") <
             LOADER.index("bpf_map__attach_struct_ops"),
             "the loader must pin maps before struct_ops attach initializes timers")
@@ -244,6 +271,14 @@ def main() -> None:
             "previous_good" in CONTROL_V10 and
             "evaluation_until_ns" in CONTROL_V10,
             "bounded actuator publication and rollback state is missing")
+    require("actuator->previous_value < actuator->minimum" in CONTROLLER_V10 and
+            "actuator->rollback_value < actuator->minimum" in CONTROLLER_V10 and
+            "controller->active_generation == controller->active.generation" in
+                CONTROLLER_V10 and
+            "controller->active_deficit_class < ORCH_DEFICIT_COUNT" in
+                CONTROLLER_V10 and
+            "if (!controller)" in CONTROLLER_V10,
+            "controller validation must cover malformed state, actuator history, and bank generations")
     require("orch_coord_v10" in BPF and "orch_coord_cpu" in BPF and
             "orch_ctrl_v10" in BPF and "orch_ctrl_tel_v10" in BPF and
             "orch_runtime10" in BPF and "orch_task_coord" in BPF,
@@ -271,6 +306,10 @@ def main() -> None:
             "bpf_link_get_info_by_fd" in LOADER and
             "BPF_LINK_TYPE_STRUCT_OPS" in LOADER,
             "loader unload must verify scheduler ownership and its pinned link/schema")
+    require("safe_root_artifact" in LOADER and "pin_path_absent" in LOADER and
+            "link_pinned" in LOADER and "detach_link_fd" in LOADER and
+            "Keep both the pinned link" in LOADER,
+            "loader must reject untrusted artifacts and pre-existing pin paths")
     require("ORCHESTRA_OPS_NAME=orchestra_scx_v8" in CLI and
             "require_scheduler_ownership" in CLI and
             "run_scheduler" in CLI and
@@ -285,9 +324,47 @@ def main() -> None:
             "safe_source_artifact" in INSTALL and
             "cp -a" not in INSTALL,
             "installation must use explicit target artifacts and root-safe file copying")
-    require("preserving non-matching systemd unit" in UNINSTALL and
-            "cmp -s" in UNINSTALL,
-            "uninstall must not remove a modified systemd unit")
+    require("path_safety.sh" in INSTALL and
+            "ORCHESTRA_INSTALL_MANIFEST_V1" in INSTALL and
+            "safe_install_file" in INSTALL and
+            "orchestra_safe_destination_file" in INSTALL,
+            "installer must constrain destinations and record ownership")
+    require("preserving non-matching or symlinked systemd unit" in UNINSTALL and
+            "cmp -s" in UNINSTALL and
+            "ORCHESTRA_INSTALL_MANIFEST_V1" in UNINSTALL and
+            "--remove-config" in UNINSTALL,
+            "uninstall must verify ownership and default to preserving configuration")
+    require("MAX_POLICY_ENTRIES = 256" in POLICY and
+            "MAX_POLICY_BYTES" in POLICY and
+            "duplicate policy state_index" in POLICY and
+            "O_NOFOLLOW" in POLICY and
+            "_safe_privileged_path_chain" in POLICY and
+            "writable path component" in POLICY,
+            "policy loading must use the kernel-sized bound, duplicate rejection, and bounded privileged path input")
+    require("orchestra_ensure_private_dir" in PATH_SAFETY and
+            "orchestra_safe_path_chain" in PATH_SAFETY and
+            "sticky" in PATH_SAFETY,
+            "build/install path checks must reject symlink and writable-parent attacks")
+    require("Root-owned sticky directories such as /var/tmp" in CLI and
+            "non-sticky writable" in CLI,
+            "root runtime artifact checks must permit only kernel-protected sticky parents")
+    require("BRIDGE_FALLBACK_SIGNAL_REPLAY" in ABI and
+            "runtime_signal_generation" in BPF and
+            "signal.sequence < runtime_signal_generation" in BPF and
+            "state->signal_generation < previous_signal_generation" in BPF,
+            "kernel signal consumption must reject sequence rollback and preserve newer state")
+    require("publication_status" in BPF and
+            "ctl->publication_status == BRIDGE_PUB_OK" in BPF and
+            "restore_inactive_policy_bank" in BRIDGE and
+            "--policy-abort" in BRIDGE,
+            "failed publications must fail closed and staged policy writes must have an abort path")
+    deferred_section = BPF[BPF.index("deferred_timerfn"):BPF.index("s32 BPF_STRUCT_OPS_SLEEPABLE(orchestra_sched_init)")]
+    require("SCX_DSQ_GLOBAL" in deferred_section,
+            "expired deferred tasks must have a global RUN promotion fallback")
+    require("orchestra_controller_next_generation_v10" in CONTROLLER_V10 and
+            "orchestra_controller_deadline_v10" in CONTROLLER_V10 and
+            "controller->active_state = ORCHESTRA_CTRL_DISABLED" in CONTROLLER_V10,
+            "controller generation/time overflow must fail closed")
     require("ExecStart=/usr/local/bin/orchestra run" in SYSTEMD and
             "ExecStop=/usr/local/bin/orchestra disable" in SYSTEMD,
             "the optional service must own a foreground scheduler lifecycle")

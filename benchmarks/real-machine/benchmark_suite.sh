@@ -10,13 +10,18 @@ set -euo pipefail
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
+# shellcheck source=/dev/null
+. "$REPO_ROOT/scripts/path_safety.sh"
 
 if [[ -v ORCHESTRA_BENCH_OUTDIR ]]; then
     OUTDIR=$ORCHESTRA_BENCH_OUTDIR
 else
     OUTDIR="/tmp/orchestra-bench-$(date +%Y%m%d-%H%M%S)"
 fi
-mkdir -p "$OUTDIR"
+orchestra_ensure_private_dir "$OUTDIR" || {
+    echo "refusing unsafe benchmark output directory: $OUTDIR" >&2
+    exit 2
+}
 df -P "$OUTDIR" >"$OUTDIR/storage_before.txt" 2>&1 || true
 
 expand_cpu_list() {
@@ -189,7 +194,10 @@ ownership_totals() {
 launch_workers() {
     local workers=$1 duration=$2 cpu i
     RUN_DIR="$OUTDIR/run-$(date +%Y%m%d-%H%M%S)-$SCHED-$workers"
-    mkdir -p "$RUN_DIR"
+    orchestra_ensure_private_dir "$RUN_DIR" || {
+        echo "refusing unsafe benchmark run directory: $RUN_DIR" >&2
+        return 2
+    }
     GATE="$RUN_DIR/release"
     PIDS=
 

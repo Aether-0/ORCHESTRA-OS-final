@@ -189,6 +189,12 @@ sudo orchestra telemetry
 - [Final product status](FINAL_PRODUCT_STATUS.md)
 - [Maintained diagrams](docs/diagrams/README.md)
 - [Security model and operator checklist](docs/security/SECURITY.md)
+- [Security audit](SECURITY_AUDIT.md)
+- [Security findings ledger](SECURITY_FINDINGS.md)
+- [Threat model](THREAT_MODEL.md)
+- [Security testing](SECURITY_TESTING.md)
+- [Limits and constraint rationale](LIMITATIONS.md)
+- [Security validation report](SECURITY_VALIDATION_REPORT.md)
 - [Foreground runtime example](examples/runtime/README.md)
 
 ## Research and claim discipline

@@ -96,6 +96,55 @@ static void test_controller_actuator_bounds(void)
     assert(copy.generation == bank.generation);
     assert(copy.actuators[ORCH_ACTUATOR_CONSENSUS_BLEND].current_value ==
            bank.actuators[ORCH_ACTUATOR_CONSENSUS_BLEND].current_value);
+
+    actuator->current_value = actuator->minimum;
+    actuator->generation = UINT64_MAX;
+    initial = actuator->current_value;
+    assert(orchestra_controller_step_actuator_v10(actuator, 1, 40000) == 0);
+    assert(actuator->current_value == initial);
+    assert(actuator->flags & ORCHESTRA_CONTROLLER_ACTUATOR_F_SATURATED);
+    assert(orchestra_controller_next_generation_v10(17, &bank.generation));
+    assert(bank.generation == 18);
+    assert(!orchestra_controller_next_generation_v10(UINT64_MAX,
+                                                     &bank.generation));
+    assert(orchestra_controller_deadline_v10(UINT64_MAX - 1, 5) == UINT64_MAX);
+}
+
+static void test_controller_state_integrity(void)
+{
+    struct orchestra_controller_state_v10 controller = { 0 };
+
+    controller.magic = ORCHESTRA_ABI_MAGIC;
+    controller.abi_version = ORCHESTRA_CONTROL_ABI_VERSION;
+    controller.value_size = sizeof(controller);
+    controller.schema_version = ORCHESTRA_CONTROLLER_SCHEMA_VERSION;
+    controller.active_state = ORCHESTRA_CTRL_NORMAL;
+    controller.scheduler_epoch = 1;
+    controller.active_generation = 1;
+    controller.staging_generation = 1;
+    controller.previous_good_generation = 1;
+    controller.controller_epoch = 1;
+    controller.update_period_ns = 1;
+    controller.minimum_hold_ns = 1;
+    orchestra_controller_reset_bank(&controller.active);
+    orchestra_controller_reset_bank(&controller.staging);
+    orchestra_controller_reset_bank(&controller.previous_good);
+    assert(orchestra_controller_state_valid_v10(&controller));
+
+    controller.active.actuators[0].previous_value =
+        controller.active.actuators[0].maximum + 1;
+    assert(!orchestra_controller_state_valid_v10(&controller));
+    controller.active.actuators[0].previous_value =
+        controller.active.actuators[0].default_value;
+    controller.active_deficit_class = ORCH_DEFICIT_COUNT;
+    assert(!orchestra_controller_state_valid_v10(&controller));
+    controller.active_deficit_class = ORCH_DEFICIT_NONE;
+    controller.active_persistence = 256;
+    assert(!orchestra_controller_state_valid_v10(&controller));
+    controller.active_persistence = 0;
+    assert(!orchestra_controller_state_valid_v10(NULL));
+    controller.active_generation = 2;
+    assert(!orchestra_controller_state_valid_v10(&controller));
 }
 
 int main(void)
@@ -104,5 +153,6 @@ int main(void)
     test_deficit_classification();
     test_causal_actuator_matrix();
     test_controller_actuator_bounds();
+    test_controller_state_integrity();
     return 0;
 }

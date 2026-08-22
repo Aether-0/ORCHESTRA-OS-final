@@ -11,10 +11,15 @@ set -euo pipefail
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../../.." && pwd)
+# shellcheck source=/dev/null
+. "$REPO_ROOT/scripts/path_safety.sh"
 EVIDENCE_DIR=${STAGE8_EVIDENCE_DIR:-"/tmp/stage8-validation-$(date +%Y%m%d-%H%M%S)"}
 P0_DIR="$EVIDENCE_DIR/p0"
 COMPARE_DIR="$EVIDENCE_DIR/comparison"
-mkdir -p "$EVIDENCE_DIR"
+orchestra_ensure_private_dir "$EVIDENCE_DIR" || {
+    echo "refusing unsafe evidence directory: $EVIDENCE_DIR" >&2
+    exit 2
+}
 
 echo "Stage 8 safe validation"
 echo "evidence=$EVIDENCE_DIR"

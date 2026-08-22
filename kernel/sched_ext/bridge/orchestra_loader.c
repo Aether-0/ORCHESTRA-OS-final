@@ -5,11 +5,13 @@
 #include <bpf/libbpf.h>
 #include <errno.h>
 #include <linux/bpf.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <unistd.h>
 
 #include "orchestra_bridge_v1.h"
@@ -140,6 +142,55 @@ static bool scheduler_owned(void)
             strcmp(ops, ORCHESTRA_LEGACY_OPS_NAME) == 0);
 }
 
+static bool safe_root_artifact(const char *path)
+{
+    struct stat file;
+    struct stat parent;
+    char parent_path[PATH_MAX];
+
+    if (!path || lstat(path, &file) != 0 || !S_ISREG(file.st_mode) ||
+        file.st_uid != 0 || (file.st_mode & (S_IWGRP | S_IWOTH)) != 0)
+        return false;
+    {
+        int written = snprintf(parent_path, sizeof(parent_path), "%s", path);
+
+        if (written < 0 || (size_t)written >= sizeof(parent_path))
+            return false;
+    }
+    {
+        char *slash = strrchr(parent_path, '/');
+
+        if (!slash)
+            return false;
+        if (slash == parent_path)
+            slash[1] = '\0';
+        else
+            *slash = '\0';
+    }
+    if (lstat(parent_path, &parent) != 0 || !S_ISDIR(parent.st_mode) ||
+        parent.st_uid != 0 || (parent.st_mode & (S_IWGRP | S_IWOTH)) != 0)
+        return false;
+    return true;
+}
+
+static bool pin_path_absent(const char *path)
+{
+    struct stat state;
+
+    if (lstat(path, &state) == 0)
+        return false;
+    return errno == ENOENT;
+}
+
+static int detach_link_fd(int link_fd)
+{
+    union bpf_attr attr;
+
+    memset(&attr, 0, sizeof(attr));
+    attr.link_fd = (uint32_t)link_fd;
+    return (int)syscall(__NR_bpf, BPF_LINK_DETACH, &attr, sizeof(attr));
+}
+
 static bool pinned_map_matches(const struct loader_map_spec *spec)
 {
     struct bpf_map_info info;
@@ -147,6 +198,12 @@ static bool pinned_map_matches(const struct loader_map_spec *spec)
     int fd;
     bool matches;
 
+    {
+        struct stat state;
+
+        if (lstat(spec->path, &state) != 0 || S_ISLNK(state.st_mode))
+            return false;
+    }
     fd = bpf_obj_get(spec->path);
     if (fd < 0)
         return false;
@@ -171,6 +228,12 @@ static bool pinned_link_matches(void)
     int map_fd;
     bool matches = false;
 
+    {
+        struct stat state;
+
+        if (lstat(LINK_PATH, &state) != 0 || S_ISLNK(state.st_mode))
+            return false;
+    }
     link_fd = bpf_obj_get(LINK_PATH);
     if (link_fd < 0)
         return false;
@@ -236,14 +299,17 @@ static int load_scheduler(const char *object_path)
     struct bpf_map *ops_map = NULL;
     struct bpf_map *map;
     size_t pinned = 0;
+    bool link_pinned = false;
     int err;
 
     if (geteuid() != 0)
         return -EPERM;
+    if (!safe_root_artifact(object_path))
+        return -EPERM;
     err = ensure_pin_dir();
     if (err)
         return err;
-    if (access(LINK_PATH, F_OK) == 0)
+    if (!pin_path_absent(LINK_PATH))
         return -EEXIST;
 
     object = bpf_object__open_file(object_path, NULL);
@@ -259,7 +325,7 @@ static int load_scheduler(const char *object_path)
             err = -EPROTO;
             goto out;
         }
-        if (access(map_specs[i].path, F_OK) == 0) {
+        if (!pin_path_absent(map_specs[i].path)) {
             err = -EEXIST;
             goto out;
         }
@@ -299,10 +365,18 @@ static int load_scheduler(const char *object_path)
     err = bpf_link__pin(link, LINK_PATH);
     if (err)
         goto out;
+    link_pinned = true;
+    if (!scheduler_owned()) {
+        err = -EPROTO;
+        goto out;
+    }
     printf("loaded %s; maps pinned before attach; link=%s\n",
            object_path, LINK_PATH);
 out:
     if (err) {
+        if (link_pinned && unlink(LINK_PATH) != 0 && errno != ENOENT)
+            fprintf(stderr, "warning: cannot remove %s: %s\n",
+                    LINK_PATH, strerror(errno));
         if (link)
             bpf_link__destroy(link);
         unlink_created(pinned);
@@ -319,6 +393,7 @@ out:
 static int unload_scheduler(void)
 {
     bool disabled = false;
+    int link_fd = -1;
     int err = 0;
 
     if (geteuid() != 0)
@@ -327,8 +402,17 @@ static int unload_scheduler(void)
         return -EPERM;
     if (!validate_existing_pins())
         return -EPERM;
-    if (unlink(LINK_PATH) != 0 && errno != ENOENT)
+    link_fd = bpf_obj_get(LINK_PATH);
+    if (link_fd < 0)
         return -errno;
+    /* Keep both the pinned link and an open reference until the kernel has
+     * actually reported sched_ext disabled.  Removing the pin first leaves
+     * an unrecoverable active scheduler if the disable transition times out. */
+    if (detach_link_fd(link_fd) != 0) {
+        err = -errno;
+        close(link_fd);
+        return err;
+    }
     for (unsigned int attempt = 0; attempt < 100; attempt++) {
         FILE *state = fopen("/sys/kernel/sched_ext/state", "re");
         char text[32] = {0};
@@ -343,8 +427,13 @@ static int unload_scheduler(void)
             fclose(state);
         usleep(10000);
     }
-    if (!disabled)
+    if (!disabled) {
+        close(link_fd);
         return -EBUSY;
+    }
+    close(link_fd);
+    if (unlink(LINK_PATH) != 0 && errno != ENOENT)
+        return -errno;
     for (size_t i = 0; i < sizeof(map_specs) / sizeof(map_specs[0]); i++) {
         if (unlink(map_specs[i].path) != 0 && errno != ENOENT && err == 0)
             err = -errno;

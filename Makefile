@@ -6,7 +6,7 @@ LIBBPF_CFLAGS := $(shell pkg-config --cflags libbpf 2>/dev/null)
 LIBBPF_LIBS := $(shell pkg-config --libs libbpf 2>/dev/null || echo '-lbpf -lelf -lz')
 
 .PHONY: all userspace bridge product kernel-bpf check test test-unit \
-	test-integration clean clean-product
+	test-integration security-test clean clean-product
 
 all: userspace
 
@@ -14,7 +14,10 @@ userspace:
 	$(MAKE) -C orchestra_paper_cpu_demo
 
 bridge:
-	@mkdir -p "$(ORCHESTRA_BUILD_DIR)"
+	@case "$(ORCHESTRA_BUILD_DIR)" in /*) ;; *) echo "ORCHESTRA_BUILD_DIR must be absolute" >&2; exit 2 ;; esac
+	@case "$(ORCHESTRA_BUILD_DIR)" in $(CURDIR)|$(CURDIR)/*) echo "refusing build output inside repository" >&2; exit 2 ;; esac
+	@bash -c '. "$(CURDIR)/scripts/path_safety.sh" && orchestra_ensure_private_dir "$$1"' -- "$(ORCHESTRA_BUILD_DIR)"
+	@[ ! -L "$(ORCHESTRA_BUILD_DIR)/orchestra_bridge" ] && [ ! -L "$(ORCHESTRA_BUILD_DIR)/orchestra_loader" ]
 	$(CC) -O2 -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
 		-Wformat=2 -Werror -I"$(ORCHESTRA_INCLUDE_DIR)" \
 		"$(ORCHESTRA_BRIDGE_DIR)/orchestra_bridge.c" \
@@ -94,6 +97,7 @@ check:
 	@python3 -m json.tool experiments/manifests/paper_cpu_exploratory_v3.json >/dev/null
 	@python3 -m json.tool experiments/manifests/paper_cpu_exploratory_v4.json >/dev/null
 	@bash -n tests/unit/run.sh tests/integration/run.sh \
+		tests/security/run.sh tests/security/test_install_paths.sh \
 		benchmarks/real-machine/benchmark_suite.sh \
 		benchmarks/real-machine/full_compare.sh \
 		benchmarks/real-machine/stress_suite.sh \
@@ -120,14 +124,20 @@ test-unit:
 test-integration:
 	./tests/integration/run.sh
 
-test: check test-unit test-integration
+security-test:
+	./tests/security/run.sh
+
+test: check test-unit test-integration security-test
 
 clean:
 	$(MAKE) -C orchestra_paper_cpu_demo clean
 
 clean-product:
 	@case "$(ORCHESTRA_BUILD_DIR)" in \
-		/var/tmp/orchestra-os-build-*|/tmp/orchestra-os-build-*) \
-			rm -rf -- "$(ORCHESTRA_BUILD_DIR)" ;; \
+		/var/tmp/orchestra-os-build-*|/tmp/orchestra-os-build-*) ;; \
 		*) echo "refusing to remove non-product build path: $(ORCHESTRA_BUILD_DIR)" >&2; exit 2 ;; \
 	esac
+	@if [ -e "$(ORCHESTRA_BUILD_DIR)" ] || [ -L "$(ORCHESTRA_BUILD_DIR)" ]; then \
+		bash -c '. "$(CURDIR)/scripts/path_safety.sh" && orchestra_safe_existing_dir "$$1"' -- "$(ORCHESTRA_BUILD_DIR)"; \
+		rm -rf -- "$(ORCHESTRA_BUILD_DIR)"; \
+	fi

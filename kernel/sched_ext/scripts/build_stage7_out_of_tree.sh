@@ -18,6 +18,8 @@ set -euo pipefail
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../../.." && pwd)
+# shellcheck source=/dev/null
+. "$REPO_ROOT/scripts/path_safety.sh"
 RUNNING_KERNEL=$(uname -r)
 RUNNING_VERSION=${RUNNING_KERNEL%%+*}
 KSRC=${1:-${ORCHESTRA_KERNEL_SRC:-/lib/modules/$RUNNING_KERNEL/build}}
@@ -98,13 +100,17 @@ case "$BUILD_DIR" in
 esac
 BUILD_PARENT=$(dirname -- "$BUILD_DIR")
 BUILD_NAME=$(basename -- "$BUILD_DIR")
-mkdir -p "$BUILD_PARENT"
+orchestra_prepare_parent_dir "$BUILD_PARENT" ||
+    blocked "UNSAFE_BUILD_PARENT:$BUILD_PARENT"
 BUILD_DIR=$(CDPATH= cd -- "$BUILD_PARENT" && pwd)/$BUILD_NAME
 case "$BUILD_DIR" in
     "$REPO_ROOT"|"$REPO_ROOT"/*)
         blocked "BUILD_DIR_INSIDE_REPOSITORY:$BUILD_DIR" ;;
 esac
-mkdir -p "$BUILD_DIR" "$BUILD_DIR/libbpf"
+orchestra_ensure_private_dir "$BUILD_DIR" ||
+    blocked "UNSAFE_BUILD_DIR:$BUILD_DIR"
+orchestra_ensure_private_dir "$BUILD_DIR/libbpf" ||
+    blocked "UNSAFE_BUILD_SUBDIR:$BUILD_DIR/libbpf"
 
 BPF_SOURCE=${ORCHESTRA_BPF_SOURCE:-$REPO_ROOT/kernel/sched_ext/bpf/orchestra_sched.bpf.c}
 require_file "$BPF_SOURCE"

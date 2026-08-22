@@ -12,6 +12,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
@@ -172,23 +173,30 @@ static void busy_work_ms(int ms, unsigned long *state) {
 }
 
 static void do_io_work(unsigned long *state) {
-    char path[128];
-    snprintf(path, sizeof(path), "/tmp/orchestra_worker_%d.tmp", getpid());
-    int fd = open(path, O_CREAT | O_WRONLY | O_APPEND, 0600);
+    char path[] = "/tmp/orchestra_worker_XXXXXX";
+    int fd = mkstemp(path);
     if (fd >= 0) {
+        (void)fchmod(fd, S_IRUSR | S_IWUSR);
+        (void)unlink(path);
         char buf[256];
         int n = snprintf(buf, sizeof(buf), "%ld %lu\n", (long)time(NULL), *state);
-        (void)write(fd, buf, (size_t)n);
-        fsync(fd);
+        if (n > 0 && (size_t)n < sizeof(buf)) {
+            (void)write(fd, buf, (size_t)n);
+            (void)fsync(fd);
+        }
         close(fd);
     }
 }
 
 static void migrate_to_cpu(int cpu_count, int cpu) {
+    int selected_cpu;
+
     if (cpu_count <= 0) return;
     cpu_set_t set;
     CPU_ZERO(&set);
-    CPU_SET(cpu % cpu_count, &set);
+    selected_cpu = cpu % cpu_count;
+    if (selected_cpu < 0) selected_cpu += cpu_count;
+    CPU_SET((size_t)selected_cpu, &set);
     (void)sched_setaffinity(0, sizeof(set), &set);
 }
 
@@ -258,7 +266,8 @@ static uint32_t lcg(uint32_t x) {
 
 static action_t local_recommendation(int worker_index, int group, double cpu_pred,
                                      double memory, double thermal, unsigned long seq) {
-    uint32_t r = lcg((uint32_t)(worker_index * 2654435761u) ^ (uint32_t)seq);
+    uint32_t r = lcg((uint32_t)worker_index * UINT32_C(2654435761) ^
+                     (uint32_t)seq);
     double jitter = ((double)(r % 1000) / 1000.0 - 0.5) * 0.08;
     double perceived = clamp01(cpu_pred + jitter);
 

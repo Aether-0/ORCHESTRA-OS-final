@@ -188,6 +188,7 @@ struct options {
     bool stream;
     bool policy_entry;
     bool policy_commit;
+    bool policy_abort;
     bool signal_publish;
     bool require_signal;
     bool dry_run;
@@ -399,6 +400,8 @@ static bool parse_action(const char *text, enum orchestra_action_id *action)
 {
     uint32_t i;
 
+    if (!text || !action)
+        return false;
     for (i = 0; i < ORCHESTRA_ACTION_COUNT; i++) {
         if (action_names[i] && strcasecmp(text, action_names[i]) == 0) {
             *action = (enum orchestra_action_id)i;
@@ -566,6 +569,7 @@ static bool valid_control(const struct bridge_control *control)
            control->scheduler_epoch != 0 &&
            control->controller_state < ORCHESTRA_CTRL_COUNT &&
            control->policy_mode < ORCHESTRA_POLICY_COUNT &&
+           control->publication_status <= BRIDGE_PUB_MAP_FULL &&
            (control->capability_flags & BRIDGE_REQUIRED_CAPS) ==
                BRIDGE_REQUIRED_CAPS;
 }
@@ -582,6 +586,81 @@ static bool valid_policy_meta_v8(const struct orchestra_policy_meta_v8 *meta,
            meta->scheduler_epoch == epoch &&
            (meta->capability_flags & ORCHESTRA_KERNEL_REQUIRED_CAPS) ==
                ORCHESTRA_KERNEL_REQUIRED_CAPS;
+}
+
+/* Relabel a retained policy bank before publishing it under a new generation.
+ * Policy entries live in a fixed-size ARRAY map, so this bounded pass keeps
+ * rollback atomic from the scheduler's point of view: the bank is inactive
+ * until the metadata flip, and no previously issued generation is reused. */
+static bool refresh_policy_bank_generation(int fd, uint32_t bank,
+                                           uint64_t generation)
+{
+    uint32_t state;
+
+    if (fd < 0 || bank >= ORCHESTRA_KERNEL_POLICY_BANK_COUNT ||
+        generation == 0)
+        return false;
+    for (state = 0; state < ORCHESTRA_KERNEL_MAX_POLICY_STATES; state++) {
+        struct orchestra_policy_entry_v8 entry;
+        struct orchestra_policy_entry_v8 verify;
+        uint32_t key = bank * ORCHESTRA_KERNEL_MAX_POLICY_STATES + state;
+
+        memset(&entry, 0, sizeof(entry));
+        if (bpf_lookup_raw(fd, &key, &entry, BPF_F_LOCK) != 0)
+            return false;
+        if (entry.value_size == 0 && entry.magic == 0)
+            continue;
+        if (entry.magic != ORCHESTRA_ABI_MAGIC ||
+            entry.abi_version != ORCHESTRA_KERNEL_ABI_VERSION ||
+            entry.value_size != sizeof(entry) ||
+            entry.policy_schema_version != ORCHESTRA_KERNEL_POLICY_SCHEMA_VERSION ||
+            entry.state_index != state ||
+            entry.action >= ORCHESTRA_ACTION_COUNT ||
+            entry.controller_state >= ORCHESTRA_CTRL_COUNT ||
+            (entry.flags & ORCHESTRA_POLICY_V8_F_VALID) == 0 ||
+            (entry.capability_mask & (1u << entry.action)) == 0 ||
+            entry.policy_generation == 0)
+            return false;
+        entry.policy_generation = generation;
+        if (bpf_update_raw(fd, &key, &entry, BPF_EXIST | BPF_F_LOCK) != 0)
+            return false;
+        memset(&verify, 0, sizeof(verify));
+        if (bpf_lookup_raw(fd, &key, &verify, BPF_F_LOCK) != 0 ||
+            verify.policy_generation != generation ||
+            verify.state_index != state)
+            return false;
+    }
+    return true;
+}
+
+static bool restore_inactive_policy_bank(int fd, uint32_t active_bank)
+{
+    uint32_t state;
+    uint32_t inactive_bank;
+
+    if (fd < 0 || active_bank >= ORCHESTRA_KERNEL_POLICY_BANK_COUNT)
+        return false;
+    inactive_bank = active_bank ^ 1u;
+    for (state = 0; state < ORCHESTRA_KERNEL_MAX_POLICY_STATES; state++) {
+        struct orchestra_policy_entry_v8 entry;
+        uint32_t active_key = active_bank * ORCHESTRA_KERNEL_MAX_POLICY_STATES + state;
+        uint32_t inactive_key = inactive_bank * ORCHESTRA_KERNEL_MAX_POLICY_STATES + state;
+
+        memset(&entry, 0, sizeof(entry));
+        if (bpf_lookup_raw(fd, &active_key, &entry, BPF_F_LOCK) != 0 ||
+            bpf_update_raw(fd, &inactive_key, &entry,
+                           BPF_EXIST | BPF_F_LOCK) != 0)
+            return false;
+    }
+    return true;
+}
+
+static bool next_policy_generation(uint64_t current, uint64_t *next)
+{
+    if (!next || current == UINT64_MAX)
+        return false;
+    *next = current + 1;
+    return *next != 0;
 }
 
 static bool read_text_file(const char *path, char *buf, size_t size)
@@ -991,7 +1070,10 @@ static int publish_directive(const struct options *opts,
     control.controller_state = opts->controller_state;
     control.policy_mode = opts->policy_mode;
     control.policy_generation = opts->policy_generation;
-    control.publication_status = BRIDGE_PUB_OK;
+    /* Invalidate readers before exposing the new control generation.  The
+     * directive is not authoritative until its payload and identity
+     * readback have completed. */
+    control.publication_status = BRIDGE_PUB_MAP_ERROR;
     if (!write_control(maps.fd[MAP_CONTROL], &control)) {
         fprintf(stderr, "control update failed: %s\n", strerror(errno));
         goto out;
@@ -1034,6 +1116,23 @@ static int publish_directive(const struct options *opts,
         (void)write_control(maps.fd[MAP_CONTROL], &control);
         errno = saved;
         fprintf(stderr, "full publication readback or identity revalidation failed\n");
+        goto out;
+    }
+    control.publication_status = BRIDGE_PUB_OK;
+    if (!write_control(maps.fd[MAP_CONTROL], &control) ||
+        !read_control(maps.fd[MAP_CONTROL], &verify_control) ||
+        !valid_control(&verify_control) ||
+        verify_control.publication_status != BRIDGE_PUB_OK ||
+        verify_control.scheduler_epoch != control.scheduler_epoch ||
+        verify_control.last_generation != directive.generation ||
+        verify_control.publisher_heartbeat_ns != now) {
+        int saved = errno;
+
+        (void)bpf_delete_raw(maps.fd[MAP_DIRECTIVE], &identity);
+        control.publication_status = BRIDGE_PUB_READBACK_FAIL;
+        (void)write_control(maps.fd[MAP_CONTROL], &control);
+        errno = saved;
+        fprintf(stderr, "final control publication readback failed\n");
         goto out;
     }
     if (!opts->quiet)
@@ -1156,7 +1255,10 @@ static int publish_signal(const struct options *opts)
      * directive that already exists.  Roll it back if frame publication fails. */
     control.publisher_heartbeat_ns = now;
     control.publisher_lease_ns = opts->lease_ns;
-    control.publication_status = BRIDGE_PUB_OK;
+    /* Signal readers must remain fail-closed while the new frame is being
+     * written.  In particular, an older valid frame must not be accepted
+     * under the refreshed lease during this transaction. */
+    control.publication_status = BRIDGE_PUB_MAP_ERROR;
     if (!write_control(maps.fd[MAP_CONTROL], &control)) {
         fprintf(stderr, "control update failed: %s\n", strerror(errno));
         goto out;
@@ -1185,6 +1287,23 @@ static int publish_signal(const struct options *opts)
         fprintf(stderr, "signal publication readback failed\n");
         goto out;
     }
+    control.publication_status = BRIDGE_PUB_OK;
+    if (!write_control(maps.fd[MAP_CONTROL], &control) ||
+        !read_control(maps.fd[MAP_CONTROL], &rollback_control) ||
+        !valid_control(&rollback_control) ||
+        rollback_control.publication_status != BRIDGE_PUB_OK ||
+        rollback_control.scheduler_epoch != control.scheduler_epoch ||
+        rollback_control.publisher_heartbeat_ns != now ||
+        rollback_control.publisher_lease_ns != opts->lease_ns) {
+        int saved = errno;
+
+        (void)bpf_delete_raw(maps.fd[MAP_SIGNAL], &zero);
+        control.publication_status = BRIDGE_PUB_READBACK_FAIL;
+        (void)write_control(maps.fd[MAP_CONTROL], &control);
+        errno = saved;
+        fprintf(stderr, "final signal control publication failed\n");
+        goto out;
+    }
     if (!opts->quiet)
         printf("published signal sequence=%" PRIu64 " epoch=%" PRIu64
                " expires_ns=%" PRIu64 " confidence_permille=%" PRIu32 "\n",
@@ -1201,7 +1320,7 @@ out:
 static int policy_command(const struct options *opts)
 {
     struct map_set maps;
-    struct bridge_control control, rollback_control;
+    struct bridge_control control, rollback_control, verify_control;
     struct orchestra_policy_meta_v8 meta, previous_meta, verify_meta;
     struct orchestra_policy_entry_v8 entry, verify_entry;
     uint32_t key;
@@ -1241,6 +1360,23 @@ static int policy_command(const struct options *opts)
     }
     previous_meta = meta;
     rollback_control = control;
+    if (opts->policy_abort && (opts->policy_entry || opts->policy_commit)) {
+        result = EXIT_ARGS;
+        goto out;
+    }
+    if (opts->policy_abort) {
+        if (!restore_inactive_policy_bank(maps.fd[MAP_POLICY_ENTRY_V8],
+                                          meta.active_bank)) {
+            result = EXIT_PUB_FAIL;
+            goto out;
+        }
+        if (!opts->quiet)
+            printf("discarded staged policy bank; active bank=%" PRIu32
+                   " generation=%" PRIu64 "\n",
+                   meta.active_bank, meta.policy_generation);
+        result = EXIT_OK;
+        goto out;
+    }
     lifecycle_transition = opts->policy_mode_set &&
         opts->policy_mode != ORCHESTRA_POLICY_EVALUATE;
     rollback_request = opts->controller_set &&
@@ -1264,9 +1400,7 @@ static int policy_command(const struct options *opts)
         goto out;
     }
     inactive_bank = meta.active_bank ^ 1u;
-    next_generation = meta.policy_generation == UINT64_MAX ? 0 :
-        meta.policy_generation + 1;
-    if (next_generation == 0) {
+    if (!next_policy_generation(meta.policy_generation, &next_generation)) {
         result = EXIT_GEN_OVERFLOW;
         goto out;
     }
@@ -1321,22 +1455,25 @@ static int policy_command(const struct options *opts)
     }
 
     if (opts->policy_commit) {
-        meta.active_bank = inactive_bank;
         if (rollback_request) {
             if (previous_meta.previous_generation == 0) {
                 fprintf(stderr, "no previous policy generation is available for rollback\n");
                 result = EXIT_ARGS;
                 goto out;
             }
-            /* The inactive bank is the last known-good bank retained by the
-             * previous commit.  Rollback intentionally rewinds the active
-             * generation; the next normal commit allocates a fresh one. */
-            meta.previous_generation = previous_meta.policy_generation;
-            meta.policy_generation = previous_meta.previous_generation;
-        } else {
-            meta.previous_generation = meta.policy_generation;
-            meta.policy_generation = next_generation;
+            /* Rollback selects the retained bank, but must not rewind the
+             * generation.  Reusing an earlier generation would let delayed
+             * directives or readers pass an ABA/replay check.  The retained
+             * entries are relabelled while the bank is inactive below. */
+            if (!refresh_policy_bank_generation(maps.fd[MAP_POLICY_ENTRY_V8],
+                                                inactive_bank, next_generation)) {
+                result = EXIT_PUB_FAIL;
+                goto out;
+            }
         }
+        meta.active_bank = inactive_bank;
+        meta.previous_generation = previous_meta.policy_generation;
+        meta.policy_generation = next_generation;
         meta.policy_mode = opts->policy_mode_set ? opts->policy_mode :
             meta.policy_mode;
         meta.controller_state = opts->controller_set ? opts->controller_state :
@@ -1352,6 +1489,14 @@ static int policy_command(const struct options *opts)
         meta.scheduler_epoch = control.scheduler_epoch;
         meta.published_ns = now;
         meta.capability_flags = ORCHESTRA_KERNEL_REQUIRED_CAPS;
+        /* Invalidate scheduler readers before flipping the policy bank.  The
+         * active metadata and control records become visible together only
+         * after the final control publication succeeds. */
+        control.publication_status = BRIDGE_PUB_MAP_ERROR;
+        if (!write_control(maps.fd[MAP_CONTROL], &control)) {
+            result = EXIT_PUB_FAIL;
+            goto out;
+        }
         if (bpf_update_raw(maps.fd[MAP_POLICY_META_V8], &zero, &meta,
                            BPF_EXIST | BPF_F_LOCK) != 0 ||
             bpf_lookup_raw(maps.fd[MAP_POLICY_META_V8], &zero, &verify_meta,
@@ -1365,11 +1510,19 @@ static int policy_command(const struct options *opts)
         control.policy_mode = meta.policy_mode;
         control.policy_generation = meta.policy_generation;
         control.publication_status = BRIDGE_PUB_OK;
-        if (!write_control(maps.fd[MAP_CONTROL], &control)) {
+        if (!write_control(maps.fd[MAP_CONTROL], &control) ||
+            !read_control(maps.fd[MAP_CONTROL], &verify_control) ||
+            !valid_control(&verify_control) ||
+            verify_control.publication_status != BRIDGE_PUB_OK ||
+            verify_control.scheduler_epoch != control.scheduler_epoch ||
+            verify_control.policy_generation != control.policy_generation ||
+            verify_control.controller_state != control.controller_state ||
+            verify_control.policy_mode != control.policy_mode) {
             /* The old bank remains the safe active policy if the auxiliary
              * control record cannot be updated after the meta flip. */
             (void)bpf_update_raw(maps.fd[MAP_POLICY_META_V8], &zero,
                                  &previous_meta, BPF_EXIST | BPF_F_LOCK);
+            rollback_control.publication_status = BRIDGE_PUB_READBACK_FAIL;
             (void)write_control(maps.fd[MAP_CONTROL], &rollback_control);
             result = EXIT_PUB_FAIL;
             goto out;
@@ -2005,6 +2158,7 @@ static void usage(const char *program)
         "  --policy-entry --policy-state-index N --action RUN|SLEEP|MIGRATE|THROTTLE|YIELD\n"
         "      [--policy-commit] [--policy-mode ID] [--controller-state STATE]\n"
         "  --policy-commit   (atomically activate the inactive v8 policy bank)\n"
+        "  --policy-abort    (restore the inactive bank from the active bank)\n"
         "  --publish --action RUN|SLEEP|MIGRATE|THROTTLE|YIELD --target-pid TID\n"
         "      [--target-cpu CPU] [--slice-ns NS] [--not-before-ns MONO_NS]\n"
         "      [--throttle-period-ns NS] [--throttle-budget-ns NS]\n"
@@ -2079,6 +2233,7 @@ static bool parse_options(int argc, char **argv, struct options *opts)
         else if (strcmp(argv[i], "--publish") == 0) opts->publish = true;
         else if (strcmp(argv[i], "--policy-entry") == 0) opts->policy_entry = true;
         else if (strcmp(argv[i], "--policy-commit") == 0) opts->policy_commit = true;
+        else if (strcmp(argv[i], "--policy-abort") == 0) opts->policy_abort = true;
         else if (strcmp(argv[i], "--signal-publish") == 0) opts->signal_publish = true;
         else if (strcmp(argv[i], "--clear") == 0) opts->clear = true;
         else if (strcmp(argv[i], "--opt-in") == 0) opts->opt_in = true;
@@ -2292,7 +2447,8 @@ static bool parse_options(int argc, char **argv, struct options *opts)
              + (unsigned int)opts->clear + (unsigned int)opts->opt_in
              + (unsigned int)opts->pin_maps + (unsigned int)opts->stream
              + (unsigned int)opts->signal_publish +
-             (unsigned int)(opts->policy_entry || opts->policy_commit);
+             (unsigned int)(opts->policy_entry || opts->policy_commit ||
+                            opts->policy_abort);
     if (commands != 1)
         return false;
     if ((opts->publish && (!opts->action_set || !opts->target_set)) ||
@@ -2326,13 +2482,20 @@ int main(int argc, char **argv)
         usage(argv[0]);
         return EXIT_ARGS;
     }
+    /* The bridge is the privileged map writer.  The shell control plane also
+     * enforces this boundary, but direct invocation must not depend on that
+     * wrapper or on bpffs pin permissions being configured perfectly. */
+    if (geteuid() != 0) {
+        fprintf(stderr, "orchestra_bridge must run as root\n");
+        return EXIT_PERM;
+    }
     if (opts.status)
         return status_command(&opts);
     if (opts.stream)
         return stream_command();
     if (opts.publish)
         return publish_directive(&opts, NULL);
-    if (opts.policy_entry || opts.policy_commit)
+    if (opts.policy_entry || opts.policy_commit || opts.policy_abort)
         return policy_command(&opts);
     if (opts.signal_publish)
         return publish_signal(&opts);

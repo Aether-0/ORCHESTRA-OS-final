@@ -13,13 +13,23 @@ set -euo pipefail
 DURATION=${1:-60}
 MODE=${2:-cfs}
 OUTDIR=${ORCHESTRA_STRESS_OUTDIR:-"/tmp/orchestra-stress-$(date +%Y%m%d-%H%M%S)"}
-mkdir -p "$OUTDIR"
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
+# shellcheck source=/dev/null
+. "$REPO_ROOT/scripts/path_safety.sh"
+orchestra_ensure_private_dir "$OUTDIR" || {
+    echo "refusing unsafe stress output directory: $OUTDIR" >&2
+    exit 2
+}
 WORKDIR="$OUTDIR/.work-$$"
 if [ -e "$WORKDIR" ]; then
     echo "BLOCKED_WORKDIR_COLLISION: $WORKDIR" >&2
     exit 2
 fi
-mkdir "$WORKDIR"
+orchestra_ensure_private_dir "$WORKDIR" || {
+    echo "refusing unsafe stress work directory: $WORKDIR" >&2
+    exit 2
+}
 OWNERSHIP_POLLS=${ORCHESTRA_OWNERSHIP_POLLS:-200}
 PHASE_TIMEOUT=${ORCHESTRA_PHASE_TIMEOUT:-}
 
@@ -413,7 +423,10 @@ log "  Memory: done"
 log "--- I/O Stress ---"
 IO_START=$(date +%s)
 IO_DIR="$WORKDIR/io"
-mkdir -p "$IO_DIR"
+orchestra_ensure_private_dir "$IO_DIR" || {
+    echo "refusing unsafe I/O work directory: $IO_DIR" >&2
+    exit 2
+}
 errors=0
 warnings=0
 PHASE_NAME=io
@@ -450,7 +463,10 @@ warnings=0
 PHASE_NAME=mixed
 GATE="$WORKDIR/mixed.release"
 MIX_DIR="$WORKDIR/mixed"
-mkdir -p "$MIX_DIR"
+orchestra_ensure_private_dir "$MIX_DIR" || {
+    echo "refusing unsafe mixed-workload directory: $MIX_DIR" >&2
+    exit 2
+}
 PIDS=()
 for i in $(seq 1 "$half"); do
     taskset -c "${CPU_IDS[$((i - 1))]}" bash -c '

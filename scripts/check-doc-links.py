@@ -11,6 +11,12 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCES = [
     ROOT / "README.md",
     ROOT / "FINAL_PRODUCT_STATUS.md",
+    ROOT / "SECURITY_AUDIT.md",
+    ROOT / "SECURITY_FINDINGS.md",
+    ROOT / "SECURITY_TESTING.md",
+    ROOT / "SECURITY_VALIDATION_REPORT.md",
+    ROOT / "THREAT_MODEL.md",
+    ROOT / "LIMITATIONS.md",
     ROOT / "docs/architecture/ORCHESTRA_OS_ARCHITECTURE.md",
     ROOT / "docs/installation/INSTALL.md",
     ROOT / "docs/usage/USAGE.md",

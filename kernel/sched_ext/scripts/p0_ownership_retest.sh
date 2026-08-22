@@ -10,8 +10,13 @@ set -euo pipefail
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../../.." && pwd)
+# shellcheck source=/dev/null
+. "$REPO_ROOT/scripts/path_safety.sh"
 EVIDENCE_DIR=${1:-"/tmp/p0-ownership-$(date +%Y%m%d-%H%M%S)"}
-mkdir -p "$EVIDENCE_DIR"
+orchestra_ensure_private_dir "$EVIDENCE_DIR" || {
+    echo "refusing unsafe evidence directory: $EVIDENCE_DIR" >&2
+    exit 2
+}
 
 BUILD_DIR="$EVIDENCE_DIR/build"
 BPF=${ORCHESTRA_BPF:-}
@@ -141,7 +146,10 @@ done
 
 if [ -z "$WORK" ]; then
     WORK="$BUILD_DIR/fixed_work"
-    mkdir -p "$BUILD_DIR"
+    orchestra_ensure_private_dir "$BUILD_DIR" || {
+        fail "unsafe build directory: $BUILD_DIR"
+        exit 2
+    }
     cc -O2 -std=c11 -Wall -Wextra -Werror "$SCRIPT_DIR/fixed_work.c" \
         -o "$WORK"
 fi
