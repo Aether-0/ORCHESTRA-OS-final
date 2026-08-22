@@ -1,12 +1,13 @@
-# ORCHESTRA-OS sched_ext Kernel Integration — Stage 7 Bridge and v8 Adaptive Core
+# ORCHESTRA-OS sched_ext kernel integration
 
 **Status:** Implemented  
 **Maturity:** Kernel-prototyped; runtime evidence is kernel- and machine-specific
 
 ## Scope
 
-The canonical implementation is `orchestra_scx_stage7.bpf.c` with the
-privileged bridge under `bridge/`. It uses full-switch sched_ext operations,
+The canonical source entry point is `bpf/orchestra_sched.bpf.c`, which selects
+the single compatibility implementation body
+`orchestra_scx_stage7.bpf.c`, with the privileged bridge under `bridge/`. It uses full-switch sched_ext operations,
 but task ownership is still explicit: a task must pass the bridge's exact
 identity admission path; loading the object alone is not proof that any
 workload is owned by ORCHESTRA. It provides:
@@ -33,7 +34,11 @@ workload is owned by ORCHESTRA. It provides:
 |------|---------|
 | `include/orchestra_abi.h` | Canonical actions and policy ABI |
 | `include/orchestra_bridge_v1.h` | Bridge map and telemetry contract |
-| `orchestra_scx_stage7.bpf.c` | Canonical Stage 7 BPF scheduler |
+| `include/orchestra_control_abi.h` | Additive v10 coordination/controller ABI |
+| `include/orchestra_coord.h` | Native bounded-window metrics and deficit matrix |
+| `include/orchestra_controller.h` | Multi-actuator feedback controller |
+| `bpf/orchestra_sched.bpf.c` | Stable product BPF source entry point |
+| `orchestra_scx_stage7.bpf.c` | Compatibility implementation body retained for evidence |
 | `bridge/orchestra_bridge.c` | Privileged map bridge CLI |
 | `bridge/orchestra_loader.c` | Exact-map pin/load/unload helper |
 | `scripts/check_kernel_config.sh` | Kernel config validation |
@@ -54,8 +59,8 @@ build when the source does not match the running kernel.
 
 ```bash
 ORCHESTRA_KERNEL_SRC=/path/to/exact/running-kernel-source \
-ORCHESTRA_BUILD_DIR=/tmp/orchestra-stage7-build \
-  bash scripts/build_stage7_out_of_tree.sh
+ORCHESTRA_BUILD_DIR=/var/tmp/orchestra-os-build-$(id -u) \
+  ./scripts/build.sh --kernel
 ```
 
 The output directory contains `vmlinux.h`, `orchestra_scx_stage7.bpf.o`,
@@ -134,10 +139,11 @@ unless BPF observes a current frame with the same scheduler epoch, controller
 state, policy mode, and policy generation.
 
 The frame can carry externally computed prediction inputs and S1/S2/S3/S4/Q
-values, but the kernel prototype does not compute those metrics, run the
-predictor, or verify the userspace HMAC. A valid map frame is therefore
-`KERNEL_PROTOTYPED` transport/gating evidence, not authenticated signal-bus or
-real-machine predictor validation.
+values, but it remains a local-trust transport and does not verify the
+userspace HMAC. The additive v10 path independently computes bounded native
+coordination windows and publishes its own S1/S2/S3/S4/Q record; it does not
+turn the legacy frame into an authenticated signal bus or prove predictor
+quality on hardware.
 
 The RT policy check is an admission guard in the privileged bridge. It avoids
 publishing adaptive directives to a target whose current Linux policy is
@@ -210,6 +216,33 @@ The v8 implementation is source/build validated here. It is not, by itself,
 proof of verifier acceptance, scheduler attachment, task ownership, or
 real-machine performance. Those remain separate runtime claims.
 
+## ABI v10 native coordination and feedback controller
+
+The additive v10 path closes the kernel-side measurement/control loop without
+changing the v8 bridge records. `include/orchestra_control_abi.h` defines exact
+v10 schemas and bounded map capacities; `include/orchestra_coord.h` computes
+native fixed-point coordination windows; and
+`include/orchestra_controller.h` implements the staged multi-actuator
+controller. The detailed contract is documented in
+[`docs/kernel/orchestra-v10-coordination-controller.md`](../../docs/kernel/orchestra-v10-coordination-controller.md).
+
+The window path records signal freshness/confidence/fidelity/continuity,
+policy compliance, actual-action coherence conditioned on runtime state, and
+temporal stability including transition, synchronized-mass-switch, and
+oscillation penalties. It publishes all four components and the fixed-point
+geometric-mean Q, then classifies deficits and selects bounded actuators from a
+shared matrix. Controller updates are slower than the default 10 ms windows,
+are limited by minimum hold/cooldown/persistence hysteresis and per-actuator
+steps, and publish active/staging/previous-known-good banks by generation.
+
+The scheduler records policy-selected, controller-adjusted,
+capability-adjusted, and actual-executed actions in `orch_task_coord`. A
+disabled, rolled-back, invalid, or threshold-ineligible action falls back to
+RUN. `orch_runtime10` and `orch_ctrl_tel_v10` expose the finalized metric,
+controller state, generations, and update/saturation/rollback/recovery
+telemetry. This is kernel-prototype and build evidence; it is not verifier,
+attachment, ownership, or performance evidence.
+
 ## Limitations
 
 - SLEEP is a one-shot deferred eligibility transition; a successful release
@@ -217,10 +250,11 @@ real-machine performance. Those remain separate runtime claims.
 - The bridge signal frame is local-trust map IPC, not kernel HMAC verification
 - RT protection currently stops at bridge admission; full kernel RT/deadline
   coexistence and starvation validation remain unimplemented
-- The kernel consumes bounded prediction and coordination records and applies
-  policy/controller state, but it does not train a predictor, compute a full
-  userspace-quality S1/S2/S3/S4/Q pipeline, or implement distributed/NUMA
-  policy learning
+- The kernel consumes bounded prediction records and does not train a
+  predictor or verify the userspace HMAC. The v10 path computes native bounded
+  S1/S2/S3/S4/Q metrics, but it does not claim userspace-quality predictor
+  calibration or distributed policy learning; NUMA results are bounded
+  single-host aggregates
 - The v8 TRAIN/ADAPT/EVALUATE lifecycle is a generation-safe policy-bank
   publication contract; it is not evidence that an online learning algorithm
   has converged on hardware

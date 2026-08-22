@@ -1,0 +1,20 @@
+{
+  "schema": "orchestra.policy.v1",
+  "product_version": "1.0.0-rc1",
+  "description": "Read-only evaluation configuration; publish with --dry-run only.",
+  "policy": {
+    "mode": "EVALUATE",
+    "controller_state": "NORMAL",
+    "entries": [
+      {"state_index": 0, "action": "RUN", "slice_ns": 5000000},
+      {"state_index": 1, "action": "RUN", "slice_ns": 5000000},
+      {"state_index": 2, "action": "YIELD", "slice_ns": 4000000},
+      {"state_index": 3, "action": "THROTTLE", "slice_ns": 3000000, "throttle_period_ns": 10000000, "throttle_budget_ns": 2000000},
+      {"state_index": 4, "action": "SLEEP", "slice_ns": 2000000}
+    ]
+  },
+  "signal": {"max_age_ns": 100000000, "confidence_floor_permille": 500},
+  "predictor": {"model": "offline_calibrated", "horizon_ns": 100000000},
+  "controller": {"period_ns": 100000000, "hysteresis_permille": 50},
+  "telemetry": {"format": "structured", "sample_period_ms": 100}
+}

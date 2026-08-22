@@ -5,6 +5,17 @@ tools/benchmark/signal_publication_microbenchmark
 *.o
 *.a
 *.so
+*.bpf.o
+*.bpf.skel.h
+
+# External product outputs
+/build/
+/dist/
+/out/
+/coverage/
+/output/
+*.bzImage
+*.zip
 
 linux/
 # Python
@@ -15,6 +26,8 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.venv/
+.cache/
 
 # Temporary and scratch
 tmp/

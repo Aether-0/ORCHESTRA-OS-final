@@ -27,6 +27,7 @@ struct orchestra_userspace_map_lock { uint32_t opaque; };
 #endif
 
 #include "orchestra_kernel_v8.h"
+#include "orchestra_control_abi.h"
 
 /* Exact BPF object names. Linux BPF names are limited to 15 characters. */
 #define BRIDGE_CTL_MAP_NAME       "orch_control"

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build the canonical Stage 7 scheduler without modifying repository sources.
+# Build the canonical ORCHESTRA scheduler without modifying repository
+# sources. The historical script name is retained for compatibility.
 #
 # Usage:
 #   ORCHESTRA_KERNEL_SRC=/path/to/exact/kernel/source \
@@ -105,10 +106,19 @@ case "$BUILD_DIR" in
 esac
 mkdir -p "$BUILD_DIR" "$BUILD_DIR/libbpf"
 
+BPF_SOURCE=${ORCHESTRA_BPF_SOURCE:-$REPO_ROOT/kernel/sched_ext/bpf/orchestra_sched.bpf.c}
+require_file "$BPF_SOURCE"
+
+case "$(uname -m)" in
+    x86_64) KERNEL_ARCH_INCLUDE="$KSRC/arch/x86" ;;
+    aarch64) KERNEL_ARCH_INCLUDE="$KSRC/arch/arm64" ;;
+    *) KERNEL_ARCH_INCLUDE="" ;;
+esac
+
 LOG="$BUILD_DIR/build.log"
 exec > >(tee "$LOG") 2>&1
 
-echo "ORCHESTRA Stage 7 out-of-tree build"
+echo "ORCHESTRA-OS target-matched sched_ext build"
 echo "repository=$REPO_ROOT"
 echo "running_kernel=$RUNNING_KERNEL"
 echo "kernel_source=$KSRC"
@@ -117,6 +127,8 @@ echo "build_dir=$BUILD_DIR"
 echo "bpf_uapi=$BPF_UAPI"
 echo "bpf_doc=$BPF_DOC"
 echo "bpf_helper_defs=$HELPER_DEFS"
+echo "bpf_source=$BPF_SOURCE"
+echo "architecture=$(uname -m)"
 
 VMLINUX_H="$BUILD_DIR/vmlinux.h"
 echo "Generating $VMLINUX_H from /sys/kernel/btf/vmlinux"
@@ -148,18 +160,20 @@ BPF_INCLUDES=(
     -I"$KSRC/tools/include/uapi"
     -I"$KSRC/include"
     -I"$KSRC/include/uapi"
-    -I"$KSRC/arch/x86/include"
-    -I"$KSRC/arch/x86/include/generated"
     -I"$KSRC/tools/sched_ext/include"
     -I/usr/include/bpf
 )
+if [ -n "$KERNEL_ARCH_INCLUDE" ]; then
+    BPF_INCLUDES+=("-I$KERNEL_ARCH_INCLUDE/include")
+    BPF_INCLUDES+=("-I$KERNEL_ARCH_INCLUDE/include/generated")
+fi
 
 echo "Building $BPF_OBJECT"
 clang -O2 -target bpf -g -nostdinc -D__BPF__ \
     "${BPF_INCLUDES[@]}" \
     -Wno-missing-declarations -Wno-visibility \
     -Wno-address-of-packed-member \
-    -c "$REPO_ROOT/kernel/sched_ext/orchestra_scx_stage7.bpf.c" \
+    -c "$BPF_SOURCE" \
     -o "$BPF_OBJECT"
 
 echo "Building $BRIDGE"
@@ -172,8 +186,10 @@ echo "Building $LOADER"
 LIBBPF_INCLUDES=(
     -isystem "$KSRC/tools/lib"
     -I"$KSRC/include/uapi"
-    -I"$KSRC/arch/x86/include/uapi"
 )
+if [ -n "$KERNEL_ARCH_INCLUDE" ]; then
+    LIBBPF_INCLUDES+=("-I$KERNEL_ARCH_INCLUDE/include/uapi")
+fi
 if ! printf '#include <bpf/libbpf.h>\n' | cc -E "${LIBBPF_INCLUDES[@]}" - \
     >/dev/null 2>"$BUILD_DIR/libbpf-header-check.log"; then
     echo "libbpf header-check output:" >&2

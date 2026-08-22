@@ -6,6 +6,7 @@ repo_dir=$(CDPATH= cd -- "$unit_dir/../.." && pwd)
 test_source="$unit_dir/test_orchestra_paper_cpu.c"
 publication_stress_source="$unit_dir/test_signal_publication_stress.c"
 bridge_test_source="$unit_dir/test_orchestra_bridge.c"
+coordination_test_source="$unit_dir/test_orchestra_coordination.c"
 test_tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/orchestra-unit.XXXXXX")
 
 cleanup() {
@@ -66,6 +67,17 @@ ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 \
 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
     timeout 30s "$bridge_gcc_binary"
 
+coordination_gcc_binary="$test_tmp_dir/test_orchestra_coordination_gcc"
+gcc "${common_flags[@]}" \
+    -I"$repo_dir/kernel/sched_ext/include" \
+    -fsanitize=address,undefined \
+    -fno-omit-frame-pointer \
+    "$coordination_test_source" -o "$coordination_gcc_binary"
+printf '%s\n' 'Running GCC ASan+UBSan native coordination/controller tests'
+ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 \
+UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+    timeout 30s "$coordination_gcc_binary"
+
 legacy_gcc_binary="$test_tmp_dir/test_orchestra_gcc_legacy"
 gcc "${common_flags[@]}" \
     -DORCHESTRA_SIGNAL_PUBLICATION_LEGACY=1 \
@@ -101,6 +113,13 @@ if command -v clang >/dev/null 2>&1; then
         "$bridge_test_source" -o "$bridge_clang_binary"
     printf '%s\n' 'Running Clang bridge parser/ABI tests'
     timeout 30s "$bridge_clang_binary"
+
+    coordination_clang_binary="$test_tmp_dir/test_orchestra_coordination_clang"
+    clang "${common_flags[@]}" \
+        -I"$repo_dir/kernel/sched_ext/include" \
+        "$coordination_test_source" -o "$coordination_clang_binary"
+    printf '%s\n' 'Running Clang native coordination/controller tests'
+    timeout 30s "$coordination_clang_binary"
 
     legacy_clang_binary="$test_tmp_dir/test_orchestra_clang_legacy"
     clang "${common_flags[@]}" \

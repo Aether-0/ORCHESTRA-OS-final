@@ -1,68 +1,19 @@
-# ORCHESTRA-OS — Final Research Package
+# Historical release package
 
-**Version:** Stage 9  
-**Date:** 2026-08-07  
-**Repository:** `Aether-0/ORCHESTRA-OS`  
-**Commit:** `0ab5d7a`  
+This directory contains archived stage-era reports, scripts, and manifests.
+It is retained for research reproducibility and is not the authoritative
+installation or runtime interface for the current product.
 
-## Overview
+Use the repository root and maintained documentation instead:
 
-ORCHESTRA-OS is a predictive, cryptographically protected, hierarchical, signal-coordinated scheduling architecture for Linux. This package contains the complete userspace prototype, sched_ext BPF kernel scheduler, signal bridge, controller safety state machine, policy lifecycle system, and benchmark framework developed across nine research stages.
+- [`README.md`](../README.md) — current product entry point
+- [`docs/installation/INSTALL.md`](../docs/installation/INSTALL.md) — current installation
+- [`docs/usage/USAGE.md`](../docs/usage/USAGE.md) — current CLI and runtime usage
+- [`docs/validation/FINAL_VALIDATION_REPORT.md`](../docs/validation/FINAL_VALIDATION_REPORT.md) — current gate status
+- [`FINAL_PRODUCT_STATUS.md`](../FINAL_PRODUCT_STATUS.md) — version and claim boundary
 
-## Research Stages
-
-| Stage | Description | Status |
-|-------|-------------|--------|
-| 1 | Userspace Core Architecture | Complete |
-| 2 | Metrics Framework (v2–v6) | Complete |
-| 3 | Generation-stamped Signal Bus | Complete |
-| 4 | Controller Safety State Machine | Complete |
-| 5 | Policy Lifecycle & Persistence | Complete |
-| 6 | sched_ext MVP (BPF Scheduler) | Complete |
-| 6B | Runtime Validation (VirtualBox) | Complete |
-| 7 | Userspace ↔ Kernel Signal Bridge | Complete |
-| 8 | Full Kernel Validation | Complete |
-| 9 | Production Benchmarking | Initial |
-
-## Quick Start
-
-```bash
-make clean && make && make test
-```
-
-## Directory Structure
-
-```
-ORCHESTRA-OS/
-├── orchestra_paper_cpu_demo/    # Userspace prototype (C, Linux)
-├── kernel/sched_ext/            # sched_ext BPF scheduler + bridge
-│   ├── include/                 # Bridge contract, scheduler headers
-│   ├── bridge/                  # Userspace bridge CLI
-│   └── scripts/                 # Build, validation, reproduction
-├── benchmarks/                  # Stage 8+9 benchmark harnesses
-├── experiments/                 # Manifests, schemas, configs
-├── tests/                       # Unit, integration, validator
-├── docs/                        # ADRs, architecture, kernel, security
-├── tools/                       # Benchmark runner, reporting
-├── artifacts/                   # Test results, kernel images
-└── release/                     # This package
-```
-
-## Key Documents
-
-- `release/FINAL_REPORT.md` — Complete research summary
-- `release/ARCHITECTURE.md` — System design
-- `release/REPRODUCTION_GUIDE.md` — How to reproduce all experiments
-- `release/BENCHMARK_RESULTS.md` — Performance data
-- `release/KNOWN_LIMITATIONS.md` — Honest limitations
-
-## Prerequisites
-
-- Linux 6.12+ with CONFIG_SCHED_CLASS_EXT=y
-- GCC 14+ or Clang 18+
-- libbpf, bpftool
-- VirtualBox (for kernel validation)
-
-## License
-
-MIT
+The historical scripts may contain assumptions from older stage milestones,
+including kernel paths and cleanup behavior that are not valid for every host.
+Inspect them before reproducing archival evidence. Do not run a broad bpffs
+cleanup script from this directory on a machine containing unrelated BPF
+state.

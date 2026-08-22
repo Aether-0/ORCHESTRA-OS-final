@@ -1,0 +1,20 @@
+{
+  "schema": "orchestra.policy.v1",
+  "product_version": "1.0.0-rc1",
+  "description": "Development policy for exercising action and fallback telemetry.",
+  "policy": {
+    "mode": "TRAIN",
+    "controller_state": "NORMAL",
+    "entries": [
+      {"state_index": 0, "action": "RUN", "slice_ns": 1000000},
+      {"state_index": 1, "action": "YIELD", "slice_ns": 1000000},
+      {"state_index": 2, "action": "MIGRATE", "target_cpu": 4294967295, "slice_ns": 1000000},
+      {"state_index": 3, "action": "THROTTLE", "slice_ns": 1000000, "throttle_period_ns": 5000000, "throttle_budget_ns": 1000000},
+      {"state_index": 4, "action": "SLEEP", "slice_ns": 1000000}
+    ]
+  },
+  "signal": {"max_age_ns": 100000000, "confidence_floor_permille": 250},
+  "predictor": {"model": "offline_calibrated", "horizon_ns": 100000000},
+  "controller": {"period_ns": 50000000, "hysteresis_permille": 25},
+  "telemetry": {"format": "structured", "sample_period_ms": 50}
+}

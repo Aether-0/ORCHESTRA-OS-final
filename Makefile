@@ -1,9 +1,38 @@
 CC ?= gcc
+ORCHESTRA_BUILD_DIR ?= /var/tmp/orchestra-os-build-$(shell id -u)
+ORCHESTRA_INCLUDE_DIR := kernel/sched_ext/include
+ORCHESTRA_BRIDGE_DIR := kernel/sched_ext/bridge
+LIBBPF_CFLAGS := $(shell pkg-config --cflags libbpf 2>/dev/null)
+LIBBPF_LIBS := $(shell pkg-config --libs libbpf 2>/dev/null || echo '-lbpf -lelf -lz')
 
-.PHONY: all check test test-unit test-integration clean
+.PHONY: all userspace bridge product kernel-bpf check test test-unit \
+	test-integration clean clean-product
 
-all:
+all: userspace
+
+userspace:
 	$(MAKE) -C orchestra_paper_cpu_demo
+
+bridge:
+	@mkdir -p "$(ORCHESTRA_BUILD_DIR)"
+	$(CC) -O2 -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
+		-Wformat=2 -Werror -I"$(ORCHESTRA_INCLUDE_DIR)" \
+		"$(ORCHESTRA_BRIDGE_DIR)/orchestra_bridge.c" \
+		-o "$(ORCHESTRA_BUILD_DIR)/orchestra_bridge"
+	@if printf '#include <bpf/libbpf.h>\n' | $(CC) $(LIBBPF_CFLAGS) -E - >/dev/null 2>&1; then \
+		$(CC) -O2 -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
+			-Wformat=2 -Werror $(LIBBPF_CFLAGS) -I"$(ORCHESTRA_INCLUDE_DIR)" \
+			"$(ORCHESTRA_BRIDGE_DIR)/orchestra_loader.c" \
+			-o "$(ORCHESTRA_BUILD_DIR)/orchestra_loader" $(LIBBPF_LIBS); \
+	else \
+		echo "BLOCKED_MISSING_LIBBPF_HEADERS: bridge built; loader deferred"; \
+	fi
+
+product: userspace bridge
+
+kernel-bpf:
+	ORCHESTRA_BUILD_DIR="$(ORCHESTRA_BUILD_DIR)" \
+		bash kernel/sched_ext/scripts/build_stage7_out_of_tree.sh
 
 check:
 	$(MAKE) -C orchestra_paper_cpu_demo check
@@ -71,6 +100,14 @@ check:
 		kernel/sched_ext/scripts/p0_ownership_retest.sh \
 		kernel/sched_ext/scripts/reproduce_stage7_runtime.sh \
 		kernel/sched_ext/scripts/stage8_validate.sh
+	@bash -n scripts/*.sh examples/*/*.sh
+	@PYTHONPYCACHEPREFIX=/tmp/orchestra-os-check-pyc \
+		python3 -m py_compile scripts/*.py
+	@for config_file in config/examples/*.json; do \
+		python3 -m json.tool "$$config_file" >/dev/null; \
+	done
+	@python3 scripts/check-doc-links.py
+	@scripts/security-scan.sh
 	@if command -v shellcheck >/dev/null 2>&1; then \
 		shellcheck tests/unit/run.sh tests/integration/run.sh; \
 	fi
@@ -85,3 +122,10 @@ test: check test-unit test-integration
 
 clean:
 	$(MAKE) -C orchestra_paper_cpu_demo clean
+
+clean-product:
+	@case "$(ORCHESTRA_BUILD_DIR)" in \
+		/var/tmp/orchestra-os-build-*|/tmp/orchestra-os-build-*) \
+			rm -rf -- "$(ORCHESTRA_BUILD_DIR)" ;; \
+		*) echo "refusing to remove non-product build path: $(ORCHESTRA_BUILD_DIR)" >&2; exit 2 ;; \
+	esac

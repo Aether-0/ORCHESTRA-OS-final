@@ -81,6 +81,12 @@ enum map_role {
     MAP_TASK_V8,
     MAP_DIAG_V8,
     MAP_TEL_V8,
+    MAP_COORD_V10,
+    MAP_COORD_CPU_V10,
+    MAP_CONTROLLER_V10,
+    MAP_CONTROLLER_TEL_V10,
+    MAP_RUNTIME_V10,
+    MAP_TASK_COORD_V10,
     MAP_ROLE_COUNT
 };
 
@@ -137,6 +143,31 @@ static const struct map_spec map_specs[MAP_ROLE_COUNT] = {
     , [MAP_TEL_V8] = { BRIDGE_TEL_V8_MAP_NAME, BRIDGE_TEL_V8_PATH,
         BPF_MAP_TYPE_ARRAY, sizeof(uint32_t),
         sizeof(struct orchestra_telemetry_v8), 1 }
+    , [MAP_COORD_V10] = { BRIDGE_COORD_V10_MAP_NAME,
+        BRIDGE_PIN_DIR "/" BRIDGE_COORD_V10_MAP_NAME,
+        BPF_MAP_TYPE_ARRAY, sizeof(uint32_t),
+        sizeof(struct orchestra_coordination_state_v10),
+        ORCHESTRA_COORD_MAP_ENTRY_COUNT }
+    , [MAP_COORD_CPU_V10] = { BRIDGE_COORD_CPU_V10_MAP_NAME,
+        BRIDGE_PIN_DIR "/" BRIDGE_COORD_CPU_V10_MAP_NAME,
+        BPF_MAP_TYPE_PERCPU_ARRAY, sizeof(uint32_t),
+        sizeof(struct orchestra_coord_cpu_v10), 1 }
+    , [MAP_CONTROLLER_V10] = { BRIDGE_CONTROLLER_V10_MAP_NAME,
+        BRIDGE_PIN_DIR "/" BRIDGE_CONTROLLER_V10_MAP_NAME,
+        BPF_MAP_TYPE_ARRAY, sizeof(uint32_t),
+        sizeof(struct orchestra_controller_state_v10), 1 }
+    , [MAP_CONTROLLER_TEL_V10] = { BRIDGE_CONTROLLER_TEL_V10_MAP_NAME,
+        BRIDGE_PIN_DIR "/" BRIDGE_CONTROLLER_TEL_V10_MAP_NAME,
+        BPF_MAP_TYPE_ARRAY, sizeof(uint32_t),
+        sizeof(struct orchestra_controller_telemetry_v10), 1 }
+    , [MAP_RUNTIME_V10] = { BRIDGE_RUNTIME_V10_MAP_NAME,
+        BRIDGE_PIN_DIR "/" BRIDGE_RUNTIME_V10_MAP_NAME,
+        BPF_MAP_TYPE_ARRAY, sizeof(uint32_t),
+        sizeof(struct orchestra_runtime_state_v10), 1 }
+    , [MAP_TASK_COORD_V10] = { BRIDGE_TASK_COORD_V10_MAP_NAME,
+        BRIDGE_PIN_DIR "/" BRIDGE_TASK_COORD_V10_MAP_NAME,
+        BPF_MAP_TYPE_HASH, sizeof(struct orchestra_task_identity),
+        sizeof(struct orchestra_task_coord_v10), BRIDGE_MAX_TASKS }
 };
 
 struct map_set {
@@ -461,10 +492,30 @@ static bool open_v8_maps(struct map_set *maps)
 {
     enum map_role role;
 
-    for (role = MAP_RUNTIME_V8; role < MAP_ROLE_COUNT; role++) {
+    for (role = MAP_RUNTIME_V8; role <= MAP_TEL_V8; role++) {
         maps->fd[role] = open_checked(role);
         if (maps->fd[role] < 0) {
             for (enum map_role cleanup = MAP_RUNTIME_V8; cleanup < role;
+                 cleanup++) {
+                if (maps->fd[cleanup] >= 0) {
+                    close(maps->fd[cleanup]);
+                    maps->fd[cleanup] = -1;
+                }
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool open_v10_maps(struct map_set *maps)
+{
+    enum map_role role;
+
+    for (role = MAP_COORD_V10; role < MAP_ROLE_COUNT; role++) {
+        maps->fd[role] = open_checked(role);
+        if (maps->fd[role] < 0) {
+            for (enum map_role cleanup = MAP_COORD_V10; cleanup < role;
                  cleanup++) {
                 if (maps->fd[cleanup] >= 0) {
                     close(maps->fd[cleanup]);
@@ -1395,6 +1446,7 @@ static int status_command(const struct options *opts)
     struct orchestra_task_identity key, next;
     bool have_key = false;
     bool have_v8 = false;
+    bool have_v10 = false;
     uint32_t zero = 0;
 
     printf("scheduler: %s\n", scheduler_loaded() ? BRIDGE_OPS_NAME : "not active");
@@ -1403,6 +1455,7 @@ static int status_command(const struct options *opts)
         return errno == EPROTO ? EXIT_SCHEMA : EXIT_MAP_MISSING;
     }
     have_v8 = open_v8_maps(&maps);
+    have_v10 = open_v10_maps(&maps);
     if (!read_control(maps.fd[MAP_CONTROL], &control) || !valid_control(&control)) {
         map_set_close(&maps);
         return EXIT_SCHEMA;
@@ -1494,6 +1547,53 @@ static int status_command(const struct options *opts)
                    meta.policy_mode,
                    meta.controller_state < ORCHESTRA_CTRL_COUNT ?
                        controller_names[meta.controller_state] : "INVALID");
+        }
+    }
+    if (have_v10) {
+        struct orchestra_runtime_state_v10 runtime;
+        struct orchestra_controller_state_v10 controller;
+
+        memset(&runtime, 0, sizeof(runtime));
+        if (bpf_lookup_raw(maps.fd[MAP_RUNTIME_V10], &zero, &runtime,
+                           BPF_F_LOCK) == 0) {
+            printf("runtime_v10 window=%" PRIu64 " scope=%" PRIu32
+                   " domain=%" PRIu32 " eligible=%" PRIu64
+                   " executed=%" PRIu64 " s1=%" PRIu32 " s2=%" PRIu32
+                   " s3=%" PRIu32 " s4=%" PRIu32 " q=%" PRIu32
+                   " deficit_class=%" PRIu32 " primary=%" PRIu32
+                   " secondary=%" PRIu32 " severity=%" PRIu32
+                   " persistence=%" PRIu32 " controller=%s"
+                   " controller_generation=%" PRIu64 " flags=%" PRIu32 "\n",
+                   runtime.window_generation, runtime.scope, runtime.domain_id,
+                   runtime.eligible_observations, runtime.executed_observations,
+                   runtime.s1_permille, runtime.s2_permille,
+                   runtime.s3_permille, runtime.s4_permille,
+                   runtime.q_permille, runtime.deficit_class,
+                   runtime.primary_deficit, runtime.secondary_deficit,
+                   runtime.deficit_severity, runtime.deficit_persistence,
+                   runtime.controller_state < ORCHESTRA_CTRL_COUNT ?
+                       controller_names[runtime.controller_state] : "INVALID",
+                   runtime.controller_generation, runtime.flags);
+        }
+        memset(&controller, 0, sizeof(controller));
+        if (bpf_lookup_raw(maps.fd[MAP_CONTROLLER_V10], &zero, &controller,
+                           BPF_F_LOCK) == 0) {
+            printf("controller_v10 state=%s generation=%" PRIu64
+                   " staging_generation=%" PRIu64
+                   " previous_good_generation=%" PRIu64
+                   " last_q=%" PRIu64 " next_update_ns=%" PRIu64
+                   " saturation=%" PRIu64 " rollback=%" PRIu64
+                   " recovery=%" PRIu64 " overrides=%" PRIu64
+                   " no_op=%" PRIu64 "\n",
+                   controller.active_state < ORCHESTRA_CTRL_COUNT ?
+                       controller_names[controller.active_state] : "INVALID",
+                   controller.active_generation,
+                   controller.staging_generation,
+                   controller.previous_good_generation,
+                   controller.last_q_permille, controller.next_update_ns,
+                   controller.saturation_count, controller.rollback_count,
+                   controller.recovery_count, controller.override_count,
+                   controller.no_op_count);
         }
     }
     while (bpf_next_key_raw(maps.fd[MAP_DIRECTIVE],
@@ -1929,6 +2029,9 @@ static void usage(const char *program)
         "      --runtime-v8-map-id ID --policy-meta-v8-map-id ID\n"
         "      --policy-entry-v8-map-id ID --task-v8-map-id ID\n"
         "      --diag-v8-map-id ID --tel-v8-map-id ID\n"
+        "      --coord-v10-map-id ID --coord-cpu-v10-map-id ID\n"
+        "      --controller-v10-map-id ID --controller-tel-v10-map-id ID\n"
+        "      --runtime-v10-map-id ID --task-coord-v10-map-id ID\n"
         "      (timer map must already be pinned before attach; use orchestra_loader)\n",
         program);
 }
@@ -2149,7 +2252,13 @@ static bool parse_options(int argc, char **argv, struct options *opts)
                    strcmp(argv[i], "--policy-entry-v8-map-id") == 0 ||
                    strcmp(argv[i], "--task-v8-map-id") == 0 ||
                    strcmp(argv[i], "--diag-v8-map-id") == 0 ||
-                   strcmp(argv[i], "--tel-v8-map-id") == 0) {
+                   strcmp(argv[i], "--tel-v8-map-id") == 0 ||
+                   strcmp(argv[i], "--coord-v10-map-id") == 0 ||
+                   strcmp(argv[i], "--coord-cpu-v10-map-id") == 0 ||
+                   strcmp(argv[i], "--controller-v10-map-id") == 0 ||
+                   strcmp(argv[i], "--controller-tel-v10-map-id") == 0 ||
+                   strcmp(argv[i], "--runtime-v10-map-id") == 0 ||
+                   strcmp(argv[i], "--task-coord-v10-map-id") == 0) {
             enum map_role role = strcmp(argv[i], "--control-map-id") == 0 ? MAP_CONTROL :
                 strcmp(argv[i], "--directive-map-id") == 0 ? MAP_DIRECTIVE :
                 strcmp(argv[i], "--identity-map-id") == 0 ? MAP_IDENTITY :
@@ -2163,7 +2272,13 @@ static bool parse_options(int argc, char **argv, struct options *opts)
                 strcmp(argv[i], "--policy-entry-v8-map-id") == 0 ? MAP_POLICY_ENTRY_V8 :
                 strcmp(argv[i], "--task-v8-map-id") == 0 ? MAP_TASK_V8 :
                 strcmp(argv[i], "--diag-v8-map-id") == 0 ? MAP_DIAG_V8 :
-                MAP_TEL_V8;
+                strcmp(argv[i], "--tel-v8-map-id") == 0 ? MAP_TEL_V8 :
+                strcmp(argv[i], "--coord-v10-map-id") == 0 ? MAP_COORD_V10 :
+                strcmp(argv[i], "--coord-cpu-v10-map-id") == 0 ? MAP_COORD_CPU_V10 :
+                strcmp(argv[i], "--controller-v10-map-id") == 0 ? MAP_CONTROLLER_V10 :
+                strcmp(argv[i], "--controller-tel-v10-map-id") == 0 ? MAP_CONTROLLER_TEL_V10 :
+                strcmp(argv[i], "--runtime-v10-map-id") == 0 ? MAP_RUNTIME_V10 :
+                MAP_TASK_COORD_V10;
             if (!need_value(argc, argv, &i, &value) ||
                 !parse_u32(value, 1, UINT32_MAX, &parsed32))
                 return false;

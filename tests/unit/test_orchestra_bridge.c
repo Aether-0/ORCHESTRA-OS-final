@@ -93,7 +93,7 @@ static void test_abi_and_snapshot_comparison(void)
 
 static void test_exact_map_schema(void)
 {
-    assert(MAP_ROLE_COUNT == 14);
+    assert(MAP_ROLE_COUNT == 20);
     for (int role = MAP_CONTROL; role < MAP_ROLE_COUNT; role++) {
         assert(map_specs[role].name != NULL);
         assert(strlen(map_specs[role].name) < BPF_OBJ_NAME_LEN);
@@ -129,6 +129,22 @@ static void test_exact_map_schema(void)
            sizeof(struct orchestra_task_diag_v8));
     assert(map_specs[MAP_TEL_V8].value_size ==
            sizeof(struct orchestra_telemetry_v8));
+    assert(map_specs[MAP_COORD_V10].type == BPF_MAP_TYPE_ARRAY);
+    assert(map_specs[MAP_COORD_V10].value_size ==
+           sizeof(struct orchestra_coordination_state_v10));
+    assert(map_specs[MAP_COORD_V10].max_entries ==
+           ORCHESTRA_COORD_MAP_ENTRY_COUNT);
+    assert(map_specs[MAP_COORD_CPU_V10].type == BPF_MAP_TYPE_PERCPU_ARRAY);
+    assert(map_specs[MAP_COORD_CPU_V10].value_size ==
+           sizeof(struct orchestra_coord_cpu_v10));
+    assert(map_specs[MAP_CONTROLLER_V10].value_size ==
+           sizeof(struct orchestra_controller_state_v10));
+    assert(map_specs[MAP_CONTROLLER_TEL_V10].value_size ==
+           sizeof(struct orchestra_controller_telemetry_v10));
+    assert(map_specs[MAP_RUNTIME_V10].value_size ==
+           sizeof(struct orchestra_runtime_state_v10));
+    assert(map_specs[MAP_TASK_COORD_V10].value_size ==
+           sizeof(struct orchestra_task_coord_v10));
 }
 
 static void test_signal_contract_helpers(void)

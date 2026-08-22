@@ -1,0 +1,11 @@
+flowchart TD
+    H[Hardware / kernel state] --> A[State acquisition]
+    A --> S[Signal Bus]
+    S --> P[Prediction + confidence]
+    P --> L[Policy]
+    L --> C[Controller / safety gate]
+    C --> X[Five-action resolver]
+    X --> E[sched_ext or conventional fallback]
+    E --> O[Observations]
+    O --> Q[S1 S2 S3 S4 and Q]
+    Q --> C

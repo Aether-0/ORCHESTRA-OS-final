@@ -6,8 +6,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 BPF = (ROOT / "kernel/sched_ext/orchestra_scx_stage7.bpf.c").read_text()
 COMPAT_BPF = (ROOT / "kernel/sched_ext/orchestra_scx.bpf.c").read_text()
+STABLE_BPF = (ROOT / "kernel/sched_ext/bpf/orchestra_sched.bpf.c").read_text()
 ABI = (ROOT / "kernel/sched_ext/include/orchestra_bridge_v1.h").read_text()
+PRODUCT_ABI = (ROOT / "kernel/sched_ext/include/orchestra_product_abi.h").read_text()
 KERNEL_V8 = (ROOT / "kernel/sched_ext/include/orchestra_kernel_v8.h").read_text()
+CONTROL_V10 = (ROOT / "kernel/sched_ext/include/orchestra_control_abi.h").read_text()
+COORD_V10 = (ROOT / "kernel/sched_ext/include/orchestra_coord.h").read_text()
+CONTROLLER_V10 = (ROOT / "kernel/sched_ext/include/orchestra_controller.h").read_text()
 BRIDGE = (ROOT / "kernel/sched_ext/bridge/orchestra_bridge.c").read_text()
 LOADER = (ROOT / "kernel/sched_ext/bridge/orchestra_loader.c").read_text()
 LEGACY_LOADER = (ROOT / "kernel/sched_ext/orchestra_scx.c").read_text()
@@ -24,6 +29,12 @@ def main() -> None:
             "partial-switch starvation mode must not return")
     require('include "orchestra_scx_stage7.bpf.c"' in COMPAT_BPF,
             "the historical BPF filename must build the canonical scheduler")
+    require('include "../orchestra_scx_stage7.bpf.c"' in STABLE_BPF,
+            "the stable product BPF entry point must select one canonical implementation")
+    require("ORCHESTRA_PRODUCT_ABI_MAJOR 1u" in PRODUCT_ABI and
+            "ORCHESTRA_PRODUCT_BRIDGE_ABI_VERSION" in PRODUCT_ABI and
+            "ORCHESTRA_PRODUCT_CONTROL_ABI_VERSION" in PRODUCT_ABI,
+            "the product ABI bundle must declare current component versions")
     require("syscall(" not in LEGACY_LOADER,
             "the retired loader must not change task policy")
     require("dir_cache" not in BPF,
@@ -180,6 +191,75 @@ def main() -> None:
     require("calibrated_prediction_confidence" in ENGINE and
             "calibrate_fixed_gain" in ENGINE and "kalman" not in ENGINE.lower(),
             "offline fixed-gain predictor must not regress to adaptive Kalman")
+    require("ORCHESTRA_CONTROL_ABI_VERSION" in CONTROL_V10 and
+            "ORCHESTRA_COORD_SCHEMA_VERSION" in CONTROL_V10 and
+            "ORCHESTRA_CONTROLLER_SCHEMA_VERSION" in CONTROL_V10 and
+            "ORCHESTRA_RUNTIME_SCHEMA_VERSION" in CONTROL_V10,
+            "native v10 ABI/schema versions must be explicit")
+    require("ORCHESTRA_COORD_WINDOW_BANK_COUNT        2u" in CONTROL_V10 and
+            "ORCHESTRA_COORD_MAP_ENTRY_COUNT" in CONTROL_V10 and
+            "ORCHESTRA_COORD_MAX_CPU_DOMAINS" in CONTROL_V10 and
+            "ORCHESTRA_COORD_MAX_NUMA_DOMAINS" in CONTROL_V10,
+            "native coordination storage must remain bounded and double-buffered")
+    require("struct orchestra_coordination_state_v10" in CONTROL_V10 and
+            "s1_permille" in CONTROL_V10 and
+            "s2_permille" in CONTROL_V10 and
+            "s3_permille" in CONTROL_V10 and
+            "s4_permille" in CONTROL_V10 and
+            "q_permille" in CONTROL_V10 and
+            "coherence_hist" in CONTROL_V10,
+            "native S1/S2/S3/S4/Q state contract is missing")
+    require("ORCH_DEFICIT_SIGNAL" in CONTROL_V10 and
+            "ORCH_DEFICIT_COMPLIANCE" in CONTROL_V10 and
+            "ORCH_DEFICIT_COHERENCE" in CONTROL_V10 and
+            "ORCH_DEFICIT_STABILITY" in CONTROL_V10 and
+            "ORCH_DEFICIT_MIXED" in CONTROL_V10 and
+            "ORCH_ACTUATOR_COORDINATION_THRESHOLD" in CONTROL_V10,
+            "deficit classes and bounded actuator IDs must remain canonical")
+    require("orchestra_coord_geomean4" in COORD_V10 and
+            "orchestra_classify_deficit_v10" in COORD_V10 and
+            "orchestra_deficit_actuator_mask" in COORD_V10 and
+            "orchestra_coord_record_signal" in COORD_V10 and
+            "orchestra_coord_record_action" in COORD_V10 and
+            "orchestra_coord_record_execution" in COORD_V10,
+            "native coordination-window measurement path is incomplete")
+    require("ORCHESTRA_CTRL_NORMAL" in CONTROLLER_V10 and
+            "ORCHESTRA_CTRL_DEGRADED" in CONTROLLER_V10 and
+            "ORCHESTRA_CTRL_SATURATED" in CONTROLLER_V10 and
+            "ORCHESTRA_CTRL_DISABLED" in CONTROLLER_V10 and
+            "ORCHESTRA_CTRL_ROLLBACK" in CONTROLLER_V10 and
+            "ORCHESTRA_CTRL_RECOVERY" in CONTROLLER_V10 and
+            "orchestra_controller_publish_staging" in CONTROLLER_V10 and
+            "orchestra_controller_rollback_locked" in CONTROLLER_V10 and
+            "minimum_hold_ns" in CONTROLLER_V10 and
+            "cooldown_until_ns" in CONTROLLER_V10,
+            "two-timescale controller state machine and anti-oscillation safeguards are missing")
+    require("ORCHESTRA_CONTROLLER_ACTUATOR_F_SATURATED" in CONTROLLER_V10 and
+            "maximum_step" in CONTROL_V10 and
+            "previous_good" in CONTROL_V10 and
+            "evaluation_until_ns" in CONTROL_V10,
+            "bounded actuator publication and rollback state is missing")
+    require("orch_coord_v10" in BPF and "orch_coord_cpu" in BPF and
+            "orch_ctrl_v10" in BPF and "orch_ctrl_tel_v10" in BPF and
+            "orch_runtime10" in BPF and "orch_task_coord" in BPF,
+            "v10 coordination/controller maps must be part of the canonical BPF object")
+    require("publish_runtime_state_v10" in BPF and
+            "orchestra_controller_init_v10" in BPF and
+            "controller_generation" in BPF and
+            "actual_executed_action" in BPF,
+            "v10 runtime publication and action provenance are not integrated")
+    require("orchestra_controller_update_from_coord" in COORD_V10 and
+            "orchestra_controller_update_from_coord" in CONTROLLER_V10,
+            "coordination finalization must feed the native controller")
+    require("ORCHESTRA_KERNEL_V10_REQUIRED_CAPS" in BPF and
+            "ORCHESTRA_KERNEL_CAP_NATIVE_COORDINATION" in CONTROL_V10 and
+            "ORCHESTRA_KERNEL_CAP_RUNTIME_CONTROLLER" in CONTROL_V10,
+            "v10 capability negotiation is missing")
+    require("ORCHESTRA_ACTION_RUN" in CONTROLLER_V10 and
+            "ORCHESTRA_CTRL_DISABLED" in BPF and
+            "ORCHESTRA_ACTION_RUN" in BPF and
+            "orchestra_controller_should_fallback_v10" in CONTROLLER_V10,
+            "controller failure must retain a safe RUN fallback")
     print("PASS sched_ext source safety invariants")
 
 

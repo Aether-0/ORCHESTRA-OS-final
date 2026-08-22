@@ -1,0 +1,10 @@
+flowchart TD
+    C[check-system] --> D{Dependencies and capability}
+    D -- observer only --> U[Build userspace and bridge]
+    D -- kernel capable --> B[Build target-matched BPF]
+    U --> I[Install tools/config]
+    B --> I
+    I --> L[Loader schema validation]
+    L --> A[Attach and enable]
+    A --> V[Verify state and telemetry]
+    V --> X[Disable / uninstall safely]

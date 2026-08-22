@@ -1,6 +1,6 @@
 # Paper CPU smoke v1 figures - 2026-08-03
 
-These figures were generated from the completed, validated artifact `/home/aether/Documents/ORCHESTRA-OS/artifacts/test-results/2026-08-03/benchmark/authoritative-c` using `tools/plotting/plot_paper_cpu_smoke.py`. The plotting script reads the processed tables and provenance only; it does not modify raw benchmark data.
+These figures were generated from the completed, validated repository artifact `artifacts/test-results/2026-08-03/benchmark/authoritative-c` using `tools/plotting/plot_paper_cpu_smoke.py`. The plotting script reads the processed tables and provenance only; it does not modify raw benchmark data.
 
 ## Interpretation boundary
 

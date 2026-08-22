@@ -1,0 +1,42 @@
+name: ORCHESTRA-OS non-privileged validation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install portable build tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential clang python3
+
+      - name: Build and test
+        run: |
+          make clean
+          make
+          make check
+          make test
+
+      - name: Validate scripts and documentation
+        run: |
+          bash -n scripts/*.sh examples/*/*.sh
+          python3 -m py_compile scripts/*.py
+          python3 scripts/check-doc-links.py
+          git diff --check
+
+      - name: Scan tracked product content
+        run: scripts/security-scan.sh
+
+      - name: Capability report
+        run: scripts/check-system.sh --json
+
+      # GitHub-hosted runners are not a certified sched_ext target. This CI
+      # job deliberately does not claim verifier, attach, ownership, action,
+      # RT, unload, or soak validation.

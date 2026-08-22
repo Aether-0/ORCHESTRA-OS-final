@@ -1,0 +1,230 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+if [ -f "$SCRIPT_DIR/../Makefile" ]; then
+    SOURCE_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+    TOOL_DIR="$SOURCE_ROOT/scripts"
+    INSTALL_ROOT="$SOURCE_ROOT"
+    DEFAULT_BUILD_DIR=/var/tmp/orchestra-os-build-$(id -u)
+    DEFAULT_CONFIG_ROOT="$SOURCE_ROOT/config/examples"
+elif [ -r "$SCRIPT_DIR/../lib/orchestra-os/VERSION" ]; then
+    INSTALL_ROOT=${ORCHESTRA_INSTALL_ROOT:-$(CDPATH= cd -- "$SCRIPT_DIR/../lib/orchestra-os" && pwd)}
+    SOURCE_ROOT="$INSTALL_ROOT"
+    TOOL_DIR="$INSTALL_ROOT/scripts"
+    DEFAULT_BUILD_DIR="$INSTALL_ROOT/build"
+    DEFAULT_CONFIG_ROOT=${ORCHESTRA_CONFIG_DIR:-/etc/orchestra-os}
+else
+    INSTALL_ROOT=${ORCHESTRA_INSTALL_ROOT:-$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)}
+    SOURCE_ROOT="$INSTALL_ROOT"
+    TOOL_DIR="$INSTALL_ROOT/scripts"
+    DEFAULT_BUILD_DIR="$INSTALL_ROOT/build"
+    DEFAULT_CONFIG_ROOT=${ORCHESTRA_CONFIG_DIR:-/etc/orchestra-os}
+fi
+
+VERSION_FILE="$SOURCE_ROOT/VERSION"
+VERSION=${ORCHESTRA_VERSION:-unknown}
+[ -r "$VERSION_FILE" ] && VERSION=$(tr -d '\n' <"$VERSION_FILE")
+BUILD_DIR=${ORCHESTRA_BUILD_DIR:-$DEFAULT_BUILD_DIR}
+BRIDGE=${ORCHESTRA_BRIDGE:-$BUILD_DIR/orchestra_bridge}
+LOADER=${ORCHESTRA_LOADER:-$BUILD_DIR/orchestra_loader}
+BPF_OBJECT=${ORCHESTRA_BPF:-$BUILD_DIR/orchestra_scx_stage7.bpf.o}
+CONFIG_ROOT=${ORCHESTRA_CONFIG_DIR:-$DEFAULT_CONFIG_ROOT}
+CHECK_SYSTEM="$TOOL_DIR/check-system.sh"
+BUILD_TOOL="$TOOL_DIR/build.sh"
+POLICY_TOOL="$TOOL_DIR/policy_load.py"
+STATE_FILE=/sys/kernel/sched_ext/state
+
+usage() {
+    cat <<'EOF'
+ORCHESTRA-OS user-facing control plane
+
+usage: orchestra COMMAND [OPTIONS]
+
+commands:
+  version                         print product version
+  status                          show lifecycle, capability, and telemetry status
+  check-system [--json|--strict] discover host capability tiers
+  build [--userspace|--bridge|--kernel|--all]
+                                  build selected artifacts outside the source tree
+  install                         install userspace tools and documentation
+  enable                          attach the target-matched sched_ext object (root)
+  disable                         detach ORCHESTRA and return to conventional scheduling (root)
+  policy load FILE [--dry-run]    validate and publish a versioned policy
+  policy show                     show policy and runtime state
+  controller status               show controller and coordination state
+  telemetry                       show structured bridge telemetry
+  validate                        run non-privileged build/test/repository checks
+  uninstall                       disable and remove only ORCHESTRA-installed files (root)
+EOF
+}
+
+require_root() {
+    if [ "$(id -u)" -ne 0 ]; then
+        echo "this operation requires root; rerun as: sudo orchestra $*" >&2
+        exit 1
+    fi
+}
+
+require_tool_file() {
+    if [ ! -x "$1" ] && [ ! -f "$1" ]; then
+        echo "ORCHESTRA tool not found: $1" >&2
+        echo "build from the source tree or set ORCHESTRA_INSTALL_ROOT/ORCHESTRA_BUILD_DIR" >&2
+        exit 1
+    fi
+}
+
+state_value() {
+    if [ -r "$STATE_FILE" ]; then
+        tr -d '\n' <"$STATE_FILE"
+    else
+        echo unavailable
+    fi
+}
+
+run_status_bridge() {
+    if [ ! -x "$BRIDGE" ]; then
+        echo "telemetry=unavailable (bridge not built; expected $BRIDGE)"
+        return 0
+    fi
+    if [ "$(id -u)" -ne 0 ]; then
+        echo "telemetry=requires-root (run sudo orchestra telemetry)"
+        return 0
+    fi
+    "$BRIDGE" --status || echo "telemetry=unavailable (maps are not active or schema validation failed)"
+}
+
+cmd=${1:-help}
+if [ "$#" -gt 0 ]; then shift; fi
+
+case "$cmd" in
+    help|-h|--help)
+        usage
+        ;;
+    version)
+        echo "ORCHESTRA-OS $VERSION"
+        echo "bridge_abi=2 kernel_abi=8 control_abi=10"
+        echo "actions=RUN,SLEEP,MIGRATE,THROTTLE,YIELD"
+        ;;
+    check-system)
+        require_tool_file "$CHECK_SYSTEM"
+        "$CHECK_SYSTEM" "$@"
+        ;;
+    build)
+        require_tool_file "$BUILD_TOOL"
+        "$BUILD_TOOL" "$@"
+        ;;
+    status)
+        echo "product=ORCHESTRA-OS"
+        echo "version=$VERSION"
+        echo "lifecycle_state=$(state_value)"
+        echo "build_dir=$BUILD_DIR"
+        echo "bpf_object=$BPF_OBJECT"
+        echo "loader=$LOADER"
+        "$CHECK_SYSTEM" 2>/dev/null || true
+        run_status_bridge
+        ;;
+    telemetry)
+        require_root
+        require_tool_file "$BRIDGE"
+        "$BRIDGE" --status
+        ;;
+    controller)
+        subcommand=${1:-status}
+        if [ "$#" -gt 0 ]; then shift; fi
+        case "$subcommand" in
+            status)
+                require_root
+                require_tool_file "$BRIDGE"
+                "$BRIDGE" --status
+                ;;
+            *) echo "usage: orchestra controller status" >&2; exit 2 ;;
+        esac
+        ;;
+    policy)
+        subcommand=${1:-show}
+        if [ "$#" -gt 0 ]; then shift; fi
+        case "$subcommand" in
+            show)
+                require_root
+                require_tool_file "$BRIDGE"
+                "$BRIDGE" --status
+                ;;
+            load)
+                require_root
+                config=${1:-$CONFIG_ROOT/safe.json}
+                if [ "$#" -gt 0 ]; then shift; fi
+                require_tool_file "$BRIDGE"
+                require_tool_file "$POLICY_TOOL"
+                python3 "$POLICY_TOOL" --bridge "$BRIDGE" "$config" "$@"
+                ;;
+            *) echo "usage: orchestra policy load FILE [--dry-run] | orchestra policy show" >&2; exit 2 ;;
+        esac
+        ;;
+    enable)
+        require_root
+        require_tool_file "$CHECK_SYSTEM"
+        require_tool_file "$LOADER"
+        require_tool_file "$BPF_OBJECT"
+        "$CHECK_SYSTEM" --strict
+        current_state=$(state_value)
+        if [ "$current_state" = enabled ]; then
+            echo "ORCHESTRA is already enabled"
+            exit 0
+        fi
+        if [ "$current_state" = unavailable ]; then
+            echo "sched_ext is unavailable on this kernel; refusing activation" >&2
+            exit 1
+        fi
+        "$LOADER" --load "$BPF_OBJECT"
+        final_state=$(state_value)
+        if [ "$final_state" != enabled ]; then
+            echo "activation did not reach enabled state: $final_state" >&2
+            exit 1
+        fi
+        echo "ORCHESTRA enabled; conventional scheduling remains the fallback for ineligible tasks"
+        ;;
+    disable)
+        require_root
+        current_state=$(state_value)
+        if [ "$current_state" = unavailable ]; then
+            echo "sched_ext is unavailable; nothing to disable"
+            exit 0
+        fi
+        if [ "$current_state" = disabled ]; then
+            echo "ORCHESTRA is already disabled"
+            exit 0
+        fi
+        require_tool_file "$LOADER"
+        "$LOADER" --unload
+        final_state=$(state_value)
+        if [ "$final_state" != disabled ]; then
+            echo "disable did not reach disabled state: $final_state" >&2
+            exit 1
+        fi
+        echo "ORCHESTRA disabled; conventional Linux scheduling is active"
+        ;;
+    validate)
+        if [ -f "$SOURCE_ROOT/Makefile" ]; then
+            make -C "$SOURCE_ROOT" check
+            make -C "$SOURCE_ROOT" test
+            git -C "$SOURCE_ROOT" diff --check
+            "$CHECK_SYSTEM" || true
+            echo "VALIDATION_COMPLETE (privileged attach is a separate gate)"
+        else
+            "$CHECK_SYSTEM" || true
+            echo "VALIDATION_PARTIAL (installed package; source regression tests require the source tree)"
+        fi
+        ;;
+    install)
+        exec "$TOOL_DIR/install.sh" "$@"
+        ;;
+    uninstall)
+        exec "$TOOL_DIR/uninstall.sh" "$@"
+        ;;
+    *)
+        echo "unknown command: $cmd" >&2
+        usage >&2
+        exit 2
+        ;;
+esac

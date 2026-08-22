@@ -1,0 +1,8 @@
+flowchart LR
+    M[Measurement] --> H[Bounded history]
+    H --> F[Feature extraction]
+    F --> P[Offline-calibrated model]
+    P --> C[Prediction + confidence]
+    C --> X{Fresh and confident?}
+    X -- yes --> U[Publish generation and expiry]
+    X -- no --> O[Observed-state fallback]

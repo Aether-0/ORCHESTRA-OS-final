@@ -1,0 +1,11 @@
+flowchart TD
+    T[Task event] --> I{Eligible?}
+    I -- no --> F[Conventional scheduling]
+    I -- yes --> S[Read signal and runtime state]
+    S --> P[Policy lookup]
+    P --> G[Controller gate]
+    G --> V{Capability valid?}
+    V -- no --> R[Observed-state / RUN fallback]
+    V -- yes --> A[RUN / YIELD / MIGRATE / THROTTLE / SLEEP]
+    A --> E[Execute and record outcome]
+    R --> E

@@ -1,0 +1,14 @@
+flowchart TD
+    O[Scheduler observations] --> W[Finalize coordination window]
+    W --> S[S1 signal fidelity]
+    W --> C[S2 compliance]
+    W --> H[S3 coherence]
+    W --> T[S4 temporal stability]
+    S --> Q[Q = geometric mean]
+    C --> Q
+    H --> Q
+    T --> Q
+    Q --> D[Deficit classification]
+    D --> A[Causal actuator selection]
+    A --> B[Bounded update / hysteresis]
+    B --> R[Publish or rollback]
