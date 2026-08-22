@@ -403,8 +403,8 @@ class BenchmarkValidatorTests(unittest.TestCase):
         )
 
     def test_v6_and_v7_manifests_declare_exact_column_contract(self) -> None:
-        v6 = harness.load_manifest(V6_MANIFEST_PATH)
-        v7 = harness.load_manifest(V7_MANIFEST_PATH)
+        v6 = harness.load_manifest(V6_MANIFEST_PATH, enforce_host=False)
+        v7 = harness.load_manifest(V7_MANIFEST_PATH, enforce_host=False)
         self.assertEqual(v6.expected_csv_column_count, 120)
         self.assertEqual(v7.expected_csv_column_count, 121)
         self.assertEqual(v6.metrics_schema_id, harness.V6_SCHEMA_ID)
@@ -478,12 +478,12 @@ class BenchmarkValidatorTests(unittest.TestCase):
             harness.load_metrics_schema(V2_SCHEMA_PATH, harness.V3_SCHEMA_ID)
 
     def test_v3_manifest_declares_the_exact_column_contract(self) -> None:
-        manifest = harness.load_manifest(V3_MANIFEST_PATH)
+        manifest = harness.load_manifest(V3_MANIFEST_PATH, enforce_host=False)
         self.assertEqual(manifest.metrics_schema_id, harness.V3_SCHEMA_ID)
         self.assertEqual(manifest.expected_csv_column_count, len(harness.V3_EXPECTED_HEADER))
 
     def test_v4_manifest_declares_the_exact_column_contract(self) -> None:
-        manifest = harness.load_manifest(V4_MANIFEST_PATH)
+        manifest = harness.load_manifest(V4_MANIFEST_PATH, enforce_host=False)
         self.assertEqual(manifest.metrics_schema_id, harness.V4_SCHEMA_ID)
         self.assertEqual(manifest.expected_csv_column_count, 83)
         self.assertEqual(manifest.expected_csv_column_count, len(harness.V4_EXPECTED_HEADER))

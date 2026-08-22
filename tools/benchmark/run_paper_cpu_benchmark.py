@@ -527,8 +527,13 @@ def available_processor_count() -> int:
         return os.cpu_count() or 1
 
 
-def load_manifest(path: Path) -> Manifest:
-    """Load and enforce all bounded userspace experiment controls."""
+def load_manifest(path: Path, *, enforce_host: bool = True) -> Manifest:
+    """Load bounded controls, optionally including the live host gate.
+
+    Production experiment execution keeps ``enforce_host=True``. Contract
+    tests can set it to ``False`` when they are validating only the manifest
+    schema and must run on a small CI runner.
+    """
 
     obj = read_json_object(path)
     manifest = Manifest(
@@ -589,13 +594,16 @@ def load_manifest(path: Path) -> Manifest:
     if manifest.modes != MODES:
         raise BenchmarkError(f"modes must be exactly {list(MODES)!r} in that order")
 
-    nproc = available_processor_count()
-    safe_worker_max = min(8, nproc)
-    if safe_worker_max < 4:
-        raise BenchmarkError(
-            f"host exposes only {nproc} CPUs; the prototype requires at least 4 workers"
-        )
-    require_range("workers", manifest.workers, 4, safe_worker_max)
+    if enforce_host:
+        nproc = available_processor_count()
+        safe_worker_max = min(8, nproc)
+        if safe_worker_max < 4:
+            raise BenchmarkError(
+                f"host exposes only {nproc} CPUs; the prototype requires at least 4 workers"
+            )
+        require_range("workers", manifest.workers, 4, safe_worker_max)
+    else:
+        require_range("workers", manifest.workers, 4, 8)
     if manifest.rt_exempt != 0:
         raise BenchmarkError(
             "rt_exempt must be 0; the bounded harness never attempts SCHED_FIFO"
