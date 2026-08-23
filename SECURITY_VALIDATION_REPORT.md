@@ -3,7 +3,7 @@
 **Product:** ORCHESTRA-OS 1.0.0-rc1
 **Assessment date:** 2026-08-23
 **Repository revision at assessment start:** b4d12899966eb5cf7b1fe87b9f865ce158e2b5b
-**Final hardening revision:** 64bae7e
+**Final hardening revision:** 5cb65c4
 **Disposition:** release candidate; not production-certified
 
 ## Gate summary
