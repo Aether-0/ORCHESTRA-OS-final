@@ -142,10 +142,74 @@ static bool scheduler_owned(void)
             strcmp(ops, ORCHESTRA_LEGACY_OPS_NAME) == 0);
 }
 
+static bool scheduler_disabled(void)
+{
+    char state[32];
+
+    return read_sysfs_line(SCHED_EXT_STATE_PATH, state, sizeof(state)) &&
+           strcmp(state, "disabled") == 0;
+}
+
+static bool path_has_dot_component(const char *path)
+{
+    const char *cursor = path;
+
+    if (!cursor)
+        return false;
+    while (*cursor) {
+        const char *start;
+        size_t length;
+
+        while (*cursor == '/')
+            cursor++;
+        if (!*cursor)
+            break;
+        start = cursor;
+        while (*cursor && *cursor != '/')
+            cursor++;
+        length = (size_t)(cursor - start);
+        if ((length == 1 && start[0] == '.') ||
+            (length == 2 && start[0] == '.' && start[1] == '.'))
+            return true;
+    }
+    return false;
+}
+
+static bool root_safe_directory_chain(const char *path)
+{
+    struct stat directory;
+    char current[PATH_MAX];
+
+    if (!path || path[0] != '/' || strlen(path) >= sizeof(current) ||
+        path_has_dot_component(path))
+        return false;
+    if (snprintf(current, sizeof(current), "%s", path) < 0)
+        return false;
+    for (;;) {
+        if (lstat(current, &directory) != 0 || !S_ISDIR(directory.st_mode) ||
+            directory.st_uid != 0)
+            return false;
+        if ((directory.st_mode & (S_IWGRP | S_IWOTH)) != 0 &&
+            (directory.st_mode & S_ISVTX) == 0)
+            return false;
+        if (strcmp(current, "/") == 0)
+            return true;
+        {
+            char *slash = strrchr(current, '/');
+
+            if (!slash)
+                return false;
+            if (slash == current)
+                slash[1] = '\0';
+            else
+                *slash = '\0';
+        }
+    }
+}
+
 static bool safe_root_artifact(const char *path)
 {
     struct stat file;
-    struct stat parent;
     char parent_path[PATH_MAX];
 
     if (!path || lstat(path, &file) != 0 || !S_ISREG(file.st_mode) ||
@@ -167,10 +231,7 @@ static bool safe_root_artifact(const char *path)
         else
             *slash = '\0';
     }
-    if (lstat(parent_path, &parent) != 0 || !S_ISDIR(parent.st_mode) ||
-        parent.st_uid != 0 || (parent.st_mode & (S_IWGRP | S_IWOTH)) != 0)
-        return false;
-    return true;
+    return root_safe_directory_chain(parent_path);
 }
 
 static bool pin_path_absent(const char *path)
@@ -280,6 +341,21 @@ static bool map_schema_matches(const struct bpf_map *map,
            bpf_map__key_size(map) == spec->key_size &&
            bpf_map__value_size(map) == spec->value_size &&
            bpf_map__max_entries(map) == spec->max_entries;
+}
+
+static int cleanup_pins(void)
+{
+    int err = 0;
+
+    if (unlink(LINK_PATH) != 0 && errno != ENOENT)
+        err = -errno;
+    for (size_t i = 0; i < sizeof(map_specs) / sizeof(map_specs[0]); i++) {
+        if (unlink(map_specs[i].path) != 0 && errno != ENOENT && err == 0)
+            err = -errno;
+    }
+    if (rmdir(PIN_DIR) != 0 && errno != ENOENT && err == 0)
+        err = -errno;
+    return err;
 }
 
 static void unlink_created(size_t count)
@@ -398,9 +474,16 @@ static int unload_scheduler(void)
 
     if (geteuid() != 0)
         return -EPERM;
-    if (!scheduler_owned())
-        return -EPERM;
-    if (!validate_existing_pins())
+    /* A prior detach can return before the kernel finishes the transition.
+     * On a later invocation, clean up only a complete, schema-validated
+     * ORCHESTRA pin set after the kernel explicitly reports disabled.  Never
+     * use this recovery path while another sched_ext owner is active. */
+    if (scheduler_disabled()) {
+        if (!validate_existing_pins())
+            return -EPERM;
+        return cleanup_pins();
+    }
+    if (!scheduler_owned() || !validate_existing_pins())
         return -EPERM;
     link_fd = bpf_obj_get(LINK_PATH);
     if (link_fd < 0)
@@ -432,14 +515,9 @@ static int unload_scheduler(void)
         return -EBUSY;
     }
     close(link_fd);
-    if (unlink(LINK_PATH) != 0 && errno != ENOENT)
-        return -errno;
-    for (size_t i = 0; i < sizeof(map_specs) / sizeof(map_specs[0]); i++) {
-        if (unlink(map_specs[i].path) != 0 && errno != ENOENT && err == 0)
-            err = -errno;
-    }
-    if (rmdir(PIN_DIR) != 0 && errno != ENOENT && err == 0)
-        err = -errno;
+    if (!scheduler_disabled() || !validate_existing_pins())
+        return -EPROTO;
+    err = cleanup_pins();
     return err;
 }
 

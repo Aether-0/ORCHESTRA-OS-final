@@ -108,9 +108,13 @@ disabled state before unpinning.
 
 **Remediation.** `orchestra_loader.c` keeps an open link reference and pin,
 uses `BPF_LINK_DETACH`, polls for `disabled`, and retains pins/maps on timeout.
-Cleanup remains scoped to the exact ORCHESTRA pin set.
+Cleanup remains scoped to the exact ORCHESTRA pin set. A later invocation may
+recover a complete, schema-validated ORCHESTRA pin set only when sysfs
+explicitly reports `disabled`; it refuses recovery while another scheduler is
+active or ownership/schema validation is incomplete.
 
-**Validation.** Source invariants and strict source checks passed. Live link
+**Validation.** Source invariants, the ASan/UBSan ABI/state mutation target,
+and strict source checks passed. Live link
 detach/verifier/ownership validation is `BLOCKED` by missing libbpf headers,
 incomplete exact-kernel build inputs, and unavailable non-interactive root.
 
@@ -168,8 +172,10 @@ inactive-bank abort path.
 **Validation.** `tests/security/test_policy_loader.py` covers the 256-entry
 boundary, duplicate indices, duplicate JSON keys, symlinks, writable bridge
 parents, oversized input, malformed JSON, recursion, invalid actions and
-booleans. The deterministic mutation target ran for 1000 iterations with
-both accepted and rejected populations.
+booleans. The policy mutation target ran for 1000 iterations with both
+accepted and rejected populations; `fuzz_abi_state.c` ran 50,000 fixed-width
+ABI, signal, bridge, policy-meta, controller, and parser mutations under
+ASan/UBSan.
 
 ### SEC-008 — stale deferred action after directive replacement
 

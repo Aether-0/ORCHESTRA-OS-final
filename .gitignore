@@ -2,6 +2,8 @@
 orchestra_paper_cpu_demo/orchestra_paper_cpu
 research/experiments/process-group-prototype/orchestra_real_cpu
 tools/benchmark/signal_publication_microbenchmark
+tools/benchmark/cpu_3min_bench
+tools/benchmark/single_worker_stress
 *.o
 *.a
 *.so

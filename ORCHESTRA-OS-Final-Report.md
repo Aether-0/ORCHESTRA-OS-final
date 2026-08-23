@@ -2,6 +2,16 @@
 
 **Nine-Stage Predictive Scheduling Architecture for Linux**
 
+> **Historical report.** This document records the earlier research and
+> prototype campaign. It is retained for reproducibility and is not the
+> current security, capability, installation, or runtime-validation authority.
+> Use [`SECURITY_AUDIT.md`](SECURITY_AUDIT.md),
+> [`SECURITY_VALIDATION_REPORT.md`](SECURITY_VALIDATION_REPORT.md),
+> [`FINAL_PRODUCT_STATUS.md`](FINAL_PRODUCT_STATUS.md), and the maintained
+> guides under `docs/` for current boundaries. Do not copy raw lifecycle or
+> broad bpffs-cleanup commands from this historical report into production
+> procedures.
+
 ---
 
 ## Table of Contents

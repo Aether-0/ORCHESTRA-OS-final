@@ -51,6 +51,7 @@ These do not constrain the production scheduler ABI:
 | CSV validator worker/sleep/oscillation bounds | `tests/integration/validate_paper_cpu_csv.py` | Test/schema integrity | Reject fabricated or physically implausible research results. These are evidence-contract bounds, not scheduler limits. |
 | Stress/ownership forward timeouts | `benchmarks`, `kernel/sched_ext/scripts` | Test safety | Prevent a failed runtime experiment from running indefinitely. No test timeout is converted into a PASS. |
 | Fuzz/mutation iterations default `1000` (maximum `100000`) | `tests/security/fuzz_policy_loader.py` | Test resource bound | Makes CI finite while allowing an isolated campaign to increase coverage. |
+| ABI/state mutation iterations `50000` (maximum `200000`) | `tests/security/fuzz_abi_state.c`, `tests/security/run.sh` | Test resource bound | Covers fixed-width bridge, signal, policy-meta, controller, and parser validators under sanitizers without making CI unbounded. |
 
 ## Limits deliberately not removed
 

@@ -12,7 +12,7 @@ if matches=$(git grep -nI -E \
     -e 'BEGIN (RSA|OPENSSH|EC|DSA|PRIVATE) KEY' \
     -e 'password[[:space:]]*=[[:space:]]*["'"'][^"'"']+["'"']' \
     -e 'api[_-]?key[[:space:]]*=[[:space:]]*["'"'][^"'"']+["'"']' \
-    -- . ':!*.png' ':!*.svg' ':!*.bpf.o' ':!*.bin' ':!*.csv' ':!*.log' 2>/dev/null); then
+    -- . ':!*.png' ':!*.svg' ':!*.bpf.o' ':!*.bin' 2>/dev/null); then
     echo "secret-pattern: $matches"
     found=1
 fi

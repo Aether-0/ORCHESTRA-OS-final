@@ -1,5 +1,9 @@
 # 17. Final Product
 
+> Historical report. It is not the current security or runtime status
+> document. Use `FINAL_PRODUCT_STATUS.md`, `SECURITY_AUDIT.md`, and the
+> maintained installation/usage guides for current claims and commands.
+
 ## ORCHESTRA-OS Complete System
 
 The ORCHESTRA-OS research program delivers a complete, validated, end-to-end predictive scheduling architecture spanning nine research stages.
@@ -34,10 +38,10 @@ ORCHESTRA-OS/
 1. `make clean && make && make test` → userspace baseline
 2. Build kernel (optional, requires Linux source)
 3. Build BPF scheduler + bridge CLI
-4. `sudo bpftool struct_ops register ...` → load ORCHESTRA
+4. `sudo orchestra enable` (or the validated loader) → load ORCHESTRA
 5. `sudo ./bridge/orchestra_bridge --status` → verify
 6. `sudo ./bridge/orchestra_bridge --publish --action RUN --target-pid <pid>` → dispatch
-7. `sudo bpftool link detach id <id>` → unload
+7. `sudo orchestra disable` → detach only the ORCHESTRA-owned scheduler
 
 ## Research Contributions
 1. First end-to-end cryptographic signal coordination for Linux scheduling

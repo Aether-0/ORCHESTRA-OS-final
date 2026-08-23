@@ -46,19 +46,25 @@ clang -O2 -target bpf -g -nostdinc -D__BPF__ \
 cc -O2 -Wall -Wextra -I include bridge/orchestra_bridge.c -o bridge/orchestra_bridge -lbpf
 ```
 
-## Load and Test
+## Load and Test (historical package only)
+
+This archived procedure is superseded by the root `README.md` and
+`docs/installation/INSTALL.md`. Use the loader so timer/map prerequisites,
+ownership, and teardown are validated as one transaction.
 
 ```bash
-sudo bpftool struct_ops register orchestra_scx_stage7.bpf.o /sys/fs/bpf/orch
+sudo ./kernel/sched_ext/bridge/orchestra_loader --load \
+  /var/tmp/orchestra-os-build-$(id -u)/orchestra_scx_stage7.bpf.o
 cat /sys/kernel/sched_ext/state  # Should show "enabled"
 
 # Pin maps, publish directive
 sudo ./bridge/orchestra_bridge --publish --action RUN --target-pid 1
 
-# Unload
-sudo rm -rf /sys/fs/bpf/*
-sudo bpftool link detach id <link_id>
+# Unload only the ORCHESTRA-owned scheduler and its validated pins
+sudo ./kernel/sched_ext/bridge/orchestra_loader --unload
 ```
+
+Never run a broad `/sys/fs/bpf` deletion or detach an arbitrary link ID.
 
 ## Expected Results
 

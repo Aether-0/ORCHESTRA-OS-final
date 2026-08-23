@@ -339,7 +339,7 @@ static int bpf_next_key_raw(int fd, const void *key, void *next_key)
 
 static bool checked_add_u64(uint64_t a, uint64_t b, uint64_t *out)
 {
-    if (UINT64_MAX - a < b)
+    if (!out || UINT64_MAX - a < b)
         return false;
     *out = a + b;
     return true;
@@ -363,7 +363,8 @@ static bool parse_u64(const char *text, uint64_t min, uint64_t max,
     char *end = NULL;
     unsigned long long value;
 
-    if (!text || !*text || isspace((unsigned char)text[0]) || text[0] == '-')
+    if (!text || !out || !*text || isspace((unsigned char)text[0]) ||
+        text[0] == '-')
         return false;
     errno = 0;
     value = strtoull(text, &end, 10);
@@ -386,6 +387,8 @@ static bool parse_u32(const char *text, uint32_t min, uint32_t max,
 
 static bool canonical_to_wire(enum orchestra_action_id action, uint32_t *wire)
 {
+    if (!wire)
+        return false;
     switch (action) {
     case ORCHESTRA_ACTION_RUN:      *wire = ORCHESTRA_ACTION_RUN; return true;
     case ORCHESTRA_ACTION_SLEEP:    *wire = ORCHESTRA_ACTION_SLEEP; return true;
@@ -415,6 +418,8 @@ static bool parse_controller(const char *text, uint32_t *state)
 {
     uint32_t i;
 
+    if (!text || !state)
+        return false;
     for (i = 0; i < ORCHESTRA_CTRL_COUNT; i++) {
         if (strcasecmp(text, controller_names[i]) == 0) {
             *state = i;
@@ -562,6 +567,8 @@ static void record_v8_policy_transition(int fd, bool rollback)
 
 static bool valid_control(const struct bridge_control *control)
 {
+    if (!control)
+        return false;
     return control->magic == ORCHESTRA_ABI_MAGIC &&
            control->abi_version == ORCHESTRA_ABI_VERSION &&
            control->value_size == sizeof(*control) &&
@@ -577,6 +584,8 @@ static bool valid_control(const struct bridge_control *control)
 static bool valid_policy_meta_v8(const struct orchestra_policy_meta_v8 *meta,
                                  uint64_t epoch)
 {
+    if (!meta)
+        return false;
     return meta->magic == ORCHESTRA_ABI_MAGIC &&
            meta->abi_version == ORCHESTRA_KERNEL_ABI_VERSION &&
            meta->value_size == sizeof(*meta) &&
@@ -697,13 +706,17 @@ static bool scheduler_loaded(void)
 /* Correctly parses field 22 after the final ')' which terminates comm. */
 static bool parse_proc_stat_start(const char *line, uint64_t *start_ticks)
 {
-    const char *right = strrchr(line, ')');
+    const char *right;
     char copy[4096];
     char *save = NULL;
     char *token;
     unsigned int field = 3;
 
-    if (!right || right[1] != ' ' || strlen(right + 2) >= sizeof(copy))
+    if (!line || !start_ticks)
+        return false;
+    right = strrchr(line, ')');
+    if (!right || right[1] != ' ' ||
+        strlen(right + 2) >= sizeof(copy))
         return false;
     strcpy(copy, right + 2);
     for (token = strtok_r(copy, " ", &save); token;
@@ -853,6 +866,8 @@ static bool scheduling_policy_is_rt(int policy)
 static bool directive_equal(const struct bridge_directive *a,
                             const struct bridge_directive *b)
 {
+    if (!a || !b)
+        return false;
     return a->abi_version == b->abi_version &&
            a->value_size == b->value_size && a->flags == b->flags &&
            a->scheduler_epoch == b->scheduler_epoch &&
@@ -873,6 +888,8 @@ static bool signal_equal(const struct bridge_signal_frame *a,
                          const struct bridge_signal_frame *b)
 {
     /* The leading map lock is synchronization metadata, not payload. */
+    if (!a || !b)
+        return false;
     return memcmp((const uint8_t *)a + sizeof(a->lock),
                   (const uint8_t *)b + sizeof(b->lock),
                   sizeof(*a) - sizeof(a->lock)) == 0;
@@ -885,6 +902,8 @@ static bool signal_permille_valid(uint32_t value)
 
 static bool stream_signal_fields_valid(const struct bridge_stream_request *request)
 {
+    if (!request)
+        return false;
     return (request->stream_flags &
             ~(BRIDGE_STREAM_F_PUBLISH_SIGNAL | BRIDGE_STREAM_F_REQUIRE_SIGNAL)) == 0 &&
            request->signal_sequence != 0 &&
@@ -2192,7 +2211,7 @@ static void usage(const char *program)
 
 static bool need_value(int argc, char **argv, int *index, const char **value)
 {
-    if (*index + 1 >= argc)
+    if (!argv || !index || !value || *index < 0 || *index + 1 >= argc)
         return false;
     *value = argv[++*index];
     return true;
@@ -2203,6 +2222,8 @@ static bool parse_options(int argc, char **argv, struct options *opts)
     int i;
     unsigned int commands = 0;
 
+    if (argc < 1 || !argv || !opts)
+        return false;
     memset(opts, 0, sizeof(*opts));
     opts->action = ORCHESTRA_ACTION_RUN;
     opts->target_cpu = ORCHESTRA_CPU_ANY;
@@ -2229,6 +2250,8 @@ static bool parse_options(int argc, char **argv, struct options *opts)
         const char *value = NULL;
         uint32_t parsed32;
 
+        if (!argv[i])
+            return false;
         if (strcmp(argv[i], "--status") == 0) opts->status = true;
         else if (strcmp(argv[i], "--publish") == 0) opts->publish = true;
         else if (strcmp(argv[i], "--policy-entry") == 0) opts->policy_entry = true;

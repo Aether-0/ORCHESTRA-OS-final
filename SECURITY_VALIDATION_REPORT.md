@@ -17,7 +17,7 @@
 | GCC/Clang warning matrix | PASS | tests/unit/run.sh |
 | Publication concurrency stress | PASS | GCC and Clang MAP_SHARED generation tests |
 | Integration/malformed-input validation | PASS | tests/integration/run.sh through make test |
-| Policy parser/property/mutation tests | PASS | tests/security/run.sh; 1000 deterministic mutations |
+| Policy/ABI parser/property/mutation tests | PASS | tests/security/run.sh; 1000 policy and 50,000 ABI/state mutations under ASan/UBSan |
 | Installer/uninstaller security regression | PASS | disposable-prefix lifecycle test |
 | ABI/source invariants | PASS | tests/unit/test_orchestra_scx_source.py |
 | Secret/path scan | PASS | scripts/security-scan.sh |

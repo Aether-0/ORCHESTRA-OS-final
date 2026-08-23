@@ -1,5 +1,10 @@
 # 11. sched_ext Integration
 
+> Historical report. The current product uses the target-matched loader and
+> the lifecycle documented in `docs/installation/INSTALL.md`. The older raw
+> registration examples below are retained only as research history and must
+> not be used for current deployment.
+
 ## Overview
 
 Linux sched_ext (available since kernel 6.12) allows BPF programs to implement custom scheduling policies. ORCHESTRA uses this mechanism to dispatch kernel tasks according to bridge directives.
@@ -60,13 +65,14 @@ clang -O2 -target bpf -g -nostdinc -D__BPF__ \
   -Wno-missing-declarations -Wno-visibility \
   -c orchestra_scx_stage7.bpf.c -o orchestra_scx_stage7.bpf.o
 
-sudo bpftool struct_ops register orchestra_scx_stage7.bpf.o /sys/fs/bpf/orch
+sudo ./kernel/sched_ext/bridge/orchestra_loader --load \
+  /var/tmp/orchestra-os-build-$(id -u)/orchestra_scx_stage7.bpf.o
 ```
 
 ## Load/Unload Cycle
 
-1. `bpftool struct_ops register` → verifier checks → struct_ops attaches
+1. `orchestra_loader --load` → map/schema checks → verifier → struct_ops attaches
 2. `/sys/kernel/sched_ext/state` transitions: disabled → enabled
 3. Scheduler runs; only SCHED_EXT tasks affected
-4. Unpin link → state transitions: enabled → disabled
+4. `orchestra_loader --unload` → detach → state transitions: enabled → disabled → scoped unpin
 5. All tasks return to CFS

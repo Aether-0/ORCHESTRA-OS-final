@@ -24,6 +24,7 @@ INSTALL = (ROOT / "scripts/install.sh").read_text()
 UNINSTALL = (ROOT / "scripts/uninstall.sh").read_text()
 SYSTEMD = (ROOT / "config/systemd/orchestra.service").read_text()
 KERNEL_CI = (ROOT / ".github/workflows/build-sched-ext.yml").read_text()
+SECURITY_RUN = (ROOT / "tests/security/run.sh").read_text()
 
 
 def require(condition: bool, message: str) -> None:
@@ -271,6 +272,10 @@ def main() -> None:
             "previous_good" in CONTROL_V10 and
             "evaluation_until_ns" in CONTROL_V10,
             "bounded actuator publication and rollback state is missing")
+    require("fuzz_abi_state.c" in SECURITY_RUN and
+            "-fsanitize=address,undefined" in SECURITY_RUN and
+            "fuzz_abi_state" in SECURITY_RUN,
+            "ABI/state mutation target must remain part of the sanitizer security gate")
     require("actuator->previous_value < actuator->minimum" in CONTROLLER_V10 and
             "actuator->rollback_value < actuator->minimum" in CONTROLLER_V10 and
             "controller->active_generation == controller->active.generation" in
@@ -301,6 +306,8 @@ def main() -> None:
             "orchestra_controller_should_fallback_v10" in CONTROLLER_V10,
             "controller failure must retain a safe RUN fallback")
     require("scheduler_owned" in LOADER and
+            "scheduler_disabled" in LOADER and
+            "root_safe_directory_chain" in LOADER and
             "validate_existing_pins" in LOADER and
             "pinned_link_matches" in LOADER and
             "bpf_link_get_info_by_fd" in LOADER and
@@ -308,7 +315,9 @@ def main() -> None:
             "loader unload must verify scheduler ownership and its pinned link/schema")
     require("safe_root_artifact" in LOADER and "pin_path_absent" in LOADER and
             "link_pinned" in LOADER and "detach_link_fd" in LOADER and
-            "Keep both the pinned link" in LOADER,
+            "Keep both the pinned link" in LOADER and
+            "clean up only a complete, schema-validated" in LOADER and
+            "cleanup_pins" in LOADER,
             "loader must reject untrusted artifacts and pre-existing pin paths")
     require("ORCHESTRA_OPS_NAME=orchestra_scx_v8" in CLI and
             "require_scheduler_ownership" in CLI and

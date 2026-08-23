@@ -58,6 +58,16 @@ Run the security subset directly when iterating:
 The policy mutation target must report both accepted and rejected populations;
 an all-rejected run is not evidence of a useful property test.
 
+The same security runner also compiles and executes
+`tests/security/fuzz_abi_state.c` under AddressSanitizer and UndefinedBehaviorSanitizer.
+Its default campaign performs 50,000 deterministic mutations across bridge ABI,
+signal, directive, policy metadata, controller, and option-parser state. The
+target accepts an explicit bounded iteration count up to 200,000 when a longer
+local campaign is appropriate:
+
+    bash tests/security/run.sh
+    # The runner's final line includes: PASS ABI/state mutation target iterations=50000
+
 ## 3. Strict source and sanitizer checks
 
 Bridge syntax:

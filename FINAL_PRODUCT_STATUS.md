@@ -74,9 +74,11 @@ deployment-ready.
    is not represented by a canonical reproducible runner in this release.
 5. No universal performance advantage over CFS/EEVDF is claimed; comparisons
    require ownership proof and workload-specific controlled evidence.
-6. Distributed scheduling, package signing/SBOM provenance, and production
-   security review, fuzzing, and dependency/SCA review remain release work
-   beyond this candidate.
+6. Distributed scheduling, package signing/SBOM provenance, production
+   security review, external fuzzing, and dependency/SCA review remain
+   release work beyond this candidate. The repository now has bounded local
+   policy and ABI/state mutation targets; those do not replace independent
+   fuzzing or kernel-runtime testing.
 
 ## Next release gates
 

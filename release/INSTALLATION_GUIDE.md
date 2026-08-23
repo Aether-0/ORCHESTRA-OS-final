@@ -49,17 +49,27 @@ clang -O2 -target bpf -g -nostdinc -D__BPF__ \
 cc -O2 -Wall -Wextra -I include bridge/orchestra_bridge.c -o bridge/orchestra_bridge -lbpf
 ```
 
-## 5. Load Scheduler
+## 5. Load Scheduler (historical package only)
+
+This document is retained as archival evidence. For the current product use
+`scripts/build.sh`, `scripts/install.sh`, and `orchestra enable` from the root
+README and maintained installation guide. Do not use a bare `bpftool
+struct_ops register` command: the current loader pins and validates every
+required map before attach.
+
 ```bash
-sudo bpftool struct_ops register orchestra_scx_stage7.bpf.o /sys/fs/bpf/orch
-cat /sys/kernel/sched_ext/state  # Should show "enabled"
+sudo ./kernel/sched_ext/bridge/orchestra_loader --load \
+  /var/tmp/orchestra-os-build-$(id -u)/orchestra_scx_stage7.bpf.o
+cat /sys/kernel/sched_ext/state  # Verify the state and ops name
 ```
 
 ## 6. Remove Scheduler
 ```bash
-sudo rm -rf /sys/fs/bpf/*
-sudo bpftool link detach id $(sudo bpftool link list 2>&1 | grep struct_ops | awk -F: '{print $1}' | tail -1)
+sudo ./kernel/sched_ext/bridge/orchestra_loader --unload
 ```
+
+The loader removes only the validated ORCHESTRA link and map pins. Never
+delete all of `/sys/fs/bpf` or detach an unverified link ID.
 
 ## Recovery
 If the scheduler causes issues, boot the fallback kernel:

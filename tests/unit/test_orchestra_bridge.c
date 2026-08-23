@@ -15,6 +15,8 @@ static void test_checked_parsing(void)
     assert(!parse_u32("-1", 0, UINT32_MAX, &u32));
     assert(!parse_u32("7x", 0, UINT32_MAX, &u32));
     assert(!parse_u32(" 7", 0, UINT32_MAX, &u32));
+    assert(!parse_u64("1", 0, UINT64_MAX, NULL));
+    assert(!checked_add_u64(1, 1, NULL));
     assert(parse_u64("18446744073709551615", 0, UINT64_MAX, &u64));
     assert(u64 == UINT64_MAX);
     assert(!parse_u64("18446744073709551616", 0, UINT64_MAX, &u64));
@@ -30,6 +32,8 @@ static void test_proc_stat_parser(void)
     assert(parse_proc_stat_start(line, &ticks));
     assert(ticks == UINT64_C(987654));
     assert(!parse_proc_stat_start("123 malformed\n", &ticks));
+    assert(!parse_proc_stat_start(NULL, &ticks));
+    assert(!parse_proc_stat_start("123 malformed\n", NULL));
 
     long hz = sysconf(_SC_CLK_TCK);
     assert(hz > 0);
@@ -53,10 +57,15 @@ static void test_action_translation(void)
         assert(wire == action);
     }
     assert(!canonical_to_wire(ORCHESTRA_ACTION_COUNT, &wire));
+    assert(!canonical_to_wire(ORCHESTRA_ACTION_RUN, NULL));
     assert(parse_action("sleep", &parsed));
     assert(parsed == ORCHESTRA_ACTION_SLEEP);
     assert(!parse_action(NULL, &parsed));
     assert(!parse_action("RUN", NULL));
+    assert(!parse_controller(NULL, &wire));
+    assert(!parse_controller("NORMAL", NULL));
+    assert(parse_controller("recovery", &wire) &&
+           wire == ORCHESTRA_CTRL_RECOVERY);
     assert(next_policy_generation(41, &generation) && generation == 42);
     assert(!next_policy_generation(UINT64_MAX, &generation));
 }
@@ -84,6 +93,7 @@ static void test_abi_and_snapshot_comparison(void)
     struct bridge_directive second = first;
 
     assert(valid_control(&control));
+    assert(!valid_control(NULL));
     control.value_size--;
     assert(!valid_control(&control));
     control.value_size = sizeof(struct bridge_control);
@@ -91,6 +101,7 @@ static void test_abi_and_snapshot_comparison(void)
     assert(!valid_control(&control));
     control.publication_status = BRIDGE_PUB_OK;
     assert(directive_equal(&first, &second));
+    assert(!directive_equal(NULL, &second));
     second.identity.start_boottime_ns++;
     assert(!directive_equal(&first, &second));
 
@@ -184,12 +195,14 @@ static void test_signal_contract_helpers(void)
     };
 
     assert(signal_equal(&first, &second));
+    assert(!signal_equal(NULL, &second));
     second.sequence++;
     assert(!signal_equal(&first, &second));
     assert(signal_permille_valid(0));
     assert(signal_permille_valid(BRIDGE_SIGNAL_SCALE));
     assert(!signal_permille_valid(BRIDGE_SIGNAL_SCALE + 1));
     assert(stream_signal_fields_valid(&request));
+    assert(!stream_signal_fields_valid(NULL));
     request.stream_flags |= 1u << 7;
     assert(!stream_signal_fields_valid(&request));
     request.stream_flags = BRIDGE_STREAM_F_PUBLISH_SIGNAL;

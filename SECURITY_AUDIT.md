@@ -35,6 +35,8 @@ implementations. Concrete checks included:
 - ABI/map/schema and generation-flow inspection;
 - privileged path, ownership, symlink, and cleanup review;
 - parser and policy mutation/property tests;
+- deterministic ABI/signal/controller/bridge-state mutation testing under
+  ASan/UBSan;
 - GCC and Clang strict warning builds;
 - AddressSanitizer and UndefinedBehaviorSanitizer userspace tests;
 - MAP_SHARED publication concurrency/integration tests;
@@ -152,6 +154,9 @@ The detailed status and regression evidence are authoritative in
   generations are validated before use.
 - The process-group research workload uses `mkstemp`, private permissions,
   and immediate unlinking instead of a predictable `/tmp` filename.
+- The loader validates every existing parent component of a root-facing BPF
+  artifact path, and a later unload can recover a complete validated pin set
+  after the kernel has finished a prior asynchronous detach.
 
 ## Threats considered
 
