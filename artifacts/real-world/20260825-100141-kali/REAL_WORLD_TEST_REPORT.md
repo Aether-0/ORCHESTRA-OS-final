@@ -65,7 +65,7 @@ the repository.
 | sched_ext attach/ownership/actions | PASS, bounded | Authorized P0 continuation attached through the exact loader, proved accepted/dispatched/running telemetry for an exact target TID, published YIELD/MIGRATE/THROTTLE/SLEEP requests, and unloaded cleanly. Effective-action scope remains bounded; see the continuation section. |
 | ORCHESTRA CPU benchmark | PASS, bounded | Matched 80M-iteration rows for 1/2/4 workers completed with ownership confirmed; no performance advantage claim. |
 | ORCHESTRA mixed benchmark | PASS, bounded | Matched CPU/I/O rows for 1/2/4 workers completed with ownership confirmed; no performance advantage claim. |
-| ORCHESTRA stress, 3 seconds | PARTIALLY_VALIDATED | CPU, I/O, mixed, and health rows passed with ownership confirmed; memory stress remained `BLOCKED_OWNERSHIP_NOT_PROVEN` because `stress --vm` child TIDs are not exposed. |
+| ORCHESTRA stress, 3 seconds | PASS, bounded follow-up | The original harness run recorded the memory-child ownership gap; the patched harness follow-up passed CPU, memory, I/O, mixed, and health rows with ownership confirmed. |
 | `scx_simple` runtime comparison | BLOCKED | Binary build succeeded, but this campaign did not start it: the existing harness tears down that scheduler with `kill`, which is not an approved scheduler-unload mechanism. |
 
 ## Clean committed-HEAD recheck
@@ -187,6 +187,31 @@ matches in `bpftool prog list`, only the pre-existing `/sys/fs/bpf` root pin,
 and no remaining campaign workers. The raw mandatory final inventory is at
 `/tmp/orchestra-runtime-20260825-kali-wL8qsm/final-inventory/`.
 
+## Memory ownership follow-up revision
+
+The remaining stress-harness memory gap was fixed in a separate revision after
+the first runtime campaign. The existing `stress --vm` helper was observed to
+create two direct child workers. The harness now discovers the descendant TIDs,
+publishes RUN for each exact child through the bridge, and requires positive
+accepted/dispatched/running telemetry before classifying the memory phase. If
+discovery or admission fails, it still emits
+`BLOCKED_OWNERSHIP_NOT_PROVEN` rather than attributing the phase.
+
+The new harness revision passed `bash -n`, `make test-unit` (30/30 named unit
+tests and associated compiler/stress checks), and `make security-test`. Its
+SHA-256 is
+`2253a4044288d43a90563e59da2c4638a299cc0026e302d218b400094b5dea92`.
+
+A fresh revision-matched campaign used 2-second phases, two 64 MiB memory
+workers, and a new mandatory pre-attach inventory. CFS completed CPU, memory,
+I/O, mixed, and health rows. ORCHESTRA then completed all five rows with zero
+errors/warnings; the memory row was `PASS, ownership=yes` and the two child
+TIDs recorded `accepted/dispatched/running` values of `4/4/4` and `2/2/2`.
+The exact loader unloaded successfully and the final state was `disabled`.
+This follow-up is not mixed into the earlier benchmark timing rows. Raw
+evidence is retained under
+`/tmp/orchestra-memory-followup-20260825-kali-AtZDh3/`.
+
 ## Kernel build provenance
 
 The exact source archive was `/usr/src/linux-source-7.0.tar.xz`, whose SHA-256
@@ -228,18 +253,15 @@ this release to deployment-ready:
 
 1. Add an approved graceful lifecycle for the external `scx_simple` comparison
    (or update the harness to use one) before running that phase.
-2. Expose and opt in the actual memory-stress child TIDs, or replace that
-   workload with an existing process model whose identities the bridge can
-   admit.
-3. Repeat the matched benchmark with a pre-registered repetition count and
+2. Repeat the matched benchmark with a pre-registered repetition count and
    report distributions, not single-run timing rows. Report the coordination
    metric only with all S1/S2/S3/S4 components, window, population, exclusions,
    and formula recorded.
-4. Run the still-open security provenance, predictor convergence, actuator
+3. Run the still-open security provenance, predictor convergence, actuator
    rollback, multicore/NUMA, soak, and recovery gates. These remain
    `INSUFFICIENT_EVIDENCE` or `BLOCKED_NOT_IMPLEMENTED`, not passes by
    implication from P0.
-5. Keep the dirty-checkout `AGENTS.md` security-scan result separate from the
+4. Keep the dirty-checkout `AGENTS.md` security-scan result separate from the
    clean committed-HEAD regression result; do not weaken the scanner to make
    the user-owned policy file pass.
 
