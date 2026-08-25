@@ -5,10 +5,10 @@ set -euo pipefail
 # Usage: bash stress_suite.sh [duration_seconds] [mode: cfs|orchestra]
 #
 # The ORCHESTRA path uses the existing bridge and proves exact-TID ownership
-# for the CPU, I/O, and mixed phases before releasing their workers.  The
-# stress(1) memory helper creates child workers whose identities are not
-# exposed by this script, so that phase is explicitly not attributed to
-# ORCHESTRA.
+# for each CPU, memory, I/O, and mixed worker before measuring its phase. The
+# stress(1) memory helper's child identities are discovered through the
+# process tree and admitted individually; failure to discover or admit every
+# requested child remains explicitly un-attributed.
 
 DURATION=${1:-60}
 MODE=${2:-cfs}
@@ -39,6 +39,7 @@ fail() { log "FAIL: $*"; echo "FAIL:$*" >> "$OUTDIR/failures.txt"; }
 PIDS=()
 STRESS_PID=
 THERMAL_MONITOR_PID=
+MEM_CHILD_PIDS=()
 
 thermal_snapshot() {
     local output=$1 zone temp type trip trip_type
@@ -316,6 +317,39 @@ configure_orchestra_ownership() {
     [ "$all_owned" -eq 1 ]
 }
 
+descendant_pids() {
+    local parent=$1 child
+
+    for child in $(pgrep -P "$parent" 2>/dev/null || true); do
+        echo "$child"
+        descendant_pids "$child"
+    done
+}
+
+configure_memory_ownership() {
+    local attempt
+
+    MEM_CHILD_PIDS=()
+    for ((attempt = 1; attempt <= OWNERSHIP_POLLS; attempt++)); do
+        mapfile -t MEM_CHILD_PIDS < <(descendant_pids "$STRESS_PID")
+        if [ "${#MEM_CHILD_PIDS[@]}" -ge "$VM_WORKERS" ]; then
+            break
+        fi
+        sleep 0.01
+    done
+    if [ "${#MEM_CHILD_PIDS[@]}" -lt "$VM_WORKERS" ]; then
+        return 1
+    fi
+
+    PIDS=("${MEM_CHILD_PIDS[@]}")
+    if configure_orchestra_ownership; then
+        PIDS=()
+        return 0
+    fi
+    PIDS=()
+    return 1
+}
+
 release_phase_workers() {
     local gate=$1
     local pid deadline=$((SECONDS + PHASE_TIMEOUT))
@@ -401,18 +435,31 @@ log "  CPU: ${elapsed}s, $errors errors, ownership=$PHASE_OWNED"
 log "--- Memory Stress (${STRESS_MB}MB) ---"
 errors=0
 warnings=0
-if [ "$MODE" = "orchestra" ]; then
-    log "BLOCKED_OWNERSHIP_NOT_PROVEN: stress --vm creates child workers without an exact-TID opt-in protocol"
-    echo "mem_stress,0,0,$((STRESS_MB * VM_WORKERS)),0,0,0,BLOCKED_OWNERSHIP_NOT_PROVEN,not_proven,child-worker-identities-unavailable" >> "$OUTDIR/results.csv"
-elif command -v stress &>/dev/null; then
+if command -v stress &>/dev/null; then
     stress --vm "$VM_WORKERS" --vm-bytes "${STRESS_MB}M" --timeout "${DURATION}s" 2>/dev/null &
     STRESS_PID=$!
-    PHASE_NAME=memory
+    memory_owned=not_applicable
+    memory_note=stress-completed
+    if [ "$MODE" = "orchestra" ]; then
+        PHASE_NAME=memory
+        if configure_memory_ownership; then
+            memory_owned=yes
+            memory_note=exact-tid-ownership-confirmed
+        else
+            memory_owned=not_proven
+            memory_note=child-ownership-gate-failed
+            log "BLOCKED_OWNERSHIP_NOT_PROVEN: stress --vm child admission did not complete"
+        fi
+    fi
     if ! wait_with_watchdog "$STRESS_PID" memory "$((SECONDS + PHASE_TIMEOUT))"; then
         errors=$((errors + 1))
     fi
     STRESS_PID=
-    echo "mem_stress,$DURATION,0,$((STRESS_MB * VM_WORKERS)),0,$errors,$warnings,$(phase_result "$errors"),not_applicable,stress-completed" >> "$OUTDIR/results.csv"
+    if [ "$MODE" = "orchestra" ] && [ "$memory_owned" != yes ]; then
+        echo "mem_stress,$DURATION,0,$((STRESS_MB * VM_WORKERS)),0,$errors,$warnings,BLOCKED_OWNERSHIP_NOT_PROVEN,$memory_owned,$memory_note" >> "$OUTDIR/results.csv"
+    else
+        echo "mem_stress,$DURATION,0,$((STRESS_MB * VM_WORKERS)),0,$errors,$warnings,$(phase_result "$errors"),$memory_owned,$memory_note" >> "$OUTDIR/results.csv"
+    fi
 else
     log "BLOCKED_MISSING_TOOL: stress is required for memory pressure; disk writes are not a memory substitute"
     echo "mem_stress,0,0,$((STRESS_MB * VM_WORKERS)),0,0,0,BLOCKED_MISSING_TOOL,not_applicable,stress-command-missing" >> "$OUTDIR/results.csv"
