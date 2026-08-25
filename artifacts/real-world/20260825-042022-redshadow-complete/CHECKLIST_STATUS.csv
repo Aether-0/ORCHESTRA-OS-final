@@ -1,0 +1,25 @@
+item,status,evidence,notes
+userspace_build,PASS,build/final-fix34/regression.stdout,clean build
+userspace_regression,PASS,build/final-fix34/regression.stdout,30/30 unit plus integration/security
+strict_capability,PASS,recovery/final-fix34/check.stdout,all required checks pass
+target_matched_kernel_build,PASS,build/fix34/build.stdout,7.0.12 source and BTF
+verifier_attach,PASS,sched_ext/p0-fix34/load.stdout,exact loader attach
+ownership_forward_progress,PASS,sched_ext/p0-fix34/results.csv,failures=0
+run_action,PASS,sched_ext/p0-fix34/results.csv,owned finite workload completed
+sleep_action,PASS,sched_ext/fix34-actions-live/status.sleep.released,deferred_rel increased
+throttle_action,PASS,sched_ext/fix34-actions-live/status.throttle.released,deferred_rel increased
+yield_action,PASS,sched_ext/fix34-policy-live/status.after,policy-driven effective YIELD
+migrate_action,PASS,sched_ext/fix34-migrate-live/status.after,actual_cpu=1 target_cpu=1
+signal_freshness,PASS,sched_ext/fix34-actions-live/status.signal.stale,stale counter increased and stale action not applied
+policy_commit,PASS,sched_ext/fix34-policy-live/status.after,policy_commit and policy_lookup increased
+coordination_metrics,PASS_LIMITED,sched_ext/fix34-actions-live/status.signal.stale,S1-S4 and Q exposed
+controller_actuator,PASS_LIMITED,sched_ext/fix34-actuator-live/status.deficit,adaptation and recovery observed
+cpu_io_mixed_stress,PASS,stress/orchestra-final/results/results.csv,exact ownership for owned phases
+three_way_cpu_benchmark,PASS_EXPLORATORY,workload/benchmark-final-three-way/results.csv,short comparison
+three_way_mixed_benchmark,PASS_EXPLORATORY,workload/benchmark-final-three-way-mixed/results.csv,short comparison
+memory_stress,BLOCKED_MISSING_TOOL,stress/orchestra-final/results/results.csv,stress command unavailable
+rt_coexistence,BLOCKED_NOT_RUN,,not safely exercised
+numa,BLOCKED_TOPOLOGY,,single NUMA node
+distributed,BLOCKED_NOT_IMPLEMENTED,,no distributed backend
+long_duration_soak,BLOCKED_NOT_RUN,,short controlled campaign only
+final_cleanup,PASS,recovery/final-fix34/return_codes.txt,sched_ext disabled and no ORCHESTRA pins

@@ -1,6 +1,6 @@
 # ORCHESTRA-OS Security Audit
 
-**Assessment date:** 2026-08-23
+**Assessment date:** 2026-08-25
 **Product:** ORCHESTRA-OS `1.0.0-rc1`
 **Scope:** repository-wide source, ABI, userspace, BPF/sched_ext, bridge,
 loader, policy, controller, installer, uninstaller, scripts, tests, build
@@ -19,11 +19,11 @@ now have regression coverage.
 No Critical vulnerability was verified in the reviewed source. No known
 unresolved High vulnerability remains within the declared trusted-root model
 after the fixes recorded in [`SECURITY_FINDINGS.md`](SECURITY_FINDINGS.md).
-That is not a production-security certification: target-matched BPF verifier,
-attach, ownership, effective-action, teardown, hotplug, and soak tests were
-not executable on the current host, and the kernel signal map is validated
-but not cryptographically authenticated inside BPF. Those boundaries are
-explicit release blockers or residual risks below.
+The current host has now passed a target-matched BPF verifier, attach,
+ownership, effective-action, and scoped teardown gate. That is not a
+production-security certification: hotplug, broad fault/recovery, long soak,
+signed provenance, and cryptographic authentication of the kernel signal map
+remain residual release gaps.
 
 ## Method and evidence
 
@@ -73,7 +73,7 @@ and key-management design.
 | Policy file → policy loader | Policy semantics and bounded execution | UTF-8/JSON/schema/type/range/duplicate-key checks; root-owned input when run as root; 1 MiB/256-entry/timeout bounds | Root operator can intentionally submit a harmful policy |
 | Policy loader → bridge | Command integrity and map transaction | Safe bridge artifact, list-based `exec`, bounded subprocesses, abort/recovery path | Bridge calls are sequential and require an authorized root control plane |
 | Bridge → BPF maps | ABI and task-control state | Fixed-size records, exact map schemas, locks, publication status, generation/identity/freshness checks | Local map transport is not cryptographically authenticated |
-| BPF map → scheduler callback | Scheduling correctness | Snapshot/retry, controller/policy equality, capability gates, action validation, RUN/conventional fallback | Verifier and live behavior are target-dependent and not currently run |
+| BPF map → scheduler callback | Scheduling correctness | Snapshot/retry, controller/policy equality, capability gates, action validation, RUN/conventional fallback | Current-host verifier/action evidence is limited to the recorded target and short runs |
 | Loader → kernel/sched_ext | Attach, ownership, and teardown | Root-only operation, trusted artifact path, exact pin schema, ownership check, detach-before-unpin | Kernel API-family compatibility requires target validation |
 | Installer/uninstaller → filesystem | Root filesystem integrity | Non-symlink/private path checks, marker/hash/manifest ownership, modified-file refusal, config preservation | A compromised root or trusted package source is outside scope |
 | Telemetry → operator/researcher | Evidence integrity | Requested/accepted/dispatched/effective/fallback fields and schema checks | Lifetime counters wrap modulo 2^64; they are not control inputs |
@@ -176,12 +176,9 @@ tests, GCC/Clang variants, publication concurrency, integration, malformed
 CSV/policy tests, mutation testing, installer/uninstaller tests, source
 invariants, documentation links, and secret scanning.
 
-The following remain `BLOCKED`, not `PASS`, on the current Kali host:
+The following remain `BLOCKED` or residual on the current Kali host:
 
-- exact running-kernel BPF compilation/verifier acceptance;
-- libbpf loader compilation and attach;
-- scheduler ownership and all five effective kernel actions;
-- RT/deadline coexistence, CPU hotplug, fault recovery, and clean unload;
+- RT/deadline coexistence, CPU hotplug, broad fault recovery, and long soak;
 - long-duration kernel soak and target architecture matrix;
 - cryptographic signal authentication in the kernel transport;
 - independent dependency/SCA, signed provenance, SBOM, and penetration
@@ -193,8 +190,7 @@ commands and reasons.
 ## Release recommendation
 
 Keep the product at `1.0.0-rc1`. It is suitable for observer/userspace
-research validation and controlled, target-specific kernel testing after a
-dedicated host passes the blocked gates. Do not describe it as a universally
-secure or production-certified scheduler until kernel-side signal trust,
-signed provenance, verifier/attach, ownership, recovery, and soak evidence
-are completed.
+research validation and controlled, target-specific kernel testing. Do not
+describe it as a universally secure or production-certified scheduler until
+kernel-side signal trust, signed provenance, broader recovery, and soak
+evidence are completed.

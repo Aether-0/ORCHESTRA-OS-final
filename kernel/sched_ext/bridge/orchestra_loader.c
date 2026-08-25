@@ -11,7 +11,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/syscall.h>
 #include <unistd.h>
 
 #include "orchestra_bridge_v1.h"
@@ -22,7 +21,7 @@
 #define SCHED_EXT_OPS_PATH "/sys/kernel/sched_ext/root/ops"
 #define ORCHESTRA_OPS_NAME "orchestra_scx_v8"
 #define ORCHESTRA_LEGACY_OPS_NAME "orchestra_scx_stage7"
-#define ORCHESTRA_OPS_MAP_NAME "orchestra_sched_ops"
+#define ORCHESTRA_OPS_MAP_NAME "orchestra_sched"
 
 struct loader_map_spec {
     const char *name;
@@ -245,11 +244,7 @@ static bool pin_path_absent(const char *path)
 
 static int detach_link_fd(int link_fd)
 {
-    union bpf_attr attr;
-
-    memset(&attr, 0, sizeof(attr));
-    attr.link_fd = (uint32_t)link_fd;
-    return (int)syscall(__NR_bpf, BPF_LINK_DETACH, &attr, sizeof(attr));
+    return bpf_link_detach(link_fd);
 }
 
 static bool pinned_map_matches(const struct loader_map_spec *spec)
@@ -470,6 +465,7 @@ static int unload_scheduler(void)
 {
     bool disabled = false;
     int link_fd = -1;
+    int detach_fd = -1;
     int err = 0;
 
     if (geteuid() != 0)
@@ -488,11 +484,30 @@ static int unload_scheduler(void)
     link_fd = bpf_obj_get(LINK_PATH);
     if (link_fd < 0)
         return -errno;
+    {
+        struct bpf_link_info link_info;
+        __u32 link_info_len = sizeof(link_info);
+
+        memset(&link_info, 0, sizeof(link_info));
+        if (bpf_link_get_info_by_fd(link_fd, &link_info,
+                                     &link_info_len) != 0) {
+            err = -errno;
+            close(link_fd);
+            return err;
+        }
+        detach_fd = bpf_link_get_fd_by_id(link_info.id);
+        if (detach_fd < 0) {
+            err = -errno;
+            close(link_fd);
+            return err;
+        }
+    }
     /* Keep both the pinned link and an open reference until the kernel has
      * actually reported sched_ext disabled.  Removing the pin first leaves
      * an unrecoverable active scheduler if the disable transition times out. */
-    if (detach_link_fd(link_fd) != 0) {
+    if (detach_link_fd(detach_fd) != 0) {
         err = -errno;
+        close(detach_fd);
         close(link_fd);
         return err;
     }
@@ -511,11 +526,13 @@ static int unload_scheduler(void)
         usleep(10000);
     }
     if (!disabled) {
+        close(detach_fd);
         close(link_fd);
         return -EBUSY;
     }
+    close(detach_fd);
     close(link_fd);
-    if (!scheduler_disabled() || !validate_existing_pins())
+    if (!scheduler_disabled())
         return -EPROTO;
     err = cleanup_pins();
     return err;

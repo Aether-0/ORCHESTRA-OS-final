@@ -1,18 +1,86 @@
 # ORCHESTRA-OS verified current state
 
-- Audit date: 2026-08-23
-- Repository commit: use `git rev-parse HEAD` for the exact handoff commit
-- Branch: `codex/final-integrated-product` (publication branch is separate)
+- Audit date: 2026-08-25
+- Repository commit: `c85ababc0c2c9a2ae1b47b265fd5b5fa414abf1d`
+- Branch: `main`
 - Current milestone: ORCHESTRA-OS `1.0.0-rc1` product integration with a
   foreground sched_ext lifecycle, ownership-checked loader, target-matched
-  build/install path, and explicit security boundary; no new bare-metal v8
-  sched_ext acceptance has been run
+  build/install path, explicit security boundary, and controlled bare-metal
+  v8 sched_ext acceptance evidence
 - Active work-package boundary: WP1 kernel foundation plus a source/build-validated v8 policy/runtime path, with userspace precursors for WP2-WP6
 - Overall claim class: mixed; see the component boundaries below
 
 This file is a handoff index. The paper, ADRs, experiment contracts, raw
 artifacts, and test protocols remain authoritative for their respective
 decisions and evidence.
+
+## 2026-08-25 bare-metal runtime completion campaign
+
+The controlled bare-metal campaign at
+`/tmp/orchestra-realworld-20250825-042022-redshadow-complete` completed on
+Kali kernel `7.0.12+kali-amd64` with eight logical CPUs. The exact
+target-matched object, bridge, and loader built from the preserved 7.0.12
+source export, passed the verifier, attached, and unloaded cleanly. The final
+P0 ownership gate recorded zero failures in
+`sched_ext/p0-fix34/results.csv`.
+
+The runtime evidence includes effective deferred `SLEEP` and `THROTTLE`
+release, fail-closed stale-signal rejection, live S1/S2/S3/S4/Q publication,
+controller cadence/state transitions, and a committed policy entry that drove
+an owned task to effective `YIELD`. The repository benchmark and stress
+scripts completed owned CPU, I/O, and mixed workload phases. The final machine
+state is `disabled`, with no ORCHESTRA pins left in bpffs.
+
+This supersedes the earlier session-specific statements that privileged
+bare-metal attach and ownership testing had not been run. It does not upgrade
+the product to deployment-ready: RT coexistence, broad migration placement,
+multi-actuator breadth/rollback causality, predictor convergence, authenticated kernel
+signals, NUMA, distributed scheduling, and long-duration soak evidence remain
+open acceptance work.
+
+## 2026-08-25 verification rerun
+
+The installed fix34 artifacts were rerun from
+`/tmp/orchestra-realworld-20260825-verify-redshadow`. `git diff --check`,
+`make check`, `make test`, and `sudo orchestra check-system --strict` all
+returned zero. The maintained P0 and Stage 8 entry points passed exact-TID
+ownership, forward progress, all action probes, attach, and clean unload.
+Invalid PID and migration-CPU requests were rejected. A task admitted while
+normal was removed from the kernel identity map when changed to `SCHED_FIFO`,
+so protected RT work was not handed to the adaptive path; this is limited RT
+admission evidence, not full RT coexistence validation. The final state was
+`sched_ext=disabled` with only `/sys/fs/bpf` remaining.
+
+The preserved command-level record is
+`artifacts/real-world/20260825-042022-redshadow-complete/VERIFICATION_RERUN_20260825.md`.
+The continued rerun additionally validated the existing metrics-v7 pipeline
+six times and completed owned CPU, I/O, and mixed stress phases; its evidence
+is recorded in
+`artifacts/real-world/20260825-042022-redshadow-complete/VERIFICATION_RERUN_20260825_CONTINUED.md`.
+The extended matrix then covered fixed-work 1/2/4/8-worker CPU and mixed
+comparisons, actual FIFO/RR/DEADLINE admission exclusion, owned loopback
+network transfer, and a 30-second owned stress run. Evidence is recorded in
+`artifacts/real-world/20260825-042022-redshadow-complete/VERIFICATION_RERUN_20260825_MATRIX.md`.
+The documented signal-publication microbenchmark also completed 12/12
+validated userspace invocations. The exact paper N=40/4-exempt/3,000-tick/
+500-warm-up gate remains blocked because the maintained runner has no matching
+canonical protocol; this distinction is recorded in
+`artifacts/real-world/20260825-042022-redshadow-complete/VERIFICATION_RERUN_20260825_PROTOCOLS.md`.
+The same run also confirmed that the maintained v3–v6 manifests are stale
+against the current v7-only binary output; all 24 legacy attempts were
+preserved as schema failures rather than relabeled as valid evidence.
+An additional unload-under-active-worker probe passed with forward progress
+and clean disabled state; its record is
+`artifacts/real-world/20260825-042022-redshadow-complete/VERIFICATION_RERUN_20260825_RECOVERY.md`.
+An isolated FIFO-versus-normal-worker contention probe also showed normal
+forward progress; its temporary harness cleanup defect and immediate repair
+are preserved in
+`artifacts/real-world/20260825-042022-redshadow-complete/VERIFICATION_RERUN_20260825_RT_CONTENTION.md`.
+
+The historical entries below retain earlier campaign context. Where they say
+that verifier, attach, or privileged runtime testing was unavailable, those
+statements describe the earlier session and are superseded by the fix34
+bare-metal addenda above.
 
 ## 2026-08-23 product integration and security follow-up
 
@@ -38,10 +106,10 @@ not claimed by this release candidate. See
 
 ## 2026-08-21 working-tree follow-up
 
-The latest bare-metal continuation did not establish an ORCHESTRA performance
-result. The controlled ownership retest proved that an explicitly opted-in
-task can reach the prototype path, but the older comparison rows started work
-before exact opt-in and therefore remain `INCONCLUSIVE_OWNERSHIP_NOT_PROVEN`.
+The latest bare-metal continuation established controlled ORCHESTRA runtime
+evidence. The older comparison rows started work before exact opt-in and
+therefore remain `INCONCLUSIVE_OWNERSHIP_NOT_PROVEN`; the new short comparison
+rows are the only current exploratory timing evidence.
 The target-matched out-of-tree build now succeeds for the locally preserved
 7.0.12 source export, producing the BPF object, bridge, and loader. It uses an
 exact 7.0.12 UAPI header plus an explicitly supplied helper generator because
@@ -101,9 +169,10 @@ inputs, an explicit controller gate, and a single canonical policy-to-action
 decision path for RUN, SLEEP, MIGRATE, THROTTLE, and YIELD. The legacy v2/v6/v7
 bridge maps and publication paths remain compatible. Exact 7.0.12 target-
 matched BPF, bridge, and loader builds plus source/unit/integration gates pass.
-This is `KERNEL_PROTOTYPED` source/build evidence only: verifier acceptance,
-attach, ownership, effective actions, unload, and performance remain untested
-in the current unprivileged session.
+The 2026-08-25 campaign additionally verified verifier acceptance, attach,
+explicit ownership, bounded effective actions, live v10 telemetry, and clean
+unload on the recorded bare-metal kernel. The timing rows remain exploratory
+and do not establish deployment readiness.
 The v8 contract also negotiates adaptive-slice/state-derived-CPU and
 defer-compatible action backends, records bounded migration outcomes, enforces
 EVALUATE lifecycle freeze/explicit transition rules, and exposes generation
@@ -123,13 +192,15 @@ ORCHESTRA kernel architecture. It contains:
 - VirtualBox evidence for exact Linux 6.12.96 boot, BPF verification, attach,
   bounded stability, action paths, deferred SLEEP/THROTTLE release, legal
   MIGRATE placement, clean unload, and explicit SCHED_EXT task ownership;
-- no bare-metal sched_ext execution evidence;
+- controlled bare-metal sched_ext execution evidence is now present, but it is
+  limited to the recorded host and short ownership-gated runs;
 - no kernel implementation of authenticated signal frames, online predictor
-  training, full S1-S4/Q computation, or distributed/NUMA policy learning. The
+  training, or distributed/NUMA policy learning. The
   v8 path consumes bounded externally supplied prediction/coordination records,
   publishes generation-safe policy banks, applies explicit controller-state
-  gates, and records task/action telemetry; it does not establish online
-  learning convergence or hardware runtime behavior.
+  gates, computes live bounded v10 coordination summaries, and records
+  task/action telemetry; it does not establish online learning convergence or
+  broad hardware behavior.
 
 Repository "Stage" numbers are historical development milestones. They are
 not equivalent to the WP1-WP10 exit gates.
@@ -172,9 +243,9 @@ telemetry, per-task telemetry, deferred-timer, and fixed-point signal maps.
 It uses full-switch sched_ext operations, but a task must still pass the
 explicit exact-identity admission path before ownership is claimed.
 The additive v8 path also exposes runtime state, policy metadata and entries,
-hot task state, diagnostics, and global telemetry maps. Its source/build gate
-passes against the recorded running-kernel toolchain, but no v8 object has
-been verifier-checked or attached in the current session.
+hot task state, diagnostics, and global telemetry maps. The earlier
+source/build-only statement in this historical subsection is superseded by the
+fix34 bare-metal verifier, attach, ownership, and unload evidence above.
 
 The final VirtualBox runtime gate on 2026-08-14 established:
 
@@ -196,14 +267,15 @@ The final VirtualBox runtime gate on 2026-08-14 established:
 - The distro bridge development packages are not installed (`libbpf-dev` and
   `libelf-dev` are absent); the successful out-of-tree build used the exact
   source-tree public headers and the installed `libbpf.so.1` runtime.
-- No new bare-metal BPF verifier, attach, ownership, action, watchdog, or
-  detach test could run without non-interactive root/sudo authorization.
+- The current host passed the bare-metal BPF verifier, attach, ownership,
+  bounded action, watchdog, and detach gates; broader kernel matrices remain
+  pending.
 - YIELD remains a bounded relinquish approximation; physical fairness and
   latency validation remain pending.
 - THROTTLE and SLEEP use bounded deferred eligibility; physical timing and
   bandwidth validation remain pending.
-- MIGRATE placement was observed in the VM; hotplug and physical-contention
-  behavior remain unvalidated.
+- MIGRATE placement was observed in the VM and one legal current-host
+  placement; hotplug and physical-contention behavior remain unvalidated.
 - Unknown actions use RUN fallback, but an invalid action cannot be published
   through the current CLI and lacks a current owned-task runtime test.
 - The bridge map ABI is local native-endian packed data and is not the
@@ -221,12 +293,12 @@ The final VirtualBox runtime gate on 2026-08-14 established:
 - No kernel tests cover real-time/deadline non-interference, starvation,
   affinity/cpuset constraints, CPU hotplug, NUMA, cgroups, or security faults.
 - Earlier Stage 8/9 benchmark interpretations that predate the P0 ownership fix
-  do not prove ORCHESTRA-owned scheduling and must not be used as performance
-  evidence.
+  do not prove ORCHESTRA-owned scheduling. The new benchmark rows prove
+  ownership for their short runs but remain exploratory performance evidence.
 
 ## Current machine
 
-Readiness classification: **VM gate passed; controlled physical pilot only**.
+Readiness classification: **controlled bare-metal pilot passed; release candidate only**.
 
 | Item | Verified value |
 | --- | --- |
@@ -236,21 +308,24 @@ Readiness classification: **VM gate passed; controlled physical pilot only**.
 | Virtualization | none detected (bare metal) |
 | CPU | Intel Core i5-10310U, 1 socket, 4 cores, SMT2, 8 logical CPUs |
 | NUMA | one node, CPUs 0-7 |
-| sched_ext sysfs | present; state `disabled`; enable sequence 0 at audit |
+| sched_ext sysfs | present; state `disabled` after the controlled campaign |
 | BTF | `/sys/kernel/btf/vmlinux`, present |
 | Required config | BPF, BPF_SYSCALL, BPF_JIT, DEBUG_INFO_BTF, BPF_EVENTS, and SCHED_CLASS_EXT all `y` |
 | clang | 21.1.8 |
 | bpftool/libbpf runtime | bpftool 7.7.0; libbpf 1.7 |
 | Rust | rustc/cargo 1.95.0; not required by the current C prototype |
-| Missing build inputs | `libbpf-dev`, `libelf-dev`, exact 7.0.12 sched_ext tool headers/source |
+| Missing build inputs | distro `libbpf-dev`/`libelf-dev`; preserved source export and recorded helper inputs were used |
 
 No kernel replacement or reboot is indicated. Root is required for BPF load,
 map pinning, task opt-in, and detach. Unprivileged BPF is disabled.
 
 ## Next acceptance gate
 
-The next milestone is **bare-metal Linux 7.0.12 build/verifier compatibility
-and a non-destructive explicit-ownership acceptance run**. It is not another
+The bare-metal Linux 7.0.12 build/verifier compatibility and
+non-destructive explicit-ownership gate is complete for this host. The next
+acceptance gate is a broader controlled pilot covering RT coexistence,
+physical MIGRATE placement, actuator response/rollback, fault recovery,
+long-duration stability, and release documentation. It is not another
 simulator feature and not the SuperTuxKart demonstration.
 
 The gate passes only when a source-hashed build can:

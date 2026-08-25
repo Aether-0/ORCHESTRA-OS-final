@@ -11,7 +11,7 @@
 | Kernel state/policy ABI | v8 |
 | Native coordination/controller ABI | v10 |
 | Release class | Research-grade release candidate |
-| Current evidence class | Userspace validated; kernel prototyped and source/build validated |
+| Current evidence class | Userspace validated; kernel prototyped with limited bare-metal experimental validation |
 
 ## Implemented subsystems
 
@@ -42,13 +42,13 @@
 | Portable observer/userspace path | Implemented and validated |
 | x86_64 target-matched BPF build path | Implemented; source/build validated |
 | arm64 target build path | Compatibility-backed; separate verifier/attach matrix required |
-| sched_ext attach and ownership | Kernel-prototyped; current-host live gate blocked |
-| RUN/YIELD/MIGRATE/THROTTLE/SLEEP backend semantics | Implemented in prototype; effective hardware matrix pending |
+| sched_ext attach and ownership | Kernel-prototyped; current-host exact-TID gate passed |
+| RUN/YIELD/MIGRATE/THROTTLE/SLEEP backend semantics | Implemented in prototype; limited current-host effective-action evidence |
 | Signal integrity | Generation/freshness/schema/identity checks implemented; kernel cryptographic verification not claimed |
 | Privileged artifact integrity | Root-owned/non-symlink/non-writable checks and build-manifest hashes; signed provenance not claimed |
 | Prediction | Bounded fixed-point consumption and fallback implemented; hardware convergence pending |
-| S1/S2/S3/S4/Q | Native source/controller contract implemented; real-machine report pending |
-| Controller | Bounded source contract implemented; live causal response/rollback pending |
+| S1/S2/S3/S4/Q | Native source/controller contract implemented; limited current-host live report |
+| Controller | Bounded source contract implemented; limited actuator adaptation/recovery observed |
 | NUMA hierarchy | Bounded ABI slots exist; NUMA behavior not validated |
 | Distributed tier | Not implemented |
 
@@ -56,10 +56,10 @@
 
 The complete gate table is in
 [`docs/validation/FINAL_VALIDATION_REPORT.md`](docs/validation/FINAL_VALIDATION_REPORT.md).
-The current host has no authorized non-interactive root session for verifier,
-attach, ownership, or unload testing and is not treated as a dedicated
-scheduler test machine. Therefore this product is not labeled `1.0.0` or
-deployment-ready.
+The current host has passed a controlled target-matched verifier, attach,
+ownership, action, and unload gate. It is still a research-grade release
+candidate, not `1.0.0` or deployment-ready, because the broader runtime,
+security, provenance, and soak gates remain open.
 
 ## Known limitations
 
@@ -67,9 +67,9 @@ deployment-ready.
    BPF artifacts must be built and verified per target kernel.
 2. The current bridge signal transport is a validated kernel-local map
    contract, not proof of cryptographic HMAC verification inside BPF.
-3. Current real-machine evidence does not establish live verifier acceptance,
-   ownership, effective action behavior, RT coexistence, hotplug safety,
-   NUMA behavior, or production soak stability.
+3. Current real-machine evidence establishes only a limited target-specific
+   verifier/ownership/action gate; it does not establish RT coexistence,
+   hotplug safety, NUMA behavior, or production soak stability.
 4. The exact paper N=40/4-exempt/3000-tick/500-warm-up/seed-42/five-seed gate
    is not represented by a canonical reproducible runner in this release.
 5. No universal performance advantage over CFS/EEVDF is claimed; comparisons

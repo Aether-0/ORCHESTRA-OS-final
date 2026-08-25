@@ -197,6 +197,7 @@ struct options {
     bool policy_state_set;
     bool controller_set;
     bool policy_mode_set;
+    bool policy_generation_set;
     enum orchestra_action_id action;
     bool action_set;
     uint32_t target_tid;
@@ -969,6 +970,9 @@ static int publish_directive(const struct options *opts,
     struct orchestra_task_identity identity, identity_after;
     uint64_t now, expiry;
     uint32_t wire_action;
+    uint32_t controller_state;
+    uint32_t policy_mode;
+    uint64_t policy_generation;
     int lock_fd = -1;
     int update_error = 0;
     int result = EXIT_PUB_FAIL;
@@ -994,6 +998,12 @@ static int publish_directive(const struct options *opts,
         result = EXIT_SCHEMA;
         goto out;
     }
+    controller_state = opts->controller_set ? opts->controller_state :
+        control.controller_state;
+    policy_mode = opts->policy_mode_set ? opts->policy_mode :
+        control.policy_mode;
+    policy_generation = opts->policy_generation_set ?
+        opts->policy_generation : control.policy_generation;
     if (!resolve_identity(&maps, opts->target_tid, control.scheduler_epoch,
                           &identity)) {
         fprintf(stderr, "TID %" PRIu32 " has no current kernel identity record\n",
@@ -1066,9 +1076,9 @@ static int publish_directive(const struct options *opts,
     directive.throttle_period_ns = opts->throttle_period_ns;
     directive.throttle_budget_ns = opts->throttle_budget_ns;
     directive.expiry_ns = expiry;
-    directive.controller_state = opts->controller_state;
-    directive.policy_mode = opts->policy_mode;
-    directive.policy_generation = opts->policy_generation;
+    directive.controller_state = controller_state;
+    directive.policy_mode = policy_mode;
+    directive.policy_generation = policy_generation;
 
     if (opts->dry_run) {
         if (!opts->quiet)
@@ -1086,9 +1096,9 @@ static int publish_directive(const struct options *opts,
     control.last_generation = directive.generation;
     control.publisher_heartbeat_ns = now;
     control.publisher_lease_ns = opts->lease_ns;
-    control.controller_state = opts->controller_state;
-    control.policy_mode = opts->policy_mode;
-    control.policy_generation = opts->policy_generation;
+    control.controller_state = controller_state;
+    control.policy_mode = policy_mode;
+    control.policy_generation = policy_generation;
     /* Invalidate readers before exposing the new control generation.  The
      * directive is not authoritative until its payload and identity
      * readback have completed. */
@@ -1724,6 +1734,7 @@ static int status_command(const struct options *opts)
     if (have_v10) {
         struct orchestra_runtime_state_v10 runtime;
         struct orchestra_controller_state_v10 controller;
+        struct orchestra_controller_telemetry_v10 controller_telemetry;
 
         memset(&runtime, 0, sizeof(runtime));
         if (bpf_lookup_raw(maps.fd[MAP_RUNTIME_V10], &zero, &runtime,
@@ -1766,6 +1777,66 @@ static int status_command(const struct options *opts)
                    controller.saturation_count, controller.rollback_count,
                    controller.recovery_count, controller.override_count,
                    controller.no_op_count);
+            printf("controller_actuators jitter=%" PRIu64
+                   " switching_penalty=%" PRIu64
+                   " consensus_blend=%" PRIu64
+                   " migration_threshold=%" PRIu64
+                   " yield_threshold=%" PRIu64
+                   " throttle_duration_ns=%" PRIu64
+                   " sleep_defer_ns=%" PRIu64
+                   " prediction_confidence=%" PRIu64
+                   " prediction_horizon_ns=%" PRIu64
+                   " signal_cadence_ns=%" PRIu64
+                   " coordination_threshold=%" PRIu64 "\n",
+                   controller.active.actuators[ORCH_ACTUATOR_JITTER].current_value,
+                   controller.active.actuators[
+                       ORCH_ACTUATOR_SWITCHING_PENALTY].current_value,
+                   controller.active.actuators[
+                       ORCH_ACTUATOR_CONSENSUS_BLEND].current_value,
+                   controller.active.actuators[
+                       ORCH_ACTUATOR_MIGRATION_THRESHOLD].current_value,
+                   controller.active.actuators[
+                       ORCH_ACTUATOR_YIELD_THRESHOLD].current_value,
+                   controller.active.actuators[
+                       ORCH_ACTUATOR_THROTTLE_DURATION].current_value,
+                   controller.active.actuators[
+                       ORCH_ACTUATOR_SLEEP_DEFER].current_value,
+                   controller.active.actuators[
+                       ORCH_ACTUATOR_PREDICTION_CONFIDENCE].current_value,
+                   controller.active.actuators[
+                       ORCH_ACTUATOR_PREDICTION_HORIZON].current_value,
+                   controller.active.actuators[
+                       ORCH_ACTUATOR_SIGNAL_CADENCE].current_value,
+                   controller.active.actuators[
+                       ORCH_ACTUATOR_COORDINATION_THRESHOLD].current_value);
+        }
+        memset(&controller_telemetry, 0, sizeof(controller_telemetry));
+        if (bpf_lookup_raw(maps.fd[MAP_CONTROLLER_TEL_V10], &zero,
+                           &controller_telemetry, BPF_F_LOCK) == 0) {
+            printf("controller_telemetry updates=%" PRIu64
+                   " actuator_updates=%" PRIu64
+                   " last_actuator=%" PRIu32
+                   " last_direction=%" PRIu32
+                   " saturation=%" PRIu64 " rollback=%" PRIu64
+                   " recovery=%" PRIu64 " no_op=%" PRIu64 "\n",
+                   controller_telemetry.update_count,
+                   controller_telemetry.actuator_update_count[0] +
+                       controller_telemetry.actuator_update_count[1] +
+                       controller_telemetry.actuator_update_count[2] +
+                       controller_telemetry.actuator_update_count[3] +
+                       controller_telemetry.actuator_update_count[4] +
+                       controller_telemetry.actuator_update_count[5] +
+                       controller_telemetry.actuator_update_count[6] +
+                       controller_telemetry.actuator_update_count[7] +
+                       controller_telemetry.actuator_update_count[8] +
+                       controller_telemetry.actuator_update_count[9] +
+                       controller_telemetry.actuator_update_count[10],
+                   controller_telemetry.last_actuator,
+                   controller_telemetry.last_update_direction,
+                   controller_telemetry.saturation_count,
+                   controller_telemetry.rollback_count,
+                   controller_telemetry.recovery_count,
+                   controller_telemetry.no_op_count);
         }
     }
     while (bpf_next_key_raw(maps.fd[MAP_DIRECTIVE],
@@ -2127,6 +2198,9 @@ static int stream_command(void)
             opts.controller_state = request.controller_state;
             opts.policy_mode = request.policy_mode;
             opts.policy_generation = request.policy_generation;
+            opts.controller_set = true;
+            opts.policy_mode_set = true;
+            opts.policy_generation_set = true;
             opts.require_signal =
                 (request.stream_flags & BRIDGE_STREAM_F_REQUIRE_SIGNAL) != 0;
             if ((request.stream_flags & BRIDGE_STREAM_F_PUBLISH_SIGNAL) != 0) {
@@ -2326,6 +2400,7 @@ static bool parse_options(int argc, char **argv, struct options *opts)
             if (!need_value(argc, argv, &i, &value) ||
                 !parse_u64(value, 0, UINT64_MAX, &opts->policy_generation))
                 return false;
+            opts->policy_generation_set = true;
         } else if (strcmp(argv[i], "--signal-sequence") == 0) {
             if (!need_value(argc, argv, &i, &value) ||
                 !parse_u64(value, 1, UINT64_MAX, &opts->signal_sequence))

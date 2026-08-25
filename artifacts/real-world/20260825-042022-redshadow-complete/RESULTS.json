@@ -1,0 +1,36 @@
+{
+  "campaign": "20260825-042022-redshadow-complete",
+  "host": "redshadow",
+  "kernel": "7.0.12+kali-amd64",
+  "architecture": "x86_64",
+  "cpus": 8,
+  "final_scheduler_state": "disabled",
+  "raw_evidence": "/tmp/orchestra-realworld-20250825-042022-redshadow-complete",
+  "final_artifact": {
+    "build": "/var/tmp/orchestra-os-build-kernel-7.0.12-fix34-20260825",
+    "bpf_sha256": "7fb7bd36bad1e78b0d93714b409677b2b0ab5ad3c19c52b75ae423451f5c7853",
+    "bridge_sha256": "30cb0b3834b9c11014d8c729a7b02aa8201d0afb3ad5e533fbe630e0a4e7b59f",
+    "loader_sha256": "d6b35436598722d17d8b446e38ab1cb31aaa1402b2a0e6e56dd20aee7f08c2bf"
+  },
+  "gates": {
+    "userspace_build": "PASS",
+    "userspace_regression": "PASS",
+    "strict_capability": "PASS",
+    "verifier_attach": "PASS",
+    "ownership": "PASS",
+    "all_five_actions": "PASS_LIMITED",
+    "signal_freshness": "PASS",
+    "coordination_s1_s4_q": "PASS_LIMITED",
+    "controller_actuator": "PASS_LIMITED",
+    "clean_unload": "PASS"
+  },
+  "blocked": [
+    "memory stress dependency",
+    "RT coexistence broad validation",
+    "cryptographic kernel signal authentication",
+    "online predictor convergence",
+    "full controller rollback",
+    "NUMA and distributed scheduling",
+    "long-duration soak"
+  ]
+}

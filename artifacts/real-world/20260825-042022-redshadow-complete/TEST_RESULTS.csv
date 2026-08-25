@@ -1,0 +1,20 @@
+test,status,classification,details
+make_clean_make,PASS,USERSPACE_VALIDATED,userspace build completed
+make_check,PASS,USERSPACE_VALIDATED,documentation/security checks completed
+make_test,PASS,USERSPACE_VALIDATED,30/30 named unit tests and integration/security suites
+build_stage7_fix34,PASS,KERNEL_PROTOTYPED,target-matched eBPF object bridge loader
+p0_fix34,PASS,EXPERIMENTALLY_VALIDATED,zero ownership-gate failures
+sleep_release,PASS,EXPERIMENTALLY_VALIDATED,one-shot deferred release observed
+throttle_release,PASS,EXPERIMENTALLY_VALIDATED,budget deferral and timer release observed
+policy_yield,PASS,EXPERIMENTALLY_VALIDATED,active policy drove effective YIELD
+migrate_cpu1,PASS,EXPERIMENTALLY_VALIDATED,requested/dispatched/actual CPU all 1
+signal_stale,PASS,EXPERIMENTALLY_VALIDATED,fail-closed stale required signal
+coordination_q,PASS_LIMITED,EXPERIMENTALLY_VALIDATED,live S1/S2/S3/S4/Q on owned host
+controller_actuator,PASS_LIMITED,EXPERIMENTALLY_VALIDATED,bounded adaptation and recovery
+stress_cpu_io_mixed,PASS,EXPERIMENTALLY_VALIDATED,owned ORCHESTRA phases completed
+benchmark_three_way,PASS_EXPLORATORY,EXPLORATORY,CFS/scx_simple/ORCHESTRA short CPU and mixed runs
+memory_pressure,BLOCKED,UNKNOWN,existing stress tool missing
+rt_layer,BLOCKED,NOT_IMPLEMENTED_OR_NOT_VALIDATED,admission guard only
+authenticated_kernel_signal,BLOCKED,NOT_IMPLEMENTED,not cryptographic in BPF
+predictor_convergence,BLOCKED,NOT_IMPLEMENTED,external bounded fields only
+rollback_causality,BLOCKED,NOT_VALIDATED,bounded recovery observed but rollback not exercised

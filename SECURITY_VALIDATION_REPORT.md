@@ -1,9 +1,9 @@
 # ORCHESTRA-OS Security Validation Report
 
 **Product:** ORCHESTRA-OS 1.0.0-rc1
-**Assessment date:** 2026-08-23
-**Repository revision at assessment start:** b4d12899966eb5cf7b1fe87b9f865ce158e2b5b
-**Final hardening revision:** 5cb65c4
+**Assessment date:** 2026-08-25
+**Repository revision at assessment start:** c85ababc0c2c9a2ae1b47b265fd5b5fa414abf1d
+**Final hardening revision:** c85ababc0c2c9a2ae1b47b265fd5b5fa414abf1d
 **Disposition:** release candidate; not production-certified
 
 ## Gate summary
@@ -22,12 +22,12 @@
 | ABI/source invariants | PASS | tests/unit/test_orchestra_scx_source.py |
 | Secret/path scan | PASS | scripts/security-scan.sh |
 | Documentation link check | PASS | make check |
-| BPF target compile | BLOCKED | current exact build input/libbpf header gate unavailable |
-| BPF verifier acceptance | BLOCKED | target-matched object could not be produced/loaded |
-| Privileged attach and ownership | BLOCKED | no authorized non-interactive root session; not a dedicated host |
-| Five effective kernel actions | BLOCKED | requires attached scheduler and ownership proof |
-| RT/deadline coexistence | BLOCKED | live sched_ext runtime not run |
-| Fault/hotplug/recovery/unload | BLOCKED | requires privileged target-kernel campaign |
+| BPF target compile | PASS | fix34 target-matched build and installed manifest |
+| BPF verifier acceptance | PASS | fix34 loader attach on `7.0.12+kali-amd64` |
+| Privileged attach and ownership | PASS, limited | exact-TID P0 gate; current host only |
+| Five effective kernel actions | PASS, limited | bounded RUN/SLEEP/THROTTLE/YIELD/MIGRATE probes with ownership proof |
+| RT/deadline coexistence | BLOCKED | protected RT admission boundary observed; full coexistence matrix not run |
+| Fault/hotplug/recovery/unload | PASS, limited | invalid PID/CPU rejection and scoped unload; hotplug/broad recovery remain |
 | Kernel signal cryptographic authentication | BLOCKED | current transport is explicitly non-cryptographic |
 | Signed provenance/SBOM/SCA/penetration test | BLOCKED | release-security work not present in this campaign |
 
@@ -56,11 +56,15 @@ duplicates, reader crashes, reader hangs, or retry exhaustions in the
 reported runs. The integration suite passed signal publication contention,
 tamper/rejection, policy lifecycle, validator, and teardown scenarios.
 
-## Host-specific blocked gates
+## Host-specific runtime addendum
 
 The current host is Kali Linux x86_64 on kernel 7.0.12+kali-amd64. sched_ext,
-BTF, clang, gcc, make, and bpftool are present. The following prevented the
-privileged kernel gate:
+BTF, clang, gcc, make, and bpftool are present. The fix34 target-matched
+artifact passed verifier acceptance, attach, exact-TID ownership, bounded
+action probes, and scoped unload. Invalid PID and CPU requests were rejected.
+Every runtime phase returned to `sched_ext=disabled` with no ORCHESTRA pins.
+
+The earlier 2026-08-23 blockers were:
 
 - no authorized non-interactive sudo/root session;
 - the running-kernel build directory does not provide the complete source
@@ -68,8 +72,10 @@ privileged kernel gate:
 - libbpf development headers/pkg-config inputs are unavailable;
 - the machine is not treated as a dedicated scheduler crash/reboot target.
 
-The correct result is BLOCKED. No verifier, attach, ownership, effective
-action, RT, recovery, or unload claim is made from userspace/source evidence.
+Those conditions describe the earlier assessment and are superseded only for
+the current host by the fix34 evidence. No claim is made for full RT/deadline
+coexistence, hotplug, long-duration stability, kernel-side cryptographic
+signal authentication, signed provenance, or another kernel/architecture.
 
 ## Vulnerabilities discovered and status
 
@@ -111,5 +117,5 @@ This revision is suitable for observer/userspace research and controlled
 target-specific kernel testing. It is **not** suitable for a claim of
 production-certified kernel scheduling, universal security, cryptographic
 Signal Bus authenticity, or universal performance improvement. Advance to
-1.0.0 only after the blocked runtime, provenance, and signal-authentication
+1.0.0 only after the remaining runtime, provenance, and signal-authentication
 gates are independently completed with preserved evidence.

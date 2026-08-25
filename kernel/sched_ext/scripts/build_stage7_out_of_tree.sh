@@ -191,12 +191,14 @@ cc -O2 -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
 echo "Building $LOADER"
 LIBBPF_INCLUDES=(
     -isystem "$KSRC/tools/lib"
-    -I"$KSRC/include/uapi"
+    -isystem "$KSRC/include/uapi"
 )
 if [ -n "$KERNEL_ARCH_INCLUDE" ]; then
-    LIBBPF_INCLUDES+=("-I$KERNEL_ARCH_INCLUDE/include/uapi")
+    LIBBPF_INCLUDES+=("-isystem" "$KERNEL_ARCH_INCLUDE/include/uapi")
 fi
-if ! printf '#include <bpf/libbpf.h>\n' | cc -E "${LIBBPF_INCLUDES[@]}" - \
+LIBBPF_DEFINES=(-D__EXPORTED_HEADERS__)
+if ! printf '#include <bpf/libbpf.h>\n' | cc "${LIBBPF_DEFINES[@]}" -E \
+    "${LIBBPF_INCLUDES[@]}" - \
     >/dev/null 2>"$BUILD_DIR/libbpf-header-check.log"; then
     echo "libbpf header-check output:" >&2
     sed -n '1,160p' "$BUILD_DIR/libbpf-header-check.log" >&2 || true
@@ -215,6 +217,7 @@ done
 echo "libbpf_link=$LIBBPF_SONAME"
 cc -O2 -std=c11 -Wall -Wextra -Wpedantic \
     -Wconversion -Wshadow -Wformat=2 -Werror \
+    "${LIBBPF_DEFINES[@]}" \
     "${LIBBPF_INCLUDES[@]}" \
     -I"$REPO_ROOT/kernel/sched_ext/include" \
     "$REPO_ROOT/kernel/sched_ext/bridge/orchestra_loader.c" \

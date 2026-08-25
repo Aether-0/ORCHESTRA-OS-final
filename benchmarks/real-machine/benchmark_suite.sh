@@ -53,6 +53,7 @@ BPF="$REPO_ROOT/kernel/sched_ext/orchestra_scx_stage7.bpf.o"
 BRIDGE="$REPO_ROOT/kernel/sched_ext/bridge/orchestra_bridge"
 LOADER="$REPO_ROOT/kernel/sched_ext/bridge/orchestra_loader"
 WORKLOAD="$REPO_ROOT/kernel/sched_ext/scripts/fixed_work"
+SCX_SIMPLE=/usr/bin/scx_simple
 WORK_ITERATIONS=80000000
 SECS=8
 WAIT_TIMEOUT=
@@ -64,6 +65,7 @@ WORKLOAD_MODE=cpu
 [[ -v ORCHESTRA_BRIDGE ]] && BRIDGE=$ORCHESTRA_BRIDGE
 [[ -v ORCHESTRA_LOADER ]] && LOADER=$ORCHESTRA_LOADER
 [[ -v ORCHESTRA_WORKLOAD ]] && WORKLOAD=$ORCHESTRA_WORKLOAD
+[[ -v ORCHESTRA_SCX_SIMPLE ]] && SCX_SIMPLE=$ORCHESTRA_SCX_SIMPLE
 [[ -v ORCHESTRA_WORK_ITERATIONS ]] && WORK_ITERATIONS=$ORCHESTRA_WORK_ITERATIONS
 [[ -v BENCH_SECS ]] && SECS=$BENCH_SECS
 [[ -v ORCHESTRA_WAIT_TIMEOUT ]] && WAIT_TIMEOUT=$ORCHESTRA_WAIT_TIMEOUT
@@ -404,10 +406,10 @@ log "Worker watchdog: ${WAIT_TIMEOUT}s"
 log "--- CFS baseline ---"
 run_worker_set cfs
 
-if [ -x /usr/bin/scx_simple ]; then
+if [ -x "$SCX_SIMPLE" ]; then
     log "--- scx_simple ---"
     if [ "$(id -u)" -eq 0 ] || sudo -n true >/dev/null 2>&1; then
-        sudo -n /usr/bin/scx_simple >"$OUTDIR/scx_simple.log" 2>&1 &
+        sudo -n "$SCX_SIMPLE" >"$OUTDIR/scx_simple.log" 2>&1 &
         SCX_PID=$!
         sleep 2
         if [ "$(state)" = "enabled" ]; then
@@ -426,7 +428,7 @@ if [ -x /usr/bin/scx_simple ]; then
         log "scx_simple blocked: non-interactive root or sudo is required"
     fi
 else
-    log "scx_simple not installed; phase blocked"
+    log "scx_simple not installed or not executable: $SCX_SIMPLE; phase blocked"
 fi
 
 log "--- ORCHESTRA ---"

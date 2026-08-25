@@ -61,8 +61,9 @@ links or delete unrelated bpffs pins. ORCHESTRA rows are not performance
 results unless every target TID has positive accepted, dispatched, and running
 telemetry before release. Override paths with `ORCHESTRA_BPF`,
 `ORCHESTRA_BRIDGE`, and `ORCHESTRA_LOADER` when using externally built
-artifacts. The fixed-iteration helper returns success after completing the
-requested work, and each benchmark run records worker exit status and stderr.
+artifacts. Set `ORCHESTRA_SCX_SIMPLE` when the comparison scheduler is built
+outside `/usr/bin`; the fixed-iteration helper returns success after completing
+the requested work, and each benchmark run records worker exit status and stderr.
 Both runners use the process's allowed CPU set rather than assuming CPU IDs
 start at zero. Set `ORCHESTRA_OWNERSHIP_POLLS` to adjust the bounded ownership
 wait and `ORCHESTRA_WAIT_TIMEOUT` to bound owned-worker teardown. The stress

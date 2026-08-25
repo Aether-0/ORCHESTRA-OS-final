@@ -2,7 +2,7 @@
 
 **Model version:** 1.0
 **Product version:** 1.0.0-rc1
-**Assessment date:** 2026-08-23
+**Assessment date:** 2026-08-25
 
 ## Scope and security posture
 
@@ -119,8 +119,10 @@ Controls:
 Runtime status:
 
 - source and userspace contracts are tested;
-- verifier, attach, ownership, effective actions, hotplug, recovery, and
-  teardown require a privileged dedicated host and are currently BLOCKED.
+- the recorded fix34 host passed verifier, attach, exact-TID ownership,
+  bounded effective actions, and scoped teardown;
+- hotplug, broad recovery, cross-kernel behavior, and long-duration stability
+  remain unvalidated.
 
 ### T6 — loader/install/uninstall to host filesystem and bpffs
 

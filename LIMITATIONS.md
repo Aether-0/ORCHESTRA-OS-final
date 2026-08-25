@@ -78,8 +78,10 @@ capability:
    before supporting larger topology claims.
 3. **Signed release provenance.** Hashes in a local build manifest do not
    establish who built or approved the artifact.
-4. **Privileged runtime coverage.** BPF verifier, attach, ownership, action,
-   recovery, hotplug, and soak results require a dedicated authorized target.
+4. **Privileged runtime coverage.** The recorded host has passed a
+   target-matched verifier/attach, exact-TID ownership, bounded action, and
+   scoped-unload gate. Broader recovery, hotplug, cross-kernel, and soak
+   results still require dedicated authorized targets.
 5. **Telemetry saturation semantics.** Lifetime counters wrap. This is safe
    for control because they are observational; a future telemetry ABI may
    add saturating totals or explicit wrap epochs.

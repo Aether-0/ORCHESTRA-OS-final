@@ -74,9 +74,10 @@ bpffs, policy, or the scheduler itself.
 3. Loader, bridge, and BPF behavior remains kernel/API-family dependent. A
    successful compile does not establish verifier acceptance or safe attach on
    another kernel.
-4. The current repository has source/unit evidence for action, coordination,
-   controller, and RT boundaries, but privileged ownership, effective action,
-   fault recovery, hotplug, and long-duration runtime gates remain pending.
+4. The current repository has source/unit evidence plus limited privileged
+   ownership, effective-action, and scoped-unload evidence on the recorded
+   host. Fault recovery, hotplug, broad RT coexistence, and long-duration
+   runtime gates remain pending.
 5. No distributed or remote scheduling protocol is implemented. Network
    attack claims and cluster isolation are therefore out of scope.
 6. The CLI is an administrative control plane, not a multi-tenant policy

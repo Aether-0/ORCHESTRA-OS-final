@@ -1,9 +1,16 @@
 # ORCHESTRA-OS Security Findings Ledger
 
-Assessment date: 2026-08-23. Severity describes the impact if the affected
+Assessment date: 2026-08-25. Severity describes the impact if the affected
 boundary is used in the declared deployment model. “Fixed” means the source
 change is present and the listed regression/equivalent evidence passed. It
-does not mean that a privileged kernel runtime gate was executed.
+does not mean that the limited current-host runtime gate generalizes to other
+kernels or establishes production readiness.
+
+Detailed validation paragraphs retain the context of the assessment in which
+each finding was recorded. Host-specific statements that the verifier,
+attach, ownership, or unload gate was unavailable are superseded by the
+fix34 runtime addendum and rerun evidence; the broader coverage gaps remain
+residual.
 
 ## Ledger
 
@@ -22,7 +29,7 @@ does not mean that a privileged kernel runtime gate was executed.
 | SEC-011 | Low | FIXED | research workload | Predictable temporary-file symlink exposure |
 | SEC-012 | Medium | RESIDUAL/BLOCKED | signal bus | No cryptographic authentication in kernel transport |
 | SEC-013 | Medium | RESIDUAL/BLOCKED | release pipeline | Unsigned provenance/SBOM/dependency review |
-| SEC-014 | Medium | BLOCKED | kernel runtime | Verifier/attach/ownership/recovery not run on current host |
+| SEC-014 | Medium | PARTIAL/RESIDUAL | kernel runtime | Current-host verifier/attach/ownership/action gate passed; broader runtime matrix remains |
 | SEC-015 | Low | ACCEPTED LIMIT | telemetry | Lifetime counters wrap modulo 2^64 |
 
 ## Detailed findings
@@ -266,14 +273,13 @@ release in an isolated environment.
 
 ### SEC-014 — target-kernel runtime security evidence unavailable
 
-**Status.** `BLOCKED`, not a source defect.
+**Status.** `PARTIAL/RESIDUAL`, not a source defect.
 
-The current host exposes sched_ext/BTF but lacks an authorized non-interactive
-root session; the exact kernel build tree is incomplete for the repository's
-target-matched build and libbpf development headers are absent. Therefore the
-following were not claimed: verifier acceptance, attach, ownership, all five
-effective actions, RT coexistence, timer/hotplug recovery, clean unload, or
-long-duration stability.
+The current host's fix34 target-matched build passed verifier acceptance,
+attach, exact-TID ownership, all five action paths in bounded probes, and
+scoped clean unload. The remaining security/runtime boundary is broader
+coverage: RT/deadline coexistence, hotplug, map-capacity and PID-reuse races,
+fault recovery, long-duration stability, and other kernels/architectures.
 
 ### SEC-015 — telemetry counters wrap
 
