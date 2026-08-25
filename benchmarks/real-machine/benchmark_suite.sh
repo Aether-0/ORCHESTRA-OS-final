@@ -49,9 +49,20 @@ if [ "$NCPU" -lt 1 ]; then
     echo "unable to determine an allowed CPU set" >&2
     exit 2
 fi
-BPF="$REPO_ROOT/kernel/sched_ext/orchestra_scx_stage7.bpf.o"
-BRIDGE="$REPO_ROOT/kernel/sched_ext/bridge/orchestra_bridge"
-LOADER="$REPO_ROOT/kernel/sched_ext/bridge/orchestra_loader"
+if [[ -v ORCHESTRA_BUILD_DIR ]]; then
+    BUILD_DIR=${ORCHESTRA_BUILD_DIR:?ORCHESTRA_BUILD_DIR must not be empty}
+    case "$BUILD_DIR" in
+        /*) ;;
+        *) echo "ORCHESTRA_BUILD_DIR must be an absolute path: $BUILD_DIR" >&2; exit 2 ;;
+    esac
+    BPF="$BUILD_DIR/orchestra_scx_stage7.bpf.o"
+    BRIDGE="$BUILD_DIR/orchestra_bridge"
+    LOADER="$BUILD_DIR/orchestra_loader"
+else
+    BPF="$REPO_ROOT/kernel/sched_ext/orchestra_scx_stage7.bpf.o"
+    BRIDGE="$REPO_ROOT/kernel/sched_ext/bridge/orchestra_bridge"
+    LOADER="$REPO_ROOT/kernel/sched_ext/bridge/orchestra_loader"
+fi
 WORKLOAD="$REPO_ROOT/kernel/sched_ext/scripts/fixed_work"
 SCX_SIMPLE=/usr/bin/scx_simple
 WORK_ITERATIONS=80000000
@@ -401,6 +412,7 @@ echo "scheduler,workload,workers,duration_s,elapsed_ms,ctx_delta,accepted,dispat
 
 log "=== Real-Machine Benchmark Suite ==="
 log "Repo: $REPO_ROOT | allowed CPUs: $CPU_LIST | workload=$WORKLOAD_MODE | Output: $OUTDIR | duration=$SECS seconds"
+log "Artifacts: bpf=$BPF | bridge=$BRIDGE | loader=$LOADER"
 log "Worker watchdog: ${WAIT_TIMEOUT}s"
 
 log "--- CFS baseline ---"
