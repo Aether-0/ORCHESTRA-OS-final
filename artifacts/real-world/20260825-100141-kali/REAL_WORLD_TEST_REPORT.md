@@ -157,5 +157,8 @@ The next runtime campaign requires explicit confirmation that the host is a
 dedicated/recoverable scheduler test target, followed by the mandated
 pre-attach inventory and the repository loader-scoped P0 ownership gate. Only
 after accepted, dispatched, and running telemetry is proven should effective
-actions or timing be reported. Missing tools remain `BLOCKED_MISSING_DEPENDENCY`
-for `scx_simple`, `perf`, `stress-ng`, `fio`, `iperf3`, and `shellcheck`.
+actions or timing be reported. At the original campaign timestamp, the host
+inventory marked `scx_simple`, `perf`, `stress-ng`, `fio`, `iperf3`, and
+`shellcheck` as `BLOCKED_MISSING_DEPENDENCY`; the follow-up supplied external
+`scx_simple` and `pkg-config` artifacts, but did not install persistent host
+packages or provide the remaining optional tools.
