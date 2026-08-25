@@ -7,14 +7,17 @@ Overall result: **PARTIALLY_VALIDATED**.
 The current checkout compiled successfully, the exact Linux `7.0.12` kernel
 source build produced a target-matched eBPF object, and the existing
 userspace/integration/security regression suites passed when run directly.
-Safe CFS-only benchmark and stress baselines also completed. sched_ext attach,
-ownership, effective-action, and ORCHESTRA performance phases were **BLOCKED_FOR_SAFETY**:
-the live desktop user was present and this checkout does not establish that the
-host is disposable/dedicated or that scheduler recovery is authorized.
+The original campaign stopped before scheduler attach because the live desktop
+user made the disposable-host premise uncertain. After explicit authorization
+for this machine as a scheduler test target, a bounded loader-scoped runtime
+continuation completed.
 
-No ORCHESTRA scheduler was attached during this campaign. Therefore this
-report contains no verifier-acceptance, task-ownership, effective-action,
-ORCHESTRA timing, S1/S2/S3/S4/Q, or controller-runtime claim for this host.
+That continuation establishes **KERNEL_PROTOTYPED** evidence for attach,
+exact-TID ownership, bounded forward progress, requested actions, matched CFS
+versus ORCHESTRA workloads, and clean unload. It does not establish
+deployment readiness, performance superiority, NUMA/distributed behavior,
+long-run stability, kernel-side signal authentication, or complete actuator
+causality.
 
 ## Campaign and environment
 
@@ -44,7 +47,7 @@ the repository.
 | Phase | Result | Evidence and interpretation |
 | --- | --- | --- |
 | `./scripts/check-system.sh --json` | PASS with warnings | Observer PASS; kernel activation WARNING only because `pkg-config` metadata for libbpf/libelf/libzstd is unavailable. |
-| `./scripts/check-system.sh --strict` | BLOCKED | Correctly returned `1` for the capability warnings; no strict activation claim. |
+| `./scripts/check-system.sh --strict` | BLOCKED | The normal host still lacks persistent `pkg-config` metadata; an external temporary extraction passed the strict gate without changing host packages. |
 | `git diff --check` | PASS | No whitespace errors. |
 | `make clean && make` | PASS | Existing userspace product compiled with GCC 15.3.0. |
 | `make check` | FAIL | Compiler/schema/doc checks completed; repository security scan failed on the pre-existing modified `AGENTS.md` absolute `/home/...` entries. `AGENTS.md` was not changed by this campaign. |
@@ -56,10 +59,14 @@ the repository.
 | target-matched `./scripts/build.sh --kernel` | PASS | Exact Linux `7.0.12` source archive, live BTF, UAPI, and helper generator used; BPF object is target-specific. |
 | policy dry-run from repository path | FAIL/blocked by safety contract | Root correctly rejected the user-owned `/home` path. |
 | policy dry-run from root-owned `/var/tmp` copy | PASS | Five-action policy parsed and generated bridge commands; no maps were published. |
-| CFS CPU benchmark | PASS | Maintained runner completed 1/2/4/8-worker fixed-work rows; ORCHESTRA phase stopped before attach because no repository loader artifact was present. |
-| CFS mixed benchmark | PASS | Maintained runner completed 1/2/4/8-worker rows; `scx_simple` missing and ORCHESTRA phase stopped before attach. |
+| CFS CPU benchmark | PASS | Maintained runner completed the earlier 1/2/4/8-worker baseline; the authorized continuation also completed matched 1/2/4-worker rows. |
+| CFS mixed benchmark | PASS | Maintained runner completed the earlier 1/2/4/8-worker baseline; the authorized continuation also completed matched 1/2/4-worker rows. |
 | CFS stress suite, 3 seconds | PASS | CPU, bounded memory (2 x 3189 MiB), I/O, mixed, and health-check rows all passed; no new panic/stall/RCU/hung-task lines. |
-| sched_ext attach/ownership/actions | BLOCKED_FOR_SAFETY | Not run; no runtime evidence was fabricated from compilation or CFS baselines. |
+| sched_ext attach/ownership/actions | PASS, bounded | Authorized P0 continuation attached through the exact loader, proved accepted/dispatched/running telemetry for an exact target TID, published YIELD/MIGRATE/THROTTLE/SLEEP requests, and unloaded cleanly. Effective-action scope remains bounded; see the continuation section. |
+| ORCHESTRA CPU benchmark | PASS, bounded | Matched 80M-iteration rows for 1/2/4 workers completed with ownership confirmed; no performance advantage claim. |
+| ORCHESTRA mixed benchmark | PASS, bounded | Matched CPU/I/O rows for 1/2/4 workers completed with ownership confirmed; no performance advantage claim. |
+| ORCHESTRA stress, 3 seconds | PARTIALLY_VALIDATED | CPU, I/O, mixed, and health rows passed with ownership confirmed; memory stress remained `BLOCKED_OWNERSHIP_NOT_PROVEN` because `stress --vm` child TIDs are not exposed. |
+| `scx_simple` runtime comparison | BLOCKED | Binary build succeeded, but this campaign did not start it: the existing harness tears down that scheduler with `kill`, which is not an approved scheduler-unload mechanism. |
 
 ## Clean committed-HEAD recheck
 
@@ -116,7 +123,69 @@ The follow-up raw evidence is under
 the refreshed evidence-manifest SHA-256 is
 `7b40234aae7e8501ddc43c5e8e73f29f1459367a4e15953b7a7fe3518e965349`.
 These fixes remove build and artifact-path blockers but do not change the
-original `BLOCKED_FOR_SAFETY` sched_ext runtime result.
+original pre-authorization safety result; the later authorized continuation is
+recorded below.
+
+## Authorized runtime continuation
+
+The user explicitly authorized this host for a controlled scheduler runtime
+test after the original safety stop. The continuation used the same host and
+target-matched artifacts, with the mandatory pre-attach inventory preserved at
+`/tmp/orchestra-runtime-20260825-kali-wL8qsm/pre-attach-inventory.stdout`.
+The live graphical session remained present, so the run stayed bounded and
+used only the repository loader/bridge control plane.
+
+The P0 ownership retest completed with zero failures:
+
+- exact loader attach: PASS; sched_ext transitioned to `enabled`;
+- CFS baseline: PASS, 2,000,000 iterations, 6 ms;
+- exact-TID forward progress: PASS, 60 ms, `accepted=2 dispatched=2 running=1`;
+- action requests: YIELD, MIGRATE, THROTTLE, and SLEEP were each published
+  only after the positive ownership gate;
+- per-task post-request status showed positive effective counts for the four
+  probes (14, 15, 10, and 9 respectively), with zero fallback/errors in the
+  captured task records;
+- exact loader unload: PASS; final sched_ext state was `disabled`.
+
+The action result is intentionally bounded. The P0 result proves that the
+bridge request reached an admitted task and that the task status recorded
+effective activity; it does not by itself prove broad actuator causality. In
+particular, the captured global YIELD/MIGRATE dispatch counters were zero in
+those short probes. No coordination Q claim is made.
+
+The matched benchmark parameters were fixed-work 80,000,000 iterations,
+1/2/4 workers, 3-second watchdog duration, and the same CPU affinity protocol
+for CFS and ORCHESTRA. The elapsed milliseconds were:
+
+| Workload | Workers | CFS | ORCHESTRA | Ownership evidence |
+| --- | ---: | ---: | ---: | --- |
+| CPU | 1 | 2553 | 2738 | `2/2/2`, owned=yes |
+| CPU | 2 | 2916 | 2892 | `7/7/7`, owned=yes |
+| CPU | 4 | 2917 | 2795 | `30/30/30`, owned=yes |
+| mixed CPU/I/O | 1 | 2558 | 2749 | `2/2/2`, owned=yes |
+| mixed CPU/I/O | 2 | 2916 | 2844 | `6/6/6`, owned=yes |
+| mixed CPU/I/O | 4 | 2967 | 2846 | `27/27/27`, owned=yes |
+
+The values in the ownership column are accepted/dispatched/running totals at
+the release gate. They are ownership evidence, not a performance metric.
+The raw benchmark directories are
+`/tmp/orchestra-runtime-20260825-kali-wL8qsm/bench-cpu/` and
+`/tmp/orchestra-runtime-20260825-kali-wL8qsm/bench-mixed/`.
+
+The bounded ORCHESTRA stress continuation ran for 3 seconds per CPU, I/O, and
+mixed phase with 24 allowed CPUs. CPU (24 workers), I/O (12 files), mixed (12
+CPU and 12 I/O workers), and the sorted dmesg health delta all passed with
+zero errors/warnings and exact ownership confirmed. The memory row remained
+`BLOCKED_OWNERSHIP_NOT_PROVEN`: `stress --vm` creates child workers whose TIDs
+are not admitted by the existing bridge protocol. Thermal samples peaked at
+72°C in the reported zones, below the reported critical trips, and no thermal
+event or new health warning occurred. The raw stress directory is
+`/tmp/orchestra-runtime-20260825-kali-wL8qsm/stress-orchestra/`.
+
+The independent final inventory recorded sched_ext `disabled`, no ORCHESTRA
+matches in `bpftool prog list`, only the pre-existing `/sys/fs/bpf` root pin,
+and no remaining campaign workers. The raw mandatory final inventory is at
+`/tmp/orchestra-runtime-20260825-kali-wL8qsm/final-inventory/`.
 
 ## Kernel build provenance
 
@@ -137,28 +206,45 @@ The external build manifest SHA-256 was
 | `orchestra_loader` | `af1aa651804a483a3952798e0e1f6f05f35545a2b8400fc2f733f32da22939d2` |
 
 The object is an eBPF ELF relocatable containing `.struct_ops`, `.maps`,
-`.BTF`, and `.BTF.ext`. This proves compilation and object structure only;
-the verifier and loader were intentionally not exercised.
+`.BTF`, and `.BTF.ext`. The authorized continuation also loaded this exact
+object through the repository loader and the kernel accepted it on this host;
+that does not prove portability to another kernel or deployment readiness.
 
 ## Safety and cleanup
 
 The pre-runtime inventory recorded a live graphical session (`sharda` on
-`seat0`), so the required disposable-host premise was not established. No
-CPU governor, kernel, bootloader, package set, persistent configuration, or
-foreign BPF state was changed. The post-run inventory confirmed sched_ext
-disabled, unchanged unrelated BPF inventory hashes, no ORCHESTRA pins, no
-remaining benchmark workload, and unchanged temporary-workload cleanup.
-Thermal samples stayed below reported critical trips; the final CFS stress
-health delta was clean.
+`seat0`); the later runtime was authorized as a bounded test despite that
+context. No CPU governor, kernel, bootloader, package set, persistent
+configuration, or foreign BPF state was changed. The final inventory confirmed
+sched_ext disabled, no ORCHESTRA matches, no ORCHESTRA pins, no remaining
+benchmark workers, and cleanup of campaign-created workload files. Unrelated
+system-managed BPF programs were preserved. Thermal samples stayed below
+reported critical trips and the stress health delta was clean.
 
 ## Open gates and next action
 
-The next runtime campaign requires explicit confirmation that the host is a
-dedicated/recoverable scheduler test target, followed by the mandated
-pre-attach inventory and the repository loader-scoped P0 ownership gate. Only
-after accepted, dispatched, and running telemetry is proven should effective
-actions or timing be reported. At the original campaign timestamp, the host
-inventory marked `scx_simple`, `perf`, `stress-ng`, `fio`, `iperf3`, and
-`shellcheck` as `BLOCKED_MISSING_DEPENDENCY`; the follow-up supplied external
-`scx_simple` and `pkg-config` artifacts, but did not install persistent host
-packages or provide the remaining optional tools.
+The next work is implementation/evidence expansion, not a reason to promote
+this release to deployment-ready:
+
+1. Add an approved graceful lifecycle for the external `scx_simple` comparison
+   (or update the harness to use one) before running that phase.
+2. Expose and opt in the actual memory-stress child TIDs, or replace that
+   workload with an existing process model whose identities the bridge can
+   admit.
+3. Repeat the matched benchmark with a pre-registered repetition count and
+   report distributions, not single-run timing rows. Report the coordination
+   metric only with all S1/S2/S3/S4 components, window, population, exclusions,
+   and formula recorded.
+4. Run the still-open security provenance, predictor convergence, actuator
+   rollback, multicore/NUMA, soak, and recovery gates. These remain
+   `INSUFFICIENT_EVIDENCE` or `BLOCKED_NOT_IMPLEMENTED`, not passes by
+   implication from P0.
+5. Keep the dirty-checkout `AGENTS.md` security-scan result separate from the
+   clean committed-HEAD regression result; do not weaken the scanner to make
+   the user-owned policy file pass.
+
+At the original campaign timestamp, the host inventory marked `scx_simple`,
+`perf`, `stress-ng`, `fio`, `iperf3`, and `shellcheck` as
+`BLOCKED_MISSING_DEPENDENCY`; the follow-up supplied external `scx_simple` and
+`pkg-config` artifacts, but did not install persistent host packages or
+provide the remaining optional tools.
