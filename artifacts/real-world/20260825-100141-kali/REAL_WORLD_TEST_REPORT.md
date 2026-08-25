@@ -85,6 +85,39 @@ performance.
 The CFS timing rows are exploratory baselines only. They are not a comparison
 against ORCHESTRA and do not establish a performance advantage.
 
+## Post-campaign blocker follow-up
+
+After the original campaign, the repository-side benchmark path defect was
+fixed and published at implementation commit
+`15f5c99f3d4c0eaa3c6008f7d422bca5099062ca`. The runner now honors an explicit
+`ORCHESTRA_BUILD_DIR` and derives the externally built BPF object, bridge, and
+loader from that directory. Shell syntax, whitespace, unit, integration, and
+security checks passed for the change. No scheduler was attached for this
+follow-up.
+
+The comparison scheduler was built from the exact Linux `7.0.12` source export
+at `/var/tmp/orchestra-scx-simple-build-20260825-kali/build/bin/scx_simple`.
+The build required only external-tool overrides for the host's available
+`ld` and `ar` in place of missing `ld.lld` and `llvm-ar`. The resulting binary
+SHA-256 is
+`52c68ac711c7660618f786649756145e445456a7f976defef014281d1aacfd45`.
+The binary was inspected and its help path was exercised; it was not started
+as a scheduler.
+
+The strict capability gate was also rerun successfully using a temporary,
+out-of-tree extraction of the available Kali `pkg-config`/`pkgconf` packages;
+no packages were installed into the host. `libbpf`, `libelf`, and `libzstd`
+metadata all passed and `kernel_activation=PASS`. The host's persistent
+package state remains unchanged, so a normal installed-toolchain rerun still
+requires package authorization if desired.
+
+The follow-up raw evidence is under
+`/tmp/orchestra-realworld-20260825-100141-kali-5nvoRG/followup-dependencies/`;
+the refreshed evidence-manifest SHA-256 is
+`7b40234aae7e8501ddc43c5e8e73f29f1459367a4e15953b7a7fe3518e965349`.
+These fixes remove build and artifact-path blockers but do not change the
+original `BLOCKED_FOR_SAFETY` sched_ext runtime result.
+
 ## Kernel build provenance
 
 The exact source archive was `/usr/src/linux-source-7.0.tar.xz`, whose SHA-256
