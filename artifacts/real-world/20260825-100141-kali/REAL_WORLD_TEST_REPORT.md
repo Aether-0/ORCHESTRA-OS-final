@@ -61,6 +61,27 @@ the repository.
 | CFS stress suite, 3 seconds | PASS | CPU, bounded memory (2 x 3189 MiB), I/O, mixed, and health-check rows all passed; no new panic/stall/RCU/hung-task lines. |
 | sched_ext attach/ownership/actions | BLOCKED_FOR_SAFETY | Not run; no runtime evidence was fabricated from compilation or CFS baselines. |
 
+## Clean committed-HEAD recheck
+
+Because the live checkout contains a user-edited `AGENTS.md`, the committed
+revision was exported to an external clean worktree with an isolated Git index
+pointing at `HEAD`. The following rerun completed successfully:
+
+- `make clean && make`: PASS;
+- `make check`: PASS, including `SECURITY_SCAN_PASS`;
+- `make test`: PASS;
+- `./scripts/build.sh --userspace --bridge`: PASS;
+- target-matched `./scripts/build.sh --kernel`: PASS.
+
+The clean-HEAD kernel object hash was
+`74747faf81c62ffe632db4b4920ec8778427a179482d269c0723f39d5d1f8a3e`.
+The difference from the live-checkout object hash is expected from the
+different absolute source path embedded in debug information; the source,
+kernel, UAPI, BTF, compiler, and loader contracts were otherwise the same.
+This clean recheck validates the committed implementation and still does not
+prove verifier acceptance, sched_ext ownership, effective actions, or runtime
+performance.
+
 The CFS timing rows are exploratory baselines only. They are not a comparison
 against ORCHESTRA and do not establish a performance advantage.
 
