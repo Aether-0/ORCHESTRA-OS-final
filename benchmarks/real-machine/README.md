@@ -36,11 +36,12 @@ Mixed workload → CPU + I/O combined
 Health check   → Kernel log scan for panics/stalls
 ```
 
-In `orchestra` mode, CPU, I/O, and mixed workers are held behind a release
-barrier and must each pass exact-TID opt-in, RUN publication, and positive
-accepted/dispatched/running telemetry before the phase is attributed to
-ORCHESTRA. The memory row is `BLOCKED_OWNERSHIP_NOT_PROVEN` because the
-existing `stress --vm` interface does not expose a safe per-child opt-in path.
+In `orchestra` mode, CPU, I/O, mixed, and memory workers must each pass
+exact-TID opt-in, RUN publication, and positive accepted/dispatched/running
+telemetry before the phase is attributed to ORCHESTRA. The memory phase
+discovers `stress --vm` child workers from the process tree and admits each
+child individually. If discovery or admission fails, that row remains
+`BLOCKED_OWNERSHIP_NOT_PROVEN` and is not attributed to ORCHESTRA.
 
 ## Benchmark Workloads
 
