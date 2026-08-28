@@ -1,7 +1,9 @@
 # ORCHESTRA-OS verified current state
 
-- Audit date: 2026-08-25
-- Repository commit: `c85ababc0c2c9a2ae1b47b265fd5b5fa414abf1d`
+- Audit date: 2026-08-28
+- Repository commit: `94664aeb001d8b3552245aedfd78254fbb5f13b8`
+- Working tree: dirty; the uncommitted source/documentation changes and their
+  hashes are preserved in the latest campaign artifact audit.
 - Branch: `main`
 - Current milestone: ORCHESTRA-OS `1.0.0-rc1` product integration with a
   foreground sched_ext lifecycle, ownership-checked loader, target-matched
@@ -322,11 +324,14 @@ map pinning, task opt-in, and detach. Unprivileged BPF is disabled.
 ## Next acceptance gate
 
 The bare-metal Linux 7.0.12 build/verifier compatibility and
-non-destructive explicit-ownership gate is complete for this host. The next
-acceptance gate is a broader controlled pilot covering RT coexistence,
-physical MIGRATE placement, actuator response/rollback, fault recovery,
-long-duration stability, and release documentation. It is not another
-simulator feature and not the SuperTuxKart demonstration.
+non-destructive explicit-ownership gate is complete for this host. The
+2026-08-28 campaign also covered bounded FIFO/RR contention, same-node
+MIGRATE placement, and a 30-minute CPU/I/O/mixed soak. The next acceptance
+gate is the remaining full-scope pilot: hard-RT/deadline coexistence, broad
+physical migration and NUMA behavior, multi-actuator response/rollback,
+fault-recovery breadth, predictor convergence, distributed scheduling, and
+release documentation. It is not another simulator feature and not the
+SuperTuxKart demonstration.
 
 The gate passes only when a source-hashed build can:
 
@@ -411,3 +416,34 @@ now delegate to the out-of-tree builder, exact-TID ownership gate, and
 loader-scoped benchmark path. The historical 30-minute/fault-injection
 portion of Stage 8 is explicitly reported as untested by the safe wrapper;
 it is not silently counted as a pass.
+
+## 2026-08-28 real-world campaign addendum
+
+The bounded follow-up campaign is preserved in the local evidence workspace at
+`artifacts/real-world/20260828-132302-redshadow-fix-implementation/`. The
+generated campaign directory is intentionally excluded from the source
+release. Its complete claim ledger is `REAL_WORLD_TEST_REPORT.md`, and its
+evidence audit is `audit/CLAIM_AUDIT.md` within that local package.
+It used the current source revision, the exact running kernel
+(`7.0.12+kali-amd64`), and a target-matched BPF/bridge/loader build. The
+userspace regression gate passed (30/30 named unit tests plus integration and
+security validators), the fixed runtime matrix recorded 81/81 passing rows,
+and the final scheduler state was `disabled` with no ORCHESTRA pins left in
+bpffs.
+
+The strongest bounded claims from that campaign are:
+
+| Area | Classification | Bounded evidence and limit |
+| --- | --- | --- |
+| Fixed-work performance comparison | `EXPERIMENTALLY_VALIDATED` (exploratory) | Three CFS and three ownership-proven ORCHESTRA repetitions for CPU and mixed workloads. These are completion-time observations only; they do not establish causal superiority, production overhead, or a valid `Q` comparison. `scx_simple` and tool-dependent memory rows were blocked. |
+| CPU/I/O/mixed stress | `EXPERIMENTALLY_VALIDATED` (bounded) | Existing stress suite completed short, medium, and one 30-minute ORCHESTRA phases with exact ownership, clean health scan, and unload. The missing `stress` utility blocked the memory variant. |
+| RT coexistence | `EXPERIMENTALLY_VALIDATED` (bounded) | Normal-task ownership coexisted with FIFO/RR contention and the admission matrix rejected adaptive opt-in for FIFO/RR/DEADLINE. DEADLINE contention was environment-blocked (`EPERM`); no hard-RT latency, starvation, or priority-inversion guarantee is claimed. |
+| Signal integrity | `EXPERIMENTALLY_VALIDATED` (userspace only) | Existing tamper/replay/stale integration checks and the documented publication microbenchmark passed (12/12 runs, 12,000 publications, 27,161 verified reads). The kernel bridge remains local-trust; no kernel-side HMAC/authentication claim is made. |
+| NUMA | `EXPERIMENTALLY_VALIDATED` (single-node only) | The host has one NUMA node; same-node affinity/migration evidence was collected. Cross-node placement and NUMA-aware policy remain untestable here. |
+| Distributed scheduling | `NOT_IMPLEMENTED` | No distributed backend, node identity, remote ordering, or partition protocol exists in the current implementation. Loopback transfer evidence is transport smoke testing, not distributed scheduler validation. |
+| Long duration | `EXPERIMENTALLY_VALIDATED` (bounded soak) | A 30-minute scheduler-enabled CPU/I/O/mixed sequence completed with exact ownership, no new critical health lines, maximum observed package temperature 87°C, and clean unload. This is not a production soak or deployment-readiness result. |
+
+These results update the evidence envelope only; they do not close the
+remaining full-scope gates for kernel cryptographic authentication, cross-node
+NUMA, distributed scheduling, hard-RT coexistence, predictor convergence,
+multi-actuator causal control, or production deployment readiness.

@@ -1830,6 +1830,33 @@ static __always_inline struct bridge_task_state *get_task_state(
     return state;
 }
 
+/* A new directive generation (or a changed action) starts a fresh accounting
+ * period. Re-enqueues for the same generation/action retain runtime_used_ns so
+ * THROTTLE can eventually exhaust its budget. Keep this transition ahead of
+ * every accepted dispatch/defer path so .running can correlate task state with
+ * the task telemetry generation written by record_accepted_legacy(). */
+static __always_inline void sync_task_state_for_action(
+    struct bridge_task_state *state, uint64_t generation, uint32_t action,
+    uint32_t requested_cpu, uint64_t now)
+{
+    if (!state)
+        return;
+    bpf_spin_lock(&state->lock);
+    if (state->generation != generation || state->action != action) {
+        state->generation = generation;
+        state->period_start_ns = now;
+        state->runtime_used_ns = 0;
+        state->running_since_ns = 0;
+        state->eligible_ns = 0;
+        state->action = action;
+        state->requested_cpu = requested_cpu;
+        state->dispatched_cpu = ORCHESTRA_CPU_ANY;
+        state->flags = 0;
+    }
+    state->last_enqueue_ns = now;
+    bpf_spin_unlock(&state->lock);
+}
+
 static __always_inline struct bridge_task_telemetry *get_task_tel(
     const struct orchestra_task_identity *id, int create)
 {
@@ -2217,8 +2244,15 @@ static __always_inline void record_dispatched_legacy(
     struct bridge_task_telemetry *task_tel = get_task_tel(id, 1);
     uint64_t now = bpf_ktime_get_ns();
 
-    if (tel)
+    if (tel) {
         tel_inc(&tel->dispatched_action_count);
+        if (action == ORCHESTRA_ACTION_RUN)
+            tel_inc(&tel->run_dispatched_count);
+        else if (action == ORCHESTRA_ACTION_YIELD)
+            tel_inc(&tel->yield_dispatched_count);
+        else if (action == ORCHESTRA_ACTION_MIGRATE)
+            tel_inc(&tel->migrate_dispatched_count);
+    }
     if (!task_tel)
         return;
     bpf_spin_lock(&task_tel->lock);
@@ -2319,6 +2353,7 @@ static __always_inline void orchestra_enqueue_bridge(
     struct bridge_run_directive directive = {};
     struct orchestra_task_identity id = task_identity(p);
     struct bridge_task_state *state;
+    struct bridge_telemetry *tel = global_tel();
     uint32_t fallback_reason = BRIDGE_FALLBACK_NO_DIRECTIVE;
     uint32_t action;
     uint64_t now;
@@ -2335,6 +2370,8 @@ static __always_inline void orchestra_enqueue_bridge(
     action = directive.action;
     if (action == ORCHESTRA_ACTION_MIGRATE &&
         !cpu_allowed_online(p, directive.target_cpu)) {
+        if (tel)
+            tel_inc(&tel->invalid_cpu_count);
         record_fallback(&id, BRIDGE_FALLBACK_BAD_CPU, 1);
         action = ORCHESTRA_ACTION_RUN;
     }
@@ -2352,25 +2389,15 @@ static __always_inline void orchestra_enqueue_bridge(
     now = bpf_ktime_get_ns();
     state = get_task_state(&id, 1);
     if (!state) {
+        record_fallback(&id, BRIDGE_FALLBACK_MAP_ERROR, 1);
         orchestra_dsq_insert(p, SCX_DSQ_GLOBAL, BRIDGE_SLICE_RUN_NS,
                              enq_flags);
+        record_dispatched_legacy(&id, directive.generation,
+                                 ORCHESTRA_ACTION_RUN, -1);
         return;
     }
-    bpf_spin_lock(&state->lock);
-    if (state->generation != directive.generation ||
-        state->action != action) {
-        state->generation = directive.generation;
-        state->period_start_ns = now;
-        state->runtime_used_ns = 0;
-        state->running_since_ns = 0;
-        state->eligible_ns = 0;
-        state->action = action;
-        state->requested_cpu = directive.target_cpu;
-        state->dispatched_cpu = ORCHESTRA_CPU_ANY;
-        state->flags = 0;
-    }
-    state->last_enqueue_ns = now;
-    bpf_spin_unlock(&state->lock);
+    sync_task_state_for_action(state, directive.generation, action,
+                               directive.target_cpu, now);
     if (action == ORCHESTRA_ACTION_YIELD) {
         orchestra_dsq_insert(p, SCX_DSQ_GLOBAL, BRIDGE_SLICE_MIN_NS,
                              enq_flags & ~SCX_ENQ_HEAD);
@@ -2378,6 +2405,8 @@ static __always_inline void orchestra_enqueue_bridge(
         return;
     }
     if (action == ORCHESTRA_ACTION_MIGRATE) {
+        if (tel)
+            tel_inc(&tel->migrate_accepted_count);
         orchestra_dsq_insert(p, SCX_DSQ_LOCAL_ON | directive.target_cpu,
                              clamp_slice(directive.slice_ns), enq_flags);
         record_dispatched_legacy(&id, directive.generation, action,
@@ -2503,6 +2532,9 @@ static ORCHESTRA_NOINLINE int orchestra_enqueue_deferred_action(
         if (directive->not_before_ns <= now ||
             directive->not_before_ns - now > BRIDGE_SLEEP_MAX_NS)
             goto bad_parameters;
+        sync_task_state_for_action(state, directive->generation,
+                                   directive->action,
+                                   directive->target_cpu, now);
         if (tel) {
             tel_inc(&tel->sleep_accepted_count);
             tel_inc(&tel->sleep_deferred_count);
@@ -2522,6 +2554,9 @@ static ORCHESTRA_NOINLINE int orchestra_enqueue_deferred_action(
     if (period < BRIDGE_SLICE_MIN_NS || period > BRIDGE_THROTTLE_MAX_NS ||
         budget < BRIDGE_SLICE_MIN_NS || budget >= period)
         goto bad_parameters;
+    sync_task_state_for_action(state, directive->generation,
+                               directive->action, directive->target_cpu,
+                               now);
     if (tel)
         tel_inc(&tel->throttle_accepted_count);
     bpf_spin_lock(&state->lock);
@@ -2554,6 +2589,9 @@ static ORCHESTRA_NOINLINE int orchestra_enqueue_deferred_action(
     return 1;
 
 bad_parameters:
+    sync_task_state_for_action(state, directive->generation,
+                               ORCHESTRA_ACTION_RUN,
+                               directive->target_cpu, now);
     record_fallback(&id, BRIDGE_FALLBACK_BAD_PARAMETERS, 1);
     orchestra_dsq_insert(p, SCX_DSQ_GLOBAL, BRIDGE_SLICE_RUN_NS, enq_flags);
     record_dispatched_legacy(&id, directive->generation,
@@ -2561,6 +2599,9 @@ bad_parameters:
     return 1;
 
 map_error:
+    sync_task_state_for_action(state, directive->generation,
+                               ORCHESTRA_ACTION_RUN,
+                               directive->target_cpu, now);
     record_fallback(&id, BRIDGE_FALLBACK_MAP_ERROR, 1);
     orchestra_dsq_insert(p, SCX_DSQ_GLOBAL, BRIDGE_SLICE_RUN_NS, enq_flags);
     record_dispatched_legacy(&id, directive->generation,
