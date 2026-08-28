@@ -1867,6 +1867,38 @@ static int status_command(const struct options *opts)
         have_key = true;
     }
     have_key = false;
+    while (bpf_next_key_raw(maps.fd[MAP_TASK_STATE],
+                            have_key ? &key : NULL, &next) == 0) {
+        struct bridge_task_state state;
+
+        memset(&state, 0, sizeof(state));
+        if ((!opts->target_set ||
+             memcmp(&next, &target_identity, sizeof(next)) == 0) &&
+            bpf_lookup_raw(maps.fd[MAP_TASK_STATE], &next, &state,
+                           BPF_F_LOCK) == 0) {
+            printf("task_state identity=%" PRIu32 ":%" PRIu32 ":%" PRIu64
+                   " generation=%" PRIu64 " action=%s"
+                   " period_start_ns=%" PRIu64
+                   " runtime_used_ns=%" PRIu64
+                   " running_since_ns=%" PRIu64
+                   " eligible_ns=%" PRIu64
+                   " last_enqueue_ns=%" PRIu64
+                   " requested_cpu=%" PRIu32
+                   " dispatched_cpu=%" PRIu32
+                   " flags=%" PRIu32 "\n",
+                   next.tgid, next.tid, next.start_boottime_ns,
+                   state.generation,
+                   state.action < ORCHESTRA_ACTION_COUNT ?
+                       action_names[state.action] : "INVALID",
+                   state.period_start_ns, state.runtime_used_ns,
+                   state.running_since_ns, state.eligible_ns,
+                   state.last_enqueue_ns, state.requested_cpu,
+                   state.dispatched_cpu, state.flags);
+        }
+        key = next;
+        have_key = true;
+    }
+    have_key = false;
     while (bpf_next_key_raw(maps.fd[MAP_TASK_TELEMETRY],
                             have_key ? &key : NULL, &next) == 0) {
         struct bridge_task_telemetry task;

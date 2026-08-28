@@ -223,6 +223,21 @@ running observations. The v8 telemetry also records state, policy, and signal
 generation changes, prediction fallback, unsupported actions, and policy
 lookup/cache outcomes.
 
+THROTTLE accounting is generation-scoped. A newly published generation, or a
+change into THROTTLE, starts a fresh period with zero charged runtime. Requeues
+for that same generation preserve charged runtime until the budget is exhausted
+or the period rolls over. Runtime accumulated under an earlier RUN generation
+is therefore not inherited by a newly published THROTTLE generation.
+Targeted bridge status reports the corresponding `task_state` generation,
+action, period start, charged runtime, eligibility deadline, and state flags so
+the scheduler/telemetry correlation can be checked directly.
+
+On the target-matched kernel build, the verifier-safe compact
+`orchestra_enqueue_bridge()` path is the authoritative live `.enqueue`
+executor. The retained `orchestra_execute_action()` helper is not called from
+that live path; compact-path dispatch telemetry is recorded by the dedicated
+legacy recorder and mapped to the actual RUN/YIELD/MIGRATE action.
+
 The bridge can stage and atomically activate a policy bank without changing
 the legacy per-task publication interface:
 

@@ -32,6 +32,23 @@ def require(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
+def function_body(source: str, marker: str, occurrence: int = 1) -> str:
+    """Return one C function body, excluding declarations and other helpers."""
+    start = -1
+    for _ in range(occurrence):
+        start = source.index(marker, start + 1)
+    brace = source.index("{", start)
+    depth = 0
+    for index in range(brace, len(source)):
+        if source[index] == "{":
+            depth += 1
+        elif source[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return source[brace + 1:index]
+    raise AssertionError(f"unterminated function body: {marker}")
+
+
 def main() -> None:
     require("SCX_OPS_SWITCH_PARTIAL" not in BPF,
             "partial-switch starvation mode must not return")
@@ -120,6 +137,67 @@ def main() -> None:
     require("struct bridge_task_state {\n    ORCHESTRA_MAP_LOCK lock" in ABI and
             "bpf_spin_lock(&state->lock)" in BPF,
             "per-task timer/callback state must remain synchronized")
+    state_sync = function_body(
+        BPF, "static __always_inline void sync_task_state_for_action(")
+    require("state->generation != generation" in state_sync and
+            "state->action != action" in state_sync and
+            "state->generation = generation" in state_sync and
+            "state->action = action" in state_sync and
+            "state->period_start_ns = now" in state_sync and
+            "state->runtime_used_ns = 0" in state_sync and
+            "state->last_enqueue_ns = now" in state_sync,
+            "new action generations must start one coherent fresh accounting period")
+    enqueue_callback = function_body(
+        BPF, "void BPF_STRUCT_OPS(orchestra_sched_enqueue,")
+    require("orchestra_enqueue_bridge(p, enq_flags)" in enqueue_callback and
+            "orchestra_execute_action(" not in enqueue_callback,
+            "enqueue must use exactly one verifier-safe live action path")
+    live_enqueue = function_body(
+        BPF, "static __always_inline void orchestra_enqueue_bridge(")
+    require("sync_task_state_for_action(" in live_enqueue and
+            "record_dispatched_legacy(" in live_enqueue,
+            "the live enqueue path must synchronize and account its actions")
+    live_dispatch = function_body(
+        BPF, "static __always_inline void record_dispatched_legacy(")
+    require(live_dispatch.count("dispatched_action_count") == 1 and
+            live_dispatch.count("run_dispatched_count") == 1 and
+            live_dispatch.count("yield_dispatched_count") == 1 and
+            live_dispatch.count("migrate_dispatched_count") == 1 and
+            "effective_count" not in live_dispatch and
+            "orchestra_record_execution_v8" not in live_dispatch,
+            "live dispatch must report one matching action without claiming execution")
+    valid_migrate = live_enqueue[live_enqueue.rindex(
+        "if (action == ORCHESTRA_ACTION_MIGRATE) {"):]
+    require(valid_migrate.index("migrate_accepted_count") <
+            valid_migrate.index("SCX_DSQ_LOCAL_ON | directive.target_cpu") <
+            valid_migrate.index("record_dispatched_legacy("),
+            "validated MIGRATE must record accepted then inserted then dispatched")
+    rejected_migrate = live_enqueue[live_enqueue.index(
+        "if (action == ORCHESTRA_ACTION_MIGRATE &&"):live_enqueue.index(
+            "if (action == ORCHESTRA_ACTION_SLEEP")]
+    require("invalid_cpu_count" in rejected_migrate and
+            "BRIDGE_FALLBACK_BAD_CPU" in rejected_migrate and
+            "migrate_accepted_count" not in rejected_migrate,
+            "illegal MIGRATE targets must fall back without accepted/dispatched claims")
+    state_failure = live_enqueue[live_enqueue.index(
+        "if (!state) {"):live_enqueue.index("sync_task_state_for_action(")]
+    require("BRIDGE_FALLBACK_MAP_ERROR" in state_failure and
+            "ORCHESTRA_ACTION_RUN" in state_failure and
+            "record_dispatched_legacy(" in state_failure,
+            "post-acceptance state allocation failure must report its RUN fallback")
+    deferred = function_body(
+        BPF, "static ORCHESTRA_NOINLINE int orchestra_enqueue_deferred_action(",
+        occurrence=2)
+    throttle_parameters = deferred.index(
+        "period = directive->throttle_period_ns")
+    throttle_sync = deferred.index(
+        "sync_task_state_for_action(state, directive->generation",
+        throttle_parameters)
+    throttle_accounting = deferred.index(
+        "elapsed = now - state->period_start_ns", throttle_sync)
+    require(throttle_parameters < throttle_sync < throttle_accounting and
+            deferred.count("ORCHESTRA_ACTION_RUN") >= 4,
+            "THROTTLE must synchronize valid generations before accounting and RUN fallbacks")
     require("bpf_cpumask_test_cpu(cpu, p->cpus_ptr)" in BPF and
             "scx_bpf_get_online_cpumask" in BPF,
             "MIGRATE must check affinity and online masks")
@@ -144,6 +222,10 @@ def main() -> None:
     require("struct orchestra_task_identity target_identity" in BRIDGE and
             "memcmp(&next, &target_identity, sizeof(next)) == 0" in BRIDGE,
             "targeted status must filter the full live task identity")
+    require("maps.fd[MAP_TASK_STATE]" in BRIDGE and
+            'printf("task_state identity=' in BRIDGE and
+            '" runtime_used_ns=%" PRIu64' in BRIDGE,
+            "targeted status must expose generation-scoped THROTTLE accounting")
     require("ORCHESTRA_ACTION_SLEEP = 1" in
             (ROOT / "kernel/sched_ext/include/orchestra_abi.h").read_text(),
             "canonical/wire action ABI drift")

@@ -80,13 +80,14 @@ distributed scheduling, or production soak readiness.
 ## Current-machine facts
 
 The latest real-world campaign directory is
-`/tmp/orchestra-realworld-20250825-042022-redshadow-complete`. The machine is
-Kali rolling on x86_64, kernel `7.0.12+kali-amd64`, Intel i5-10310U, 4
-cores/8 logical CPUs, and approximately 30 GiB RAM. sched_ext, BTF, BPF JIT,
-and the required kernel configuration were present. Root filesystem
-headroom was approximately 42 GiB and authorized `sudo` was available. The
-host was used only for short, controlled, ownership-gated runs; no reboot or
-destructive bpffs cleanup was performed.
+`artifacts/real-world/20260828-132302-redshadow-fix-implementation`. The
+machine is Kali rolling on x86_64, kernel `7.0.12+kali-amd64`, Intel
+i5-10310U, 4 cores/8 logical CPUs, and approximately 31 GiB RAM. sched_ext,
+BTF, BPF JIT, and the required kernel configuration were present. Root
+filesystem headroom and authorized `sudo` were recorded in the campaign
+environment evidence. The host was used for controlled, ownership-gated runs
+including the bounded 30-minute soak; no reboot or destructive bpffs cleanup
+was performed.
 
 The campaign preserved pre-existing kernel warnings and performed only
 controlled loader-scoped attaches. It did not reboot, install packages, or
@@ -131,3 +132,35 @@ python3 tests/unit/test_orchestra_scx_source.py
 These checks cover source contracts and local artifact handling. They do not
 replace cryptographic review, signed release verification, fuzzing, or a
 privileged verifier/attach/ownership test.
+
+## 2026-08-28 bounded real-world campaign addendum
+
+The follow-up evidence package is preserved in the local evidence workspace at
+`artifacts/real-world/20260828-132302-redshadow-fix-implementation/`; the
+generated campaign directory is intentionally excluded from the source
+release.
+The campaign rebuilt the current source against the exact running kernel
+(`7.0.12+kali-amd64`), reran the userspace gate (30/30 named unit tests plus
+integration/security validators), and completed the fixed runtime matrix with
+81/81 passing rows. Every attached phase returned to `sched_ext=disabled` and
+the final BPF inventory contained no ORCHESTRA pins; unrelated BPF state was
+preserved.
+
+This addendum records only the additional bounded claims, using the evidence
+and limits in the package's `REAL_WORLD_TEST_REPORT.md`:
+
+| Claim | State | Evidence boundary |
+| --- | --- | --- |
+| Performance comparison | `EXPERIMENTALLY_VALIDATED` (exploratory) | Three CFS versus three ownership-proven ORCHESTRA repetitions for CPU and mixed fixed-work runs. Completion times are not a causal superiority or production-overhead claim; `scx_simple` was unavailable. |
+| Stress | `EXPERIMENTALLY_VALIDATED` (bounded) | Existing CPU/I/O/mixed stress phases passed at short, medium, and one 30-minute sequence with ownership and clean health state. Memory stress was blocked because `stress` is not installed. |
+| RT | `EXPERIMENTALLY_VALIDATED` (bounded) | FIFO/RR contention and FIFO/RR/DEADLINE adaptive-admission refusal were observed while normal work remained owned. DEADLINE contention itself was blocked by host `EPERM`; no hard-RT coexistence guarantee is claimed. |
+| Cryptographic integrity | `EXPERIMENTALLY_VALIDATED` (userspace only) | Tamper/replay/stale integration checks and the documented userspace publication microbenchmark passed 12/12 runs. The kernel signal path has no HMAC verifier and remains local-trust. |
+| NUMA | `EXPERIMENTALLY_VALIDATED` (single-node only) | The host exposes one NUMA node; same-node placement/migration was measured. Cross-node NUMA behavior was impossible to exercise. |
+| Distributed | `NOT_IMPLEMENTED` | Source and architecture records contain no distributed scheduler/backend or remote protocol. Loopback networking is not distributed validation. |
+| Long duration | `EXPERIMENTALLY_VALIDATED` (bounded soak) | One 30-minute scheduler-enabled CPU/I/O/mixed sequence completed with exact ownership, no new critical health lines, max package temperature 87°C, and clean unload. Production soak/readiness remains `BLOCKED`. |
+
+Accordingly, the broad gates for kernel-side cryptographic authentication,
+cross-node NUMA, distributed scheduling, hard-RT coexistence, predictor
+convergence, full controller causality/rollback, and deployment readiness
+remain `BLOCKED` or `NOT_IMPLEMENTED`; the bounded observations above must not
+be promoted to those claims.
