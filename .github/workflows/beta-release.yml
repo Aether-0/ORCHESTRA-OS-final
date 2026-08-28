@@ -108,7 +108,7 @@ jobs:
                 make clean
                 make
                 if [ "$DISTRO" = alpine ]; then
-                  # Alpine's GCC package does not ship the ASan/UBSan runtime
+                  # Alpine GCC packages do not ship the ASan/UBSan runtime
                   # required by tests/unit/run.sh and tests/security/run.sh.
                   # Keep the portable compile gate explicit instead of
                   # pretending to have full test parity with the glibc
