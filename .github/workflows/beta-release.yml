@@ -33,8 +33,6 @@ jobs:
           - name: alpine-3.20
             distro: alpine
             image: alpine:3.20
-    env:
-      OUTPUT_DIR: ${{ runner.temp }}/${{ matrix.name }}
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -45,6 +43,7 @@ jobs:
           DISTRO: ${{ matrix.distro }}
           SOURCE_SHA: ${{ github.sha }}
           SOURCE_REF: ${{ github.ref_name }}
+          OUTPUT_DIR: ${{ runner.temp }}/${{ matrix.name }}
         run: |
           set -euo pipefail
           mkdir -p "$OUTPUT_DIR"
