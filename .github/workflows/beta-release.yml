@@ -1,0 +1,206 @@
+name: ORCHESTRA-OS beta release build
+
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*-beta*'
+
+permissions:
+  contents: read
+
+jobs:
+  portable-build:
+    name: ${{ matrix.name }} portable beta
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu-22.04
+            distro: ubuntu
+            image: ubuntu:22.04
+          - name: ubuntu-24.04
+            distro: ubuntu
+            image: ubuntu:24.04
+          - name: debian-12
+            distro: debian
+            image: debian:12
+          - name: fedora-latest
+            distro: fedora
+            image: fedora:latest
+          - name: alpine-3.20
+            distro: alpine
+            image: alpine:3.20
+    env:
+      OUTPUT_DIR: ${{ runner.temp }}/${{ matrix.name }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Build and test in ${{ matrix.image }}
+        env:
+          IMAGE: ${{ matrix.image }}
+          DISTRO: ${{ matrix.distro }}
+          SOURCE_SHA: ${{ github.sha }}
+          SOURCE_REF: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUTPUT_DIR"
+          docker run --rm \
+            --env DISTRO \
+            --env SOURCE_SHA \
+            --env SOURCE_REF \
+            --volume "$GITHUB_WORKSPACE:/src:ro" \
+            --volume "$OUTPUT_DIR:/out" \
+            "$IMAGE" \
+            /bin/sh -euc '
+              case "$DISTRO" in
+                ubuntu|debian)
+                  export DEBIAN_FRONTEND=noninteractive
+                  apt-get update -qq
+                  apt-get install -y -qq --no-install-recommends \
+                    bash build-essential ca-certificates clang git gzip \
+                    libbpf-dev libelf-dev libzstd-dev make pkg-config \
+                    python3 tar
+                  ;;
+                fedora)
+                  dnf -y install \
+                    bash ca-certificates clang elfutils-libelf-devel \
+                    gcc gcc-c++ git gzip libbpf-devel libzstd-devel \
+                    make pkgconf-pkg-config python3 tar
+                  ;;
+                alpine)
+                  apk add --no-cache \
+                    bash build-base ca-certificates clang coreutils git \
+                    gzip libbpf-dev llvm make musl-dev pkgconf python3 tar
+                  ;;
+                *)
+                  echo "unsupported beta-build distro: $DISTRO" >&2
+                  exit 2
+                  ;;
+              esac
+
+              work_dir=$(mktemp -d /tmp/orchestra-beta-work.XXXXXX)
+              cp -a /src/. "$work_dir/"
+              cd "$work_dir"
+
+              if ! {
+                make clean
+                make
+                make test
+                ORCHESTRA_BUILD_DIR=/tmp/orchestra-os-build \
+                  bash scripts/build.sh --userspace --bridge
+              } > /out/build.log 2>&1; then
+                cat /out/build.log
+                exit 1
+              fi
+
+              package_name="orchestra-os-${DISTRO}-beta"
+              package_dir="/out/${package_name}"
+              mkdir -p "$package_dir/bin" "$package_dir/docs"
+              cp orchestra_paper_cpu_demo/orchestra_paper_cpu "$package_dir/bin/"
+              cp /tmp/orchestra-os-build/orchestra_bridge "$package_dir/bin/"
+              if [ -x /tmp/orchestra-os-build/orchestra_loader ]; then
+                cp /tmp/orchestra-os-build/orchestra_loader "$package_dir/bin/"
+              fi
+              cp scripts/orchestra scripts/check-system.sh "$package_dir/bin/"
+              cp README.md FINAL_PRODUCT_STATUS.md "$package_dir/docs/"
+              cp docs/installation/INSTALL.md "$package_dir/docs/"
+              {
+                echo "product=ORCHESTRA-OS"
+                echo "release_class=controlled research beta"
+                echo "source_commit=${SOURCE_SHA}"
+                echo "source_sha=${SOURCE_SHA}"
+                echo "source_ref=${SOURCE_REF}"
+                echo "build_distribution=${DISTRO}"
+                echo "kernel_scheduler_artifacts=target-specific and excluded"
+                echo "kernel_mode_claim=not established by this portable build"
+                cc --version | head -n 1
+              } > "$package_dir/BUILD_INFO"
+              cp /out/build.log "$package_dir/"
+
+              (
+                cd "$package_dir"
+                find . -type f -not -name SHA256SUMS -print | LC_ALL=C sort |
+                  while IFS= read -r file; do sha256sum "$file"; done
+              ) > "$package_dir/SHA256SUMS"
+              tar -C /out -czf "/out/${package_name}.tar.gz" "$package_name"
+              cat "$package_dir/BUILD_INFO"
+              sha256sum "/out/${package_name}.tar.gz"
+            '
+
+      - name: Upload ${{ matrix.name }} beta package
+        uses: actions/upload-artifact@v4
+        with:
+          name: orchestra-os-${{ matrix.name }}-beta
+          path: |
+            ${{ runner.temp }}/${{ matrix.name }}/orchestra-os-*-beta.tar.gz
+            ${{ runner.temp }}/${{ matrix.name }}/build.log
+          if-no-files-found: error
+          retention-days: 30
+
+  aggregate:
+    name: aggregate beta packages
+    needs: portable-build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download beta packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: orchestra-os-*-beta
+          path: dist
+          merge-multiple: true
+
+      - name: Create aggregate checksum manifest
+        run: |
+          set -euo pipefail
+          find dist -type f -name '*.tar.gz' -print | LC_ALL=C sort |
+            xargs -r sha256sum > dist/SHA256SUMS
+          test -s dist/SHA256SUMS
+          cat dist/SHA256SUMS
+
+      - name: Upload aggregate beta packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: orchestra-os-beta-bundles
+          path: dist
+          if-no-files-found: error
+          retention-days: 30
+
+  publish-prerelease:
+    name: publish GitHub beta prerelease
+    if: startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, '-beta')
+    needs: aggregate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download aggregate beta packages
+        uses: actions/download-artifact@v4
+        with:
+          name: orchestra-os-beta-bundles
+          path: dist
+
+      - name: Publish prerelease and packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cat > release-notes.md <<'EOF'
+          ORCHESTRA-OS controlled research beta build.
+
+          The portable packages contain userspace/bridge artifacts built in the
+          declared distribution environment. sched_ext kernel objects are not
+          universal binaries and must be built against the exact target kernel
+          using the separate target-matched workflow.
+
+          This prerelease does not claim production readiness, universal
+          performance superiority, hard-real-time guarantees, distributed
+          scheduling, or kernel-side cryptographic signal authentication.
+          EOF
+          gh release create "$GITHUB_REF_NAME" dist/*.tar.gz dist/SHA256SUMS \
+            --prerelease \
+            --title "ORCHESTRA-OS $GITHUB_REF_NAME" \
+            --notes-file release-notes.md
