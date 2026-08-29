@@ -189,7 +189,11 @@ jobs:
               make clean
               make
               make check
-              make test
+              # The complete ASan/UBSan regression runs in the x86_64 and
+              # arm64 source-gate jobs above. Some target package images (for
+              # example Alpine/musl) do not ship sanitizer runtimes, so this
+              # matrix records native package build/check/smoke evidence
+              # without weakening or relabeling the source regression gate.
               build=/tmp/orchestra-build
               rm -rf "$build"
               mkdir -p "$build"
