@@ -71,7 +71,19 @@ Description: ORCHESTRA-OS research-stable scheduler control plane
  Safe observer/control plane and explicitly opt-in target-matched sched_ext
  research prototype. Installation never attaches or enables a scheduler.
 EOF
-        printf '%s\n' /etc/orchestra-os/*.json > "$STAGE/DEBIAN/conffiles"
+        conffiles="$STAGE/DEBIAN/conffiles"
+        : > "$conffiles"
+        config_count=0
+        for config_file in "$STAGE"/etc/orchestra-os/*.json; do
+            [ -f "$config_file" ] || continue
+            printf '/etc/orchestra-os/%s\n' "$(basename -- "$config_file")" \
+                >> "$conffiles"
+            config_count=$((config_count + 1))
+        done
+        [ "$config_count" -gt 0 ] || {
+            echo "no package configuration files were staged" >&2
+            exit 1
+        }
         find "$STAGE" -exec touch -d "@$SOURCE_DATE_EPOCH" {} +
         artifact="orchestra-os_${VERSION}-1_${DISTRO}_${ARCH}.deb"
         dpkg-deb --build --root-owner-group "$STAGE" "$OUTPUT/$artifact" >/dev/null
