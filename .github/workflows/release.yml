@@ -331,7 +331,7 @@ jobs:
           sha256sum -c dist/SHA256SUMS
           python3 -m json.tool dist/RELEASE_MANIFEST.json >/dev/null
       - name: Attest release assets
-        uses: actions/attest-build-provenance@c074443f1aee8d4aee555aebba3282517141b2 # v2.2.3
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
         with:
           subject-path: |
             dist/*.deb
