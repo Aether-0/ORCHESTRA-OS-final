@@ -78,7 +78,7 @@ sed \
     > "$STAGE/usr/lib/systemd/system/orchestra.service"
 chmod 0644 "$STAGE/usr/lib/systemd/system/orchestra.service"
 
-if [ "$DISTRO" = alpine ] && [ -f "$ROOT/packaging/openrc/orchestra" ]; then
+if [[ "$DISTRO" == alpine* ]] && [ -f "$ROOT/packaging/openrc/orchestra" ]; then
     mkdir -p "$STAGE/etc/init.d"
     install -m 0755 "$ROOT/packaging/openrc/orchestra" \
         "$STAGE/etc/init.d/orchestra"
