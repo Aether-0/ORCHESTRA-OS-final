@@ -1,6 +1,6 @@
 {
   "schema": "orchestra.policy.v1",
-  "product_version": "1.0.0-rc1",
+  "product_version": "1.0.0",
   "description": "Read-only evaluation configuration; publish with --dry-run only.",
   "policy": {
     "mode": "EVALUATE",

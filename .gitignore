@@ -24,6 +24,11 @@ kernel/sched_ext/scripts/fixed_work
 /out/
 /coverage/
 /output/
+*.deb
+*.rpm
+*.apk
+*.spdx.json
+*.intoto.jsonl
 *.bzImage
 *.zip
 

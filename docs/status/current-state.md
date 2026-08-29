@@ -1,16 +1,18 @@
 # ORCHESTRA-OS verified current state
 
-- Audit date: 2026-08-28
-- Repository commit: `94664aeb001d8b3552245aedfd78254fbb5f13b8`
-- Working tree: dirty; the uncommitted source/documentation changes and their
-  hashes are preserved in the latest campaign artifact audit.
-- Branch: `main`
-- Current milestone: ORCHESTRA-OS `1.0.0-rc1` product integration with a
+- Audit date: 2026-08-29
+- Repository commit: release candidate commit recorded by the release tag
+- Working tree: frozen before release-gate execution; generated campaign
+  evidence remains outside the public source export.
+- Branch: `main` in the public distribution repository
+- Current milestone: ORCHESTRA-OS `1.0.0` research-stable product integration with a
   foreground sched_ext lifecycle, ownership-checked loader, target-matched
   build/install path, explicit security boundary, and controlled bare-metal
   v8 sched_ext acceptance evidence
 - Active work-package boundary: WP1 kernel foundation plus a source/build-validated v8 policy/runtime path, with userspace precursors for WP2-WP6
-- Overall claim class: mixed; see the component boundaries below
+- Overall claim class: mixed; research-stable userspace/package surface with
+  target-specific experimental sched_ext evidence; see the component
+  boundaries below
 
 This file is a handoff index. The paper, ADRs, experiment contracts, raw
 artifacts, and test protocols remain authoritative for their respective
@@ -101,9 +103,9 @@ evidence remains archived.
 
 The security boundary is intentionally explicit: local schema, generation,
 freshness, identity, fallback, and artifact-integrity checks are implemented;
-cryptographic authentication of the kernel signal frame, signed release
-provenance/SBOM, fuzzing/SCA review, and privileged runtime security gates are
-not claimed by this release candidate. See
+cryptographic authentication of the kernel signal frame, distro package
+signatures, fuzzing/SCA review, and privileged runtime security gates are not
+claimed by this research-stable release. See
 `docs/security/SECURITY.md` and `FINAL_PRODUCT_STATUS.md`.
 
 ## 2026-08-21 working-tree follow-up
@@ -300,7 +302,9 @@ The final VirtualBox runtime gate on 2026-08-14 established:
 
 ## Current machine
 
-Readiness classification: **controlled bare-metal pilot passed; release candidate only**.
+Readiness classification: **controlled bare-metal pilot passed; research-stable
+userspace/package release; sched_ext remains experimental and not
+deployment-ready**.
 
 | Item | Verified value |
 | --- | --- |

@@ -1,7 +1,7 @@
 # ORCHESTRA-OS Threat Model
 
 **Model version:** 1.0
-**Product version:** 1.0.0-rc1
+**Product version:** 1.0.0 research stable
 **Assessment date:** 2026-08-25
 
 ## Scope and security posture

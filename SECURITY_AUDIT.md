@@ -1,7 +1,7 @@
 # ORCHESTRA-OS Security Audit
 
 **Assessment date:** 2026-08-25
-**Product:** ORCHESTRA-OS `1.0.0-rc1`
+**Product:** ORCHESTRA-OS `1.0.0` research stable
 **Scope:** repository-wide source, ABI, userspace, BPF/sched_ext, bridge,
 loader, policy, controller, installer, uninstaller, scripts, tests, build
 and documentation paths.
@@ -189,8 +189,8 @@ commands and reasons.
 
 ## Release recommendation
 
-Keep the product at `1.0.0-rc1`. It is suitable for observer/userspace
-research validation and controlled, target-specific kernel testing. Do not
-describe it as a universally secure or production-certified scheduler until
-kernel-side signal trust, signed provenance, broader recovery, and soak
-evidence are completed.
+The `1.0.0` label applies to the observer/userspace and native package
+surface. It is suitable for research validation and controlled, target-specific
+kernel testing. Do not describe it as a universally secure or
+production-certified scheduler: kernel-side signal authentication, broad
+recovery, and generalized soak evidence remain outside this release claim.

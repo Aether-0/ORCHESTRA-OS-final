@@ -40,7 +40,7 @@ jobs:
             install_libbpf: false
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Build and test in ${{ matrix.image }}
         env:
@@ -170,7 +170,7 @@ jobs:
             '
 
       - name: Upload ${{ matrix.name }} beta package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: orchestra-os-${{ matrix.name }}-beta
           path: |
@@ -185,7 +185,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download beta packages
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           pattern: orchestra-os-*-beta
           path: dist
@@ -200,7 +200,7 @@ jobs:
           cat dist/SHA256SUMS
 
       - name: Upload aggregate beta packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: orchestra-os-beta-bundles
           path: dist
@@ -239,6 +239,7 @@ jobs:
           scheduling, or kernel-side cryptographic signal authentication.
           EOF
           gh release create "$GITHUB_REF_NAME" dist/*.tar.gz dist/SHA256SUMS \
+            --repo "$GITHUB_REPOSITORY" \
             --prerelease \
             --title "ORCHESTRA-OS $GITHUB_REF_NAME" \
             --notes-file release-notes.md

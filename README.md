@@ -3,9 +3,9 @@
 ORCHESTRA-OS is a research-grade, capability-tiered Linux scheduling
 prototype that coordinates observed runtime state, bounded prediction,
 policy, controller gates, and sched_ext actions. The current product line is
-`1.0.0-rc1`: source/build validation is established, while privileged
-verifier, attachment, ownership, and hardware-runtime gates remain explicit
-release conditions.
+`1.0.0`, a research-stable release for the observer/control plane and native
+package lifecycle. Privileged sched_ext verifier, attachment, ownership, and
+hardware-runtime behavior remain target-specific experimental gates.
 
 The safe default is observer/userspace operation. Kernel scheduling is
 target-specific and is enabled only after the host capability check, a
@@ -61,7 +61,7 @@ switching cannot appear healthy merely because actions agree at one instant.
 | --- | --- | --- |
 | Observer | Portable userspace simulation, prediction/metrics contracts, diagnostics, and reports; no scheduling changes | Build, unit, integration, and source checks pass |
 | Safe canary | Target-matched sched_ext object, exact map negotiation, explicit opt-in, bounded fallback, and loader-scoped cleanup | Kernel prototype source/build validated; live gate requires privilege and a compatible host |
-| Certified kernel | sched_ext ownership, all action outcomes, RT bypass, watchdog/recovery, soak, and rollback evidence | Not claimed by this release candidate |
+| Certified kernel | sched_ext ownership, all action outcomes, RT bypass, watchdog/recovery, soak, and rollback evidence | Not claimed by this research-stable release |
 | Conventional fallback | CFS/EEVDF remains active whenever ORCHESTRA cannot safely own or decide | Implemented as the fail-closed boundary |
 
 Current ABI contracts are additive and explicit: bridge ABI v2, kernel state
@@ -72,6 +72,12 @@ BTF/UAPI and is not a universal binary. The stable source entry point is
 is retained as the compatibility implementation body and output name.
 
 ## Quick start: observer and source validation
+
+The release workflow publishes native all-in-one packages for Ubuntu
+24.04/26.04, Debian 13, Fedora 44, and Alpine 3.24 on amd64/x86_64 and
+arm64/aarch64. Package installation is observer-only and never compiles or
+attaches sched_ext. See the [research-stable release guide](docs/releases/v1.0.0-research-stable.md)
+for checksums, attestations, and target-kernel activation boundaries.
 
 From the repository root:
 

@@ -1,0 +1,7 @@
+ORCHESTRA-OS v1.0.0
+
+Original userspace, scripts, documentation, examples, and configuration are
+released under the MIT License in LICENSE. Kernel-facing sources under
+kernel/sched_ext/ carry GPL-2.0-only SPDX notices or the license stated in
+their individual headers. Inherited Linux/BPF headers retain their original
+licenses. Consult each component's SPDX notice before redistribution.

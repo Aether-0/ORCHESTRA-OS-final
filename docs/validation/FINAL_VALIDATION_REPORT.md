@@ -1,7 +1,7 @@
 # Final validation report
 
 This report records the strongest evidence available for product
-`1.0.0-rc1`. States are explicit: `PASS`, `FAIL`, `BLOCKED`, or
+`1.0.0` research stable. States are explicit: `PASS`, `FAIL`, `BLOCKED`, or
 `NOT APPLICABLE`. A compile is not an attach; a simulation is not a hardware
 measurement; a request counter is not effective action evidence.
 
