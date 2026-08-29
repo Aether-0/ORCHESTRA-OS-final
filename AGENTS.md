@@ -2223,3 +2223,19 @@ Do not reuse the preparation host's vmlinux.h or loader artifacts as proof of
 target compatibility. Do not treat the historical USB bundle, a successful
 registration command, or a userspace action emulation run as kernel-runtime
 validation.
+
+# 63. Explicit Release-Engineering Exception (2026-08-29)
+
+The repository owner has explicitly authorized implementation of the
+ORCHESTRA-OS v1.0.0 research-stable release plan. For that bounded release
+work, the agent MAY edit the implementation, tests, scripts, CI workflows,
+packaging metadata, and release documentation; create isolated branches and
+commits; and publish the approved release repository and assets after the
+release gates pass.
+
+This exception does not permit falsifying evidence. The testing requirements
+above remain in force for every validation campaign: freeze the candidate
+before testing, preserve the first failure and its logs, never weaken tests or
+warnings to obtain a pass, and keep experimental sched_ext limitations and
+negative results visible in the release documentation. Work must be isolated
+from unrelated dirty files in the existing checkout.

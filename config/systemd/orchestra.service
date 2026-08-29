@@ -1,6 +1,6 @@
 [Unit]
 Description=ORCHESTRA-OS capability-tiered sched_ext scheduler
-Documentation=https://github.com/Aether-0/ORCHESTRA-OS-final
+Documentation=https://github.com/Aether-0/ORCHESTRA-OS-Public
 ConditionPathExists=/usr/local/bin/orchestra
 After=local-fs.target
 Before=multi-user.target

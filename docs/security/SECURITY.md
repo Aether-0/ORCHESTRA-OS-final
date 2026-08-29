@@ -108,10 +108,10 @@ Before kernel activation:
 
 The repository has source-level invariants and userspace validation for input
 bounds, schema/generation/freshness behavior, policy lifecycle, fallback,
-artifact checks, and cleanup ownership. Cryptographic signal authentication,
-signed release provenance, fuzzing, dependency/SCA review, verifier/attach
-runtime testing, and production penetration testing are not claimed as
-complete by `1.0.0-rc1`.
+artifact checks, and cleanup ownership. The `1.0.0` release adds checksummed
+native packages, SPDX SBOMs, and CI provenance attestations. Cryptographic
+signal authentication inside the kernel transport and production penetration
+testing remain outside the research-stable claim.
 
 ## Vulnerability reporting
 

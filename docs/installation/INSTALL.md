@@ -1,10 +1,24 @@
 # Installing ORCHESTRA-OS
 
-This guide installs the current `1.0.0-rc1` product tools. The installer does
+This guide installs the current `1.0.0` product tools. The installer does
 not enable sched_ext and does not change boot configuration, sysctls, CPU
 governors, or unrelated BPF state.
 
-## 1. Supported starting point
+## 1. Native packages
+
+The recommended installation uses the distro-native package for the current
+architecture from the GitHub Release. Packages are observer-only: they do not
+compile, load, enable, or attach sched_ext, and their service is disabled by
+default. Use the package manager for upgrades and removal; the bundled
+`orchestra install` and `orchestra uninstall` commands refuse to overwrite a
+package-managed installation.
+
+For target-specific sched_ext experiments, install the optional kernel-build
+prerequisites and run `sudo orchestra build --kernel` on the exact target host.
+A BPF object from another kernel or distribution must not be copied into the
+build directory.
+
+## 2. Supported starting point
 
 The observer tier runs on supported Linux systems with a C compiler, Make,
 Python 3, and the repository userspace dependencies. Kernel mode requires a
@@ -17,7 +31,7 @@ observer-only until separately certified.
 The kernel source must match `uname -r` exactly. One BPF object must not be
 copied between unrelated kernels.
 
-## 1.1 Install build dependencies
+## 2.1 Install build dependencies
 
 The project never installs packages automatically. Choose the command for the
 distribution and review it before running it. The portable observer build

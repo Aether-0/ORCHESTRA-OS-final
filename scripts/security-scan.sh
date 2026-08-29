@@ -29,7 +29,7 @@ if [ "$found" -ne 0 ]; then
     exit 1
 fi
 
-if tracked_runtime=$(git ls-files | rg -n \
+if tracked_runtime=$(git ls-files | grep -En \
     '(^|/)(vmlinux\.h|orchestra_(bridge|loader)|fixed_work|.*\.bpf\.o|.*\.skel\.h)$' \
     2>/dev/null); then
     echo "tracked-runtime-artifact: $tracked_runtime" >&2
@@ -37,7 +37,7 @@ if tracked_runtime=$(git ls-files | rg -n \
     exit 1
 fi
 
-if tracked_secret_file=$(git ls-files | rg -n \
+if tracked_secret_file=$(git ls-files | grep -En \
     '(^|/)(\.env($|\.)|.*\.(pem|key|p12|pfx|kdbx)$|id_(rsa|ed25519)(\.pub)?$)' \
     2>/dev/null); then
     echo "tracked-secret-file: $tracked_secret_file" >&2

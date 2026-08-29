@@ -23,6 +23,7 @@ SOURCES = [
     ROOT / "docs/troubleshooting/TROUBLESHOOTING.md",
     ROOT / "docs/development/DEVELOPMENT.md",
     ROOT / "docs/research/RESEARCH_TO_CODE.md",
+    ROOT / "docs/releases/v1.0.0-research-stable.md",
     ROOT / "docs/validation/FINAL_VALIDATION_REPORT.md",
 ]
 LINK = re.compile(r"!?(?:\[[^\]]*\])\(([^)]+)\)")

@@ -68,7 +68,14 @@ fi
 BIN="$PREFIX/bin/orchestra"
 LIB="$PREFIX/lib/orchestra-os"
 MARKER="$LIB/.orchestra-install"
+PACKAGE_MARKER="$LIB/.package-managed"
 SERVICE_TARGET="$PREFIX/lib/systemd/system/orchestra.service"
+
+if [ -f "$PACKAGE_MARKER" ] || [ -L "$PACKAGE_MARKER" ]; then
+    echo "this installation is owned by a package manager; use apt, dnf, or apk" >&2
+    echo "refusing source-tree uninstall of package-managed files" >&2
+    exit 1
+fi
 
 if ! orchestra_safe_existing_dir "$LIB" ||
    [ ! -f "$MARKER" ] || [ -L "$MARKER" ] ||

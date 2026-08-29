@@ -1,10 +1,10 @@
 # ORCHESTRA-OS Security Validation Report
 
-**Product:** ORCHESTRA-OS 1.0.0-rc1
+**Product:** ORCHESTRA-OS 1.0.0 research stable
 **Assessment date:** 2026-08-25
 **Repository revision at assessment start:** c85ababc0c2c9a2ae1b47b265fd5b5fa414abf1d
 **Final hardening revision:** c85ababc0c2c9a2ae1b47b265fd5b5fa414abf1d
-**Disposition:** release candidate; not production-certified
+**Disposition:** research-stable userspace release; not production-certified
 
 ## Gate summary
 

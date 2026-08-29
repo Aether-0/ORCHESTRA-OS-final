@@ -83,6 +83,13 @@ manifest_hash_matches() {
 BIN_DIR="$PREFIX/bin"
 LIB_ROOT="$PREFIX/lib/orchestra-os"
 INSTALL_MARKER="$LIB_ROOT/.orchestra-install"
+PACKAGE_MARKER="$LIB_ROOT/.package-managed"
+
+if [ -f "$PACKAGE_MARKER" ] || [ -L "$PACKAGE_MARKER" ]; then
+    echo "this installation is owned by a package manager; use apt, dnf, or apk" >&2
+    echo "refusing source-tree installation over package-managed files" >&2
+    exit 1
+fi
 
 safe_install_file() {
     local source=$1 destination=$2 mode=$3

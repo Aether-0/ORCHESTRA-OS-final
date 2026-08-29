@@ -12,7 +12,7 @@ elif [ -r "$SCRIPT_DIR/../lib/orchestra-os/VERSION" ]; then
     INSTALL_ROOT=${ORCHESTRA_INSTALL_ROOT:-$(CDPATH= cd -- "$SCRIPT_DIR/../lib/orchestra-os" && pwd)}
     SOURCE_ROOT="$INSTALL_ROOT"
     TOOL_DIR="$INSTALL_ROOT/scripts"
-    DEFAULT_BUILD_DIR="$INSTALL_ROOT/build"
+    DEFAULT_BUILD_DIR=${ORCHESTRA_PACKAGE_BUILD_DIR:-/var/lib/orchestra-os/build}
     DEFAULT_CONFIG_ROOT=${ORCHESTRA_CONFIG_DIR:-/etc/orchestra-os}
 else
     INSTALL_ROOT=${ORCHESTRA_INSTALL_ROOT:-$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)}
@@ -31,6 +31,7 @@ LOADER=${ORCHESTRA_LOADER:-$BUILD_DIR/orchestra_loader}
 BPF_OBJECT=${ORCHESTRA_BPF:-$BUILD_DIR/orchestra_scx_stage7.bpf.o}
 BUILD_MANIFEST=${ORCHESTRA_BUILD_MANIFEST:-$BUILD_DIR/build-manifest.txt}
 CONFIG_ROOT=${ORCHESTRA_CONFIG_DIR:-$DEFAULT_CONFIG_ROOT}
+PACKAGE_MARKER="$INSTALL_ROOT/.package-managed"
 CHECK_SYSTEM="$TOOL_DIR/check-system.sh"
 BUILD_TOOL="$TOOL_DIR/build.sh"
 POLICY_TOOL="$TOOL_DIR/policy_load.py"
@@ -51,7 +52,7 @@ commands:
   check-system [--json|--strict] discover host capability tiers
   build [--userspace|--bridge|--kernel|--all]
                                   build selected artifacts outside the source tree
-  install [--with-kernel]         install userspace tools/documentation (opt-in kernel files)
+  install [--with-kernel]         install from source (package-managed installs refuse this)
   enable                          attach the target-matched sched_ext object (root)
   run [--interval SEC]            attach, monitor, and detach on exit (root)
   monitor [--interval SEC]        stream scheduler telemetry until interrupted (root)
@@ -61,7 +62,7 @@ commands:
   controller status               show controller and coordination state
   telemetry                       show structured bridge telemetry
   validate                        run non-privileged build/test/repository checks
-  uninstall                       disable and remove only ORCHESTRA-installed files (root)
+  uninstall                       remove only source-installed files (use package manager for packages)
 EOF
 }
 
@@ -304,6 +305,7 @@ case "$cmd" in
         ;;
     version)
         echo "ORCHESTRA-OS $VERSION"
+        if [ -f "$PACKAGE_MARKER" ]; then echo "install=package-managed"; else echo "install=source-tree"; fi
         echo "bridge_abi=2 kernel_abi=8 control_abi=10"
         echo "actions=RUN,SLEEP,MIGRATE,THROTTLE,YIELD"
         ;;
@@ -435,7 +437,10 @@ case "$cmd" in
         echo "ORCHESTRA disabled; conventional Linux scheduling is active"
         ;;
     validate)
-        if [ -f "$SOURCE_ROOT/Makefile" ]; then
+        if [ -f "$PACKAGE_MARKER" ]; then
+            "$CHECK_SYSTEM" || true
+            echo "VALIDATION_PARTIAL (package-managed install; source regression tests require a writable source tree)"
+        elif [ -f "$SOURCE_ROOT/Makefile" ]; then
             make -C "$SOURCE_ROOT" check
             make -C "$SOURCE_ROOT" test
             git -C "$SOURCE_ROOT" diff --check
@@ -447,9 +452,17 @@ case "$cmd" in
         fi
         ;;
     install)
+        if [ -f "$PACKAGE_MARKER" ]; then
+            echo "this installation is package-managed; use apt, dnf, or apk to change it" >&2
+            exit 1
+        fi
         exec "$TOOL_DIR/install.sh" "$@"
         ;;
     uninstall)
+        if [ -f "$PACKAGE_MARKER" ]; then
+            echo "this installation is package-managed; use apt, dnf, or apk to remove it" >&2
+            exit 1
+        fi
         exec "$TOOL_DIR/uninstall.sh" "$@"
         ;;
     *)

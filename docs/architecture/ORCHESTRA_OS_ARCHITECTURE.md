@@ -119,7 +119,7 @@ The adaptive path has an explicit eligibility boundary. Protected real-time
 classes (`SCHED_FIFO`, `SCHED_RR`, and `SCHED_DEADLINE`) must remain outside
 adaptive ownership. The bridge rejects adaptive publication to protected
 targets, and kernel ownership/admission checks are still required for any
-runtime claim. The current release candidate records this as implemented
+runtime claim. The current research-stable release records this as implemented
 source behavior, not as completed live RT coexistence validation.
 
 ### Coordination and Q

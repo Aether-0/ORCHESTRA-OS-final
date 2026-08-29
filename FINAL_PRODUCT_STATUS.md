@@ -5,13 +5,13 @@
 | Field | Value |
 | --- | --- |
 | Product | ORCHESTRA-OS |
-| Version | `1.0.0-rc1` |
+| Version | `1.0.0` |
 | Product ABI | 1.0.0 |
 | Bridge ABI | v2 |
 | Kernel state/policy ABI | v8 |
 | Native coordination/controller ABI | v10 |
-| Release class | Research-grade release candidate |
-| Current evidence class | Userspace validated; kernel prototyped with limited bare-metal experimental validation |
+| Release class | Research-stable public release |
+| Current evidence class | Userspace validated; kernel prototyped with bounded target-specific experimental validation |
 
 ## Implemented subsystems
 
@@ -58,8 +58,11 @@ The complete gate table is in
 [`docs/validation/FINAL_VALIDATION_REPORT.md`](docs/validation/FINAL_VALIDATION_REPORT.md).
 The current host has passed a controlled target-matched verifier, attach,
 ownership, action, and unload gate. It is still a research-grade release
-candidate, not `1.0.0` or deployment-ready, because the broader runtime,
-security, provenance, and soak gates remain open.
+artifact, not deployment-ready. The stable claim is limited to the
+observer/userspace and package lifecycle; sched_ext remains opt-in and
+target-specific. Kernel-side cryptographic signal authentication, broad
+hardware/runtime coverage, distributed scheduling, and hard-real-time
+guarantees are not claimed.
 
 ## Known limitations
 
@@ -74,16 +77,16 @@ security, provenance, and soak gates remain open.
    is not represented by a canonical reproducible runner in this release.
 5. No universal performance advantage over CFS/EEVDF is claimed; comparisons
    require ownership proof and workload-specific controlled evidence.
-6. Distributed scheduling, package signing/SBOM provenance, production
-   security review, external fuzzing, and dependency/SCA review remain
-   release work beyond this candidate. The repository now has bounded local
-   policy and ABI/state mutation targets; those do not replace independent
+6. Distributed scheduling, distro package signing, production security review,
+   external fuzzing, and dependency/SCA review remain outside this release.
+   Release assets include SPDX SBOMs and CI build-provenance attestations; the
+   repository's bounded local mutation targets do not replace independent
    fuzzing or kernel-runtime testing.
 
 ## Next release gates
 
-Use a dedicated authorized x86_64 and arm64 matrix to pass target-matched
-verifier/attach, exact ownership, all five effective actions, protected RT
-coexistence, fault/recovery/unload, telemetry/controller, paper, comparison,
-and soak gates. Only then should the version move from `1.0.0-rc1` to
-`1.0.0`.
+Future releases should use a dedicated authorized x86_64 and arm64 matrix to
+expand target-matched verifier/attach, exact ownership, all five effective
+actions, protected RT coexistence, fault/recovery/unload, telemetry/controller,
+paper, comparison, and soak evidence. Those expansion gates do not change the
+bounded research-stable claim of `1.0.0`.

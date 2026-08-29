@@ -1,0 +1,16 @@
+#!/sbin/openrc-run
+
+name="orchestra"
+description="ORCHESTRA-OS observer/control plane"
+command="/usr/bin/orchestra"
+command_args="run --interval 5"
+command_user="root"
+pidfile="/run/${RC_SVCNAME}.pid"
+command_background="yes"
+
+depend() {
+    need localmount
+    before bootmisc
+}
+
+# The package installs this service but does not add it to any runlevel.

@@ -6,7 +6,7 @@ LIBBPF_CFLAGS := $(shell pkg-config --cflags libbpf 2>/dev/null)
 LIBBPF_LIBS := $(shell pkg-config --libs libbpf 2>/dev/null || echo '-lbpf -lelf -lz')
 
 .PHONY: all userspace bridge product kernel-bpf check test test-unit \
-	test-integration security-test clean clean-product
+	test-integration security-test package clean clean-product
 
 all: userspace
 
@@ -34,6 +34,13 @@ bridge:
 	@if [ -e "$(ORCHESTRA_BUILD_DIR)/orchestra_loader" ]; then chmod 0755 "$(ORCHESTRA_BUILD_DIR)/orchestra_loader"; fi
 
 product: userspace bridge
+
+package:
+	@bash packaging/build-package.sh \
+		--format "$${FORMAT:-deb}" \
+		--distro "$${DISTRO:-local}" \
+		--output "$${OUTPUT:-/tmp/orchestra-os-packages}" \
+		--build-dir "$${ORCHESTRA_BUILD_DIR:-/var/tmp/orchestra-os-build-$$(id -u)}"
 
 kernel-bpf:
 	ORCHESTRA_BUILD_DIR="$(ORCHESTRA_BUILD_DIR)" \
@@ -107,6 +114,7 @@ check:
 		kernel/sched_ext/scripts/reproduce_stage7_runtime.sh \
 		kernel/sched_ext/scripts/stage8_validate.sh
 	@bash -n scripts/*.sh examples/*/*.sh
+	@bash -n packaging/*.sh packaging/openrc/orchestra
 	@PYTHONPYCACHEPREFIX=/tmp/orchestra-os-check-pyc \
 		python3 -m py_compile scripts/*.py
 	@for config_file in config/examples/*.json; do \
