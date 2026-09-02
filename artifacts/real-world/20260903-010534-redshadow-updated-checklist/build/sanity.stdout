@@ -1,0 +1,23 @@
+=== ORCHESTRA Real-Machine Sanity Check ===
+
+Kernel: 7.0.12+kali-amd64 | CPUs: 8 | RAM: 30Gi
+
+Required tools:
+  [OK] gcc
+  [OK] clang
+  [OK] make
+  [OK] bpftool
+  [OK] python3
+
+Kernel capabilities:
+  [OK] CONFIG_SCHED_CLASS_EXT=y
+  [OK] CONFIG_DEBUG_INFO_BTF=y
+  [OK] CONFIG_BPF_SYSCALL=y
+  [OK] CONFIG_BPF_JIT=y
+
+[OK] sched_ext: disabled
+[OK] BTF: 5.2M
+  SHA-256: 3f39484930b332629a5864a1a703b0a39320cc1584f6e8a00dfbc6375b58ec76
+
+Network: 192.168.1.113/24
+Disk:   11G free

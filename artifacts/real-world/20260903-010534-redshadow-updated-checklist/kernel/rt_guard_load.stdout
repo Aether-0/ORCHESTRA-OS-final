@@ -1,0 +1,1 @@
+loaded /var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_scx_stage7.bpf.o; maps pinned before attach; link=/sys/fs/bpf/orchestra/orchestra_sched

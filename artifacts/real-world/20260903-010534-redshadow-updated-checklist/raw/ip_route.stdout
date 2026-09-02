@@ -1,0 +1,7 @@
+default via 192.168.1.1 dev wlan0 proto dhcp src 192.168.1.113 metric 600 
+10.0.3.0/24 dev lxcbr0 proto kernel scope link src 10.0.3.1 linkdown 
+172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 linkdown 
+172.18.0.0/16 dev br-cff834e653c5 proto kernel scope link src 172.18.0.1 linkdown 
+172.19.0.0/16 dev br-a8158d9f91a0 proto kernel scope link src 172.19.0.1 
+172.20.0.0/16 dev br-d783d12b58e7 proto kernel scope link src 172.20.0.1 
+192.168.1.0/24 dev wlan0 proto kernel scope link src 192.168.1.113 metric 600 

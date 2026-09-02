@@ -1,0 +1,17 @@
+component,status,evidence_summary,limitation,evidence
+System-state acquisition,KERNEL_PROTOTYPED,Telemetry/status fields and host snapshots,Bounded fields; full acquisition path not independently measured,artifacts/real-world/20260903-010534-redshadow-updated-checklist/environment
+sched_ext scheduler,KERNEL_PROTOTYPED,"Exact target build, load, ownership and clean unload",Current target kernel only,artifacts/real-world/20260903-010534-redshadow-updated-checklist/sched_ext
+bridge/loader,KERNEL_PROTOTYPED,Target-matched build and runtime CLI,No source changes,artifacts/real-world/20260903-010534-redshadow-updated-checklist/build
+RUN,EXPERIMENTALLY_VALIDATED,Exact-TID accepted/dispatched/running and valid directive,Bounded workload,artifacts/real-world/20260903-010534-redshadow-updated-checklist/sched_ext
+SLEEP,EXPERIMENTALLY_VALIDATED,"Effective sleep counters, fallback=0",Bounded action probe,artifacts/real-world/20260903-010534-redshadow-updated-checklist/sched_ext
+MIGRATE,EXPERIMENTALLY_VALIDATED,Target/dispatched/actual CPU counters,Single-socket host,artifacts/real-world/20260903-010534-redshadow-updated-checklist/sched_ext
+THROTTLE,EXPERIMENTALLY_VALIDATED,Throttle accepted/effective counters,Bounded action probe,artifacts/real-world/20260903-010534-redshadow-updated-checklist/sched_ext
+YIELD,EXPERIMENTALLY_VALIDATED,Yield dispatch/effective counters,Bounded action probe,artifacts/real-world/20260903-010534-redshadow-updated-checklist/sched_ext
+Signal Bus,KERNEL_PROTOTYPED,Frame/generation/freshness/status and MAP_SHARED tests,Local-trust only,artifacts/real-world/20260903-010534-redshadow-updated-checklist/signal
+integrity/freshness,USERSPACE_VALIDATED,CLI sequence/freshness/replay rejection,Kernel cryptographic HMAC not implemented,artifacts/real-world/20260903-010534-redshadow-updated-checklist/security
+predictor,NOT_IMPLEMENTED,No kernel predictor output stream,Real-machine predictor metrics blocked,artifacts/real-world/20260903-010534-redshadow-updated-checklist/prediction
+S1/S2/S3/S4/Q,KERNEL_PROTOTYPED,Bounded fields/calculation/status evidence,Population/forecast/temporal validation incomplete,artifacts/real-world/20260903-010534-redshadow-updated-checklist/coordination
+controller,KERNEL_PROTOTYPED,Policy bank commit/abort and status lifecycle,Causal actuator response not proven,artifacts/real-world/20260903-010534-redshadow-updated-checklist/controller
+RT bypass,EXPERIMENTALLY_VALIDATED,Prior bounded FIFO/RR adaptive refusal/coexistence,Current live RT transition probe inconclusive,artifacts/real-world/20260903-010534-redshadow-updated-checklist/security
+NUMA,NOT_APPLICABLE,Single NUMA node,No cross-node validation,artifacts/real-world/20260903-010534-redshadow-updated-checklist/numa
+distributed tier,NOT_IMPLEMENTED,No distributed implementation identified,Not testable on single host,artifacts/real-world/20260903-010534-redshadow-updated-checklist

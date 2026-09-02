@@ -1,0 +1,10 @@
+timestamp=2026-09-03T01:15:24+05:30
+hostname=redshadow
+kernel=7.0.12+kali-amd64
+cpus=8
+cpu_list=0-7
+scheduler_pre=disabled
+bpf=/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_scx_stage7.bpf.o
+bridge=/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_bridge
+loader=/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_loader
+workload=/var/tmp/orchestra-updated-p0-exact-20260903-0117/build/fixed_work

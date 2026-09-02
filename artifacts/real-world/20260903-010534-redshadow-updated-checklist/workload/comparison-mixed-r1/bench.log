@@ -1,0 +1,19 @@
+01:24:59 === Real-Machine Benchmark Suite ===
+01:24:59 Repo: /home/aether/Documents/ORCHESTRA-OS-final | allowed CPUs: 0-7 | workload=mixed | Output: /var/tmp/orchestra-updated-compare-mixed-20260903-0124 | duration=2 seconds
+01:24:59 Worker watchdog: 17s
+01:24:59 --- CFS baseline ---
+01:24:59   cfs: 1 workers, 2 seconds/fixed workload...
+01:25:01     1589ms ctx_delta=14044 accepted=0 dispatched=0 running=0 owned=n/a
+01:25:01   cfs: 2 workers, 2 seconds/fixed workload...
+01:25:03     2001ms ctx_delta=37429 accepted=0 dispatched=0 running=0 owned=n/a
+01:25:03   cfs: 4 workers, 2 seconds/fixed workload...
+01:25:05     1959ms ctx_delta=47597 accepted=0 dispatched=0 running=0 owned=n/a
+01:25:05 scx_simple not installed or not executable: /usr/bin/scx_simple; phase blocked
+01:25:05 --- ORCHESTRA ---
+01:25:08   orchestra: 1 workers, 2 seconds/fixed workload...
+01:25:10     1230ms ctx_delta=12081 accepted=2 dispatched=2 running=2 owned=yes
+01:25:10   orchestra: 2 workers, 2 seconds/fixed workload...
+01:25:12     1904ms ctx_delta=29463 accepted=5 dispatched=5 running=5 owned=yes
+01:25:12   orchestra: 4 workers, 2 seconds/fixed workload...
+01:25:14     1708ms ctx_delta=35840 accepted=28 dispatched=28 running=28 owned=yes
+01:25:14 === COMPLETE ===

@@ -1,0 +1,2 @@
+Filesystem     1024-blocks      Used Available Capacity Mounted on
+/dev/sda2        464766672 430542268  10542052      98% /

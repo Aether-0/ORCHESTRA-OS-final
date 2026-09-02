@@ -1,0 +1,1 @@
+timestamp=2026-09-03T01:43:39+05:30	cwd=/home/aether/Documents/ORCHESTRA-OS-final	command=timedatectl show -p NTPSynchronized -p NTPService -p TimeUSec -p Timezone	rc=0	stdout=environment/time_sync.stdout	stderr=environment/time_sync.stderr

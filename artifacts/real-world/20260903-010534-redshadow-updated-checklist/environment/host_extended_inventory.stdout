@@ -1,0 +1,131 @@
+### governors
+policy=policy0
+scaling_driver=intel_pstate
+scaling_governor=powersave
+scaling_available_governors=performance powersave
+scaling_cur_freq=3499992
+cpuinfo_min_freq=400000
+cpuinfo_max_freq=4400000
+policy=policy1
+scaling_driver=intel_pstate
+scaling_governor=powersave
+scaling_available_governors=performance powersave
+scaling_cur_freq=3499996
+cpuinfo_min_freq=400000
+cpuinfo_max_freq=4400000
+policy=policy2
+scaling_driver=intel_pstate
+scaling_governor=powersave
+scaling_available_governors=performance powersave
+scaling_cur_freq=3499941
+cpuinfo_min_freq=400000
+cpuinfo_max_freq=4400000
+policy=policy3
+scaling_driver=intel_pstate
+scaling_governor=powersave
+scaling_available_governors=performance powersave
+scaling_cur_freq=3493099
+cpuinfo_min_freq=400000
+cpuinfo_max_freq=4400000
+policy=policy4
+scaling_driver=intel_pstate
+scaling_governor=powersave
+scaling_available_governors=performance powersave
+scaling_cur_freq=3400007
+cpuinfo_min_freq=400000
+cpuinfo_max_freq=4400000
+policy=policy5
+scaling_driver=intel_pstate
+scaling_governor=powersave
+scaling_available_governors=performance powersave
+scaling_cur_freq=3400013
+cpuinfo_min_freq=400000
+cpuinfo_max_freq=4400000
+policy=policy6
+scaling_driver=intel_pstate
+scaling_governor=powersave
+scaling_available_governors=performance powersave
+scaling_cur_freq=3399974
+cpuinfo_min_freq=400000
+cpuinfo_max_freq=4400000
+policy=policy7
+scaling_driver=intel_pstate
+scaling_governor=powersave
+scaling_available_governors=performance powersave
+scaling_cur_freq=3400008
+cpuinfo_min_freq=400000
+cpuinfo_max_freq=4400000
+### power_supply
+AC
+type=Mains
+BAT0
+type=Battery
+status=Not charging
+capacity=99
+energy_now=34430000
+power_now=0
+ucsi-source-psy-USBC000:001
+type=USB
+status=Not charging
+ucsi-source-psy-USBC000:002
+type=USB
+status=Charging
+### cgroup
+cpuset cpu io memory hugetlb pids rdma misc
+cpuset cpu io memory hugetlb pids rdma misc
+cpu.pressure
+cpu.stat
+cpu.stat.local
+### virtualization
+none
+Docker version 28.5.2+dfsg4, build 9cc6dea35e9a963f281434761c656fba4ac43aed
+bash: line 5: podman: command not found
+12.4.0
+QEMU emulator version 11.0.1 (Debian 1:11.0.1+ds-1)
+### suspend_hotplug
+freeze mem disk
+[platform] shutdown reboot suspend test_resume
+0-7
+
+### tooling
+perf=MISSING
+trace-cmd=MISSING
+turbostat=MISSING
+powertop=MISSING
+cpupower=MISSING
+stress=MISSING
+stress-ng=MISSING
+fio=MISSING
+hyperfine=MISSING
+scx_simple=MISSING
+irqbalance=MISSING
+top=/usr/bin/top
+htop=/usr/bin/htop
+ps=/usr/bin/ps
+mpstat=/usr/bin/mpstat
+pidstat=/usr/bin/pidstat
+numastat=MISSING
+lspci=/usr/bin/lspci
+vainfo=MISSING
+glxinfo=MISSING
+afl-fuzz=/usr/bin/afl-fuzz
+honggfuzz=MISSING
+### tracing
+debugfs=mounted
+ftrace_dir=present
+proc_sched_debug=missing
+### interrupts
+            CPU0       CPU1       CPU2       CPU3       CPU4       CPU5       CPU6       CPU7       
+   1:       2059        311          0          0          0          0          0          0 IR-IO-APIC    1-edge      i8042
+   8:          0          0          0          0          0          0          0          0 IR-IO-APIC    8-edge      rtc0
+   9:      16572          0          0          0          0          0          0          0 IR-IO-APIC    9-fasteoi   acpi
+  12:        196          0          0          0          0          0          0          0 IR-IO-APIC   12-edge      i8042
+  14:          0          0          0          0          0          0          0          0 IR-IO-APIC   14-fasteoi   INT34BB:00
+  16:     415963          0          0          0      55743          0          0          0 IR-IO-APIC   16-fasteoi   i801_smbus
+ 120:          0          0          0          0          0          0          0          0 DMAR-MSI 1024-edge      dmar0-prq
+ 121:          0          0          0          0          0          0          0          0 DMAR-MSI    0-edge      dmar0
+ 122:          0          0          0          0          0          0          0          0 DMAR-MSI    1-edge      dmar1
+ 123:          2          0          0          0          0          1          0          0 IR-PCI-MSI-0000:00:1c.0    0-edge      PCIe PME, PCIe bwctrl
+ 124:          4          0          0          0          0          0          3          0 IR-PCI-MSI-0000:00:1c.4    0-edge      PCIe PME, pciehp, PCIe bwctrl
+### gpu
+00:02.0 VGA compatible controller [0300]: Intel Corporation CometLake-U GT2 [UHD Graphics] [8086:9b41] (rev 02)

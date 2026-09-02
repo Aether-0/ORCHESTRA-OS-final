@@ -1,0 +1,1 @@
+EVALUATE freezes the active policy; explicitly transition to TRAIN or ADAPT before committing

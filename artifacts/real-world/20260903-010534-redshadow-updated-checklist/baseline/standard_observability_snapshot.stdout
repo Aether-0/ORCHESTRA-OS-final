@@ -1,0 +1,55 @@
+top - 01:23:19 up  5:40,  1 user,  load average: 2.20, 7.34, 6.32
+Tasks: 388 total, 2 running, 385 sleep, 1 d-sleep, 0 stopped, 0 zombie
+%Cpu(s):  9.5 us,  3.0 sy,  0.0 ni, 87.6 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+MiB Mem :  31725.0 total,   9860.2 free,  10088.9 used,  14083.1 buff/cache     
+MiB Swap:  25183.0 total,  25183.0 free,      0.0 used.  21636.1 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+   5918 aether    20   0 1499676  93260  67204 R  29.0   0.3   8:26.60 gnome-t+
+   3543 aether    20   0 7508436 493904 206852 S  19.3   1.5  17:50.47 gnome-s+
+ 507537 aether    20   0 1448.2g 692572 133816 S  14.5   2.1   7:43.11 chrome
+ 507937 aether    20   0 1448.2g 715704 143232 S  14.5   2.2   9:33.83 chrome
+ 487382 aether    20   0   73.4g   1.0g 101204 S   4.8   3.2  23:47.33 pentest+
+ 615844 root      20   0    8492   5952   3752 R   4.8   0.0   0:00.01 top
+      1 root      20   0   29072  17840  11668 S   0.0   0.1   0:03.76 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+--- ps scheduler fields ---
+    PID     TID CLS POL PRI  NI PSR STAT COMMAND
+     82      82  TS TS    0  19   0 SN   khugepaged
+     81      81  TS TS   14   5   0 SN   ksmd
+   1263    1263  TS TS   18   1   6 SNsl rtkit-daemon
+      1       1  TS TS   19   0   7 Ss   systemd
+      2       2  TS TS   19   0   1 S    kthreadd
+      3       3  TS TS   19   0   3 S    pool_workqueue_release
+     14      14  TS TS   19   0   0 S    ksoftirqd/0
+     15      15  TS TS   19   0   0 I    rcu_preempt
+     16      16  TS TS   19   0   0 S    rcu_exp_par_gp_kthread_worker/0
+     17      17  TS TS   19   0   5 S    rcu_exp_gp_kthread_worker
+     19      19  TS TS   19   0   0 S    kprobe-optimizer
+     21      21  TS TS   19   0   0 S    cpuhp/0
+     22      22  TS TS   19   0   1 S    cpuhp/1
+     25      25  TS TS   19   0   1 S    ksoftirqd/1
+     28      28  TS TS   19   0   2 S    cpuhp/2
+     31      31  TS TS   19   0   2 S    ksoftirqd/2
+     34      34  TS TS   19   0   3 S    cpuhp/3
+     37      37  TS TS   19   0   3 S    ksoftirqd/3
+     40      40  TS TS   19   0   4 S    cpuhp/4
+     43      43  TS TS   19   0   4 S    ksoftirqd/4
+     46      46  TS TS   19   0   5 S    cpuhp/5
+     49      49  TS TS   19   0   5 S    ksoftirqd/5
+     52      52  TS TS   19   0   6 S    cpuhp/6
+--- sysctl scheduler ---
+kernel.sched_autogroup_enabled = 1
+kernel.sched_cfs_bandwidth_slice_us = 5000
+kernel.sched_deadline_period_max_us = 4194304
+kernel.sched_deadline_period_min_us = 100
+kernel.sched_rr_timeslice_ms = 100
+kernel.sched_rt_period_us = 1000000
+kernel.sched_rt_runtime_us = 950000
+kernel.sched_schedstats = 0
+kernel.sched_util_clamp_max = 1024
+kernel.sched_util_clamp_min = 1024
+kernel.sched_util_clamp_min_rt_default = 1024

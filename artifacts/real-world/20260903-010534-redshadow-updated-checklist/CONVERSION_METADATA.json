@@ -1,0 +1,11 @@
+{
+  "source_docx": "Orchestra updated check list .docx",
+  "source_docx_sha256": "b3e047049b63a470f9ebd37f08d1e35bafd7061028eeca37a29176a3cadd426d",
+  "markdown_file": "ORCHESTRA_UPDATED_CHECKLIST.md",
+  "markdown_sha256": "0f2630d3ae5dbc50c43dca43bfa62caa778087ebbd58fcdaae14aa393fe98c02",
+  "checkbox_items": 587,
+  "phase_count": 36,
+  "converted_at": "2026-09-03T01:36:00.962637+05:30",
+  "campaign_id": "20260903-010534-redshadow-updated-checklist",
+  "status_ledger": "artifacts/real-world/20260903-010534-redshadow-updated-checklist/CHECKLIST_STATUS.csv"
+}

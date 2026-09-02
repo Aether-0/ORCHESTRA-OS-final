@@ -1,0 +1,4 @@
+make -C orchestra_paper_cpu_demo clean
+make[1]: Entering directory '/home/aether/Documents/ORCHESTRA-OS-final/orchestra_paper_cpu_demo'
+rm -f orchestra_paper_cpu
+make[1]: Leaving directory '/home/aether/Documents/ORCHESTRA-OS-final/orchestra_paper_cpu_demo'

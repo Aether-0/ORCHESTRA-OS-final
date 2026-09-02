@@ -1,0 +1,9 @@
+./tests/integration/run.sh
+process-reader=0 status=0 attempts=22772 valid=1809 verified=1809 retries=909 retry-exhaustions=0 unstable=0 invalid=0 hmac=0 regressions=0 duplicates=0 final=2000
+process-reader=1 status=0 attempts=44153 valid=1992 verified=1992 retries=932 retry-exhaustions=0 unstable=0 invalid=0 hmac=0 regressions=0 duplicates=0 final=2000
+process-reader=2 status=0 attempts=8538 valid=1223 verified=1223 retries=1476 retry-exhaustions=0 unstable=0 invalid=0 hmac=0 regressions=0 duplicates=0 final=2000
+process-reader=3 status=0 attempts=25354 valid=1958 verified=1958 retries=1056 retry-exhaustions=0 unstable=0 invalid=0 hmac=0 regressions=0 duplicates=0 final=2000
+process-stress-summary publisher-success=2000 publisher-attempts=5010 publisher-contention=3010 read-attempts=100817 verified=6982 retries=4373 retry-exhaustions=0 unstable=0 invalid=0 hmac=0 invalid-fields=0 invalid-schema=0 invalid-tier=0 invalid-source=0 invalid-directive=0 invalid-sequence=0 invalid-key-epoch=0 stale=0 torn-frame-detections=0 regressions=0 accepted-duplicates=0 reader-crashes=0 reader-hangs=0 hook-yields=35324 final-generation=2000 final-slot=1
+PASS signal publication MAP_SHARED integration scenarios
+PASS csv=/tmp/orchestra-integration.fYhqXo/baseline.csv rows=10 mode=baseline schema=orchestra.paper_cpu.metrics/v7
+PASS csv=/tmp/orchestra-integration.fYhqXo/orchestra.csv rows=30 mode=orchestra schema=orchestra.paper_cpu.metrics/v7

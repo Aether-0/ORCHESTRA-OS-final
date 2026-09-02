@@ -1,0 +1,4 @@
+make -C orchestra_paper_cpu_demo
+make[1]: Entering directory '/home/aether/Documents/ORCHESTRA-OS-final/orchestra_paper_cpu_demo'
+cc -O2 -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wformat=2 -Werror -o orchestra_paper_cpu orchestra_paper_cpu.c -lm
+make[1]: Leaving directory '/home/aether/Documents/ORCHESTRA-OS-final/orchestra_paper_cpu_demo'

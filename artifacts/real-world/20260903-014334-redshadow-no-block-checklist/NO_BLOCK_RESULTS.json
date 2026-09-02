@@ -1,0 +1,63 @@
+{
+  "campaign_id": "20260903-014334-redshadow-no-block-checklist",
+  "source_campaign": "20260903-010534-redshadow-updated-checklist",
+  "included_items": 290,
+  "excluded_original_items": 300,
+  "included_status_counts": {
+    "PASS": 192,
+    "N/A": 3,
+    "INCONCLUSIVE": 94,
+    "FAIL": 1
+  },
+  "excluded_root_cause_counts": {
+    "SAFETY_AUTHORIZATION_OR_REBOOT_BOUNDARY": 14,
+    "MISSING_WORKLOAD_TOOLING_OR_PEER": 20,
+    "NOT_OBSERVED_IN_PRIOR_RUN": 3,
+    "IMPLEMENTATION_MISSING_PREDICTOR": 27,
+    "MISSING_OBSERVABILITY_TOOLING": 22,
+    "IMPLEMENTATION_MISSING_CRYPTO_INTEGRITY": 5,
+    "NO_SAFE_FAULT_INJECTOR": 5,
+    "NO_HERD_OR_ABLATION_HARNESS": 24,
+    "STRESS_REGIME_NOT_CONTROLLED": 33,
+    "NO_DYNAMIC_WORKLOAD_HARNESS": 10,
+    "TOPOLOGY_OR_PRESSURE_PROTOCOL_MISSING": 9,
+    "FAULT_INJECTION_OR_PREDICTOR_PATH_MISSING": 20,
+    "HOST_TOPOLOGY_LIMIT": 7,
+    "ABLATION_OR_COMPARATOR_MISSING": 7,
+    "NO_SEED_PARAMETER": 1,
+    "MISSING_REPRODUCIBILITY_ARTIFACT": 4,
+    "IMPLEMENTATION_OR_MEASUREMENT_MISSING": 44,
+    "POWER_OR_FREQUENCY_TOOLING_BOUNDARY": 9,
+    "CONTAINER_TEST_NOT_RUN": 11,
+    "MISSING_TEST_MATRIX_ENVIRONMENTS": 9,
+    "DESTRUCTIVE_OPERATION_NOT_AUTHORIZED": 7,
+    "GPU_OR_IRQ_INFRASTRUCTURE_BOUNDARY": 4,
+    "NO_APPROVED_FUZZ_HARNESS": 5
+  },
+  "no_block_status_values": [
+    "PASS",
+    "FAIL",
+    "INCONCLUSIVE",
+    "N/A"
+  ],
+  "contains_blocked_status": false,
+  "timedatectl_recheck": "PASS",
+  "prediction_transport_recheck": "PASS",
+  "final_sched_ext_state": "disabled",
+  "source_implementation_edited": false,
+  "scope_note": "No-block is an executable-scope view; excluded original items remain auditable in EXCLUDED_SCOPE.csv.",
+  "full_scope_items": 587,
+  "full_scope_status_counts": {
+    "PASS": 190,
+    "FAIL": 1,
+    "INCONCLUSIVE": 93,
+    "N/A": 3,
+    "ACTION_REQUIRED": 300
+  },
+  "full_scope_checklist": "ORCHESTRA_NO_BLOCK_FULL_SCOPE_CHECKLIST.md",
+  "full_scope_csv": "NO_BLOCK_FULL_SCOPE.csv",
+  "no_block_checklist_sha256": "1a187f9fb1f9ecf681751cc55eace8d5c2a7fc49fc16f54c0d1418e1496ca559",
+  "full_scope_sha256": "5aa4069e2cde511be494e48c20a6235f67f0885c4f5e2b9ae24d594fe3910494",
+  "excluded_scope_sha256": "9a0d454c5c7ce340e6b3635497d463dfe8f26ba94280e641b4e4f8ed0ae680e6",
+  "report_sha256": "8821bc00dd2e700ca6a786611fca8418fee6df6fea18a4321f156bbd2fda5e7c"
+}

@@ -1,0 +1,5 @@
+01:13:16 === Real-Machine Benchmark Suite ===
+01:13:16 Repo: /home/aether/Documents/ORCHESTRA-OS-final | allowed CPUs: 0-7 | workload=cpu | Output: /home/aether/Documents/ORCHESTRA-OS-final/artifacts/real-world/20260903-010534-redshadow-updated-checklist/baseline/benchmark-smoke-abs | duration=2 seconds
+01:13:16 Worker watchdog: 17s
+01:13:16 --- CFS baseline ---
+01:13:16   cfs: 1 workers, 2 seconds/fixed workload...

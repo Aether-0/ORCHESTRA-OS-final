@@ -1,0 +1,13 @@
+2026-09-03T01:19:08+05:30	fault_scheduler_load	sudo /var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_loader --load /var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_scx_stage7.bpf.o	rc=0
+2026-09-03T01:19:17+05:30	fault_state_loaded	bash -c printf "state="; cat /sys/kernel/sched_ext/state; printf "ops="; cat /sys/kernel/sched_ext/root/ops 2>/dev/null || true	rc=0
+2026-09-03T01:19:17+05:30	fault_invalid_pid_opt_in	/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_bridge --opt-in --target-pid 2147483647	rc=6
+2026-09-03T01:19:17+05:30	fault_invalid_action	/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_bridge --publish --action BOGUS --target-pid 610008	rc=1
+2026-09-03T01:19:17+05:30	fault_worker_opt_in	/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_bridge --opt-in --target-pid 610008	rc=0
+2026-09-03T01:19:17+05:30	fault_invalid_cpu	/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_bridge --publish --action MIGRATE --target-pid 610008 --target-cpu 999999	rc=7
+2026-09-03T01:19:17+05:30	fault_signal_valid	/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_bridge --signal-publish --signal-sequence 1 --signal-max-age-ns 100000000	rc=0
+2026-09-03T01:19:17+05:30	fault_signal_duplicate	/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_bridge --signal-publish --signal-sequence 1 --signal-max-age-ns 100000000	rc=10
+2026-09-03T01:19:17+05:30	fault_signal_out_of_range	/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_bridge --signal-publish --signal-sequence 2 --signal-confidence-permille 1001	rc=1
+2026-09-03T01:19:17+05:30	fault_signal_require_run	/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_bridge --publish --action RUN --target-pid 610008 --require-signal	rc=0
+2026-09-03T01:19:17+05:30	fault_status_target	/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_bridge --status --target-pid 610008	rc=0
+2026-09-03T01:19:17+05:30	fault_scheduler_unload	sudo /var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_loader --unload	rc=0
+2026-09-03T01:19:17+05:30	fault_state_unloaded	bash -c printf "state="; cat /sys/kernel/sched_ext/state; printf "ops="; cat /sys/kernel/sched_ext/root/ops 2>/dev/null || true	rc=0

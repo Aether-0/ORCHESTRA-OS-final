@@ -1,0 +1,9 @@
+timestamp=2026-09-03T01:18:19+05:30
+zone=thermal_zone0 type=acpitz temp_mC=48000 trip_point_0_mC=128000_critical
+zone=thermal_zone1 type=pch_cannonlake temp_mC=54000 trip_point_0_mC=120000_critical
+zone=thermal_zone2 type=INT3400 Thermal temp_mC=20000
+zone=thermal_zone3 type=SEN1 temp_mC=1050 trip_point_0_mC=103050_critical trip_point_1_mC=100050_hot trip_point_2_mC=80050_passive
+zone=thermal_zone4 type=SEN2 temp_mC=39050 trip_point_0_mC=80050_critical trip_point_1_mC=75050_hot trip_point_2_mC=80050_passive
+zone=thermal_zone5 type=B0D4 temp_mC=48050 trip_point_0_mC=110050_critical trip_point_1_mC=110050_hot trip_point_2_mC=80050_passive
+zone=thermal_zone6 type=iwlwifi_1 temp_mC=58000 trip_point_0_mC=-274000_passive trip_point_1_mC=-274000_passive trip_point_2_mC=-274000_passive trip_point_3_mC=-274000_passive trip_point_4_mC=-274000_passive trip_point_5_mC=-274000_passive trip_point_6_mC=-274000_passive trip_point_7_mC=-274000_passive
+zone=thermal_zone7 type=x86_pkg_temp temp_mC=68000 trip_point_0_mC=-274000_passive trip_point_1_mC=-274000_passive

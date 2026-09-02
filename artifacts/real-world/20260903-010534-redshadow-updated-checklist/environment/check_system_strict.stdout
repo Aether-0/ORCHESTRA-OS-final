@@ -1,0 +1,26 @@
+ORCHESTRA-OS capability report
+kernel=7.0.12+kali-amd64 architecture=x86_64 online_cpus=8
+os                       PASS    Linux
+architecture             PASS    x86_64; target-matched build family
+sched_ext                PASS    state=disabled
+btf                      PASS    /sys/kernel/btf/vmlinux
+config:CONFIG_SCHED_CLASS_EXT PASS    y
+config:CONFIG_DEBUG_INFO_BTF PASS    y
+config:CONFIG_BPF_SYSCALL PASS    y
+config:CONFIG_BPF_JIT    PASS    y
+tool:cc                  PASS    /usr/bin/cc
+tool:clang               PASS    /usr/bin/clang
+tool:make                PASS    /usr/bin/make
+tool:python3             PASS    /usr/bin/python3
+tool:bpftool             PASS    /usr/sbin/bpftool
+libbpf-header            PASS    compiler can include bpf/libbpf.h
+libbpf-library           PASS    pkg-config libbpf
+libelf-library           PASS    pkg-config libelf
+libzstd-library          PASS    pkg-config libzstd
+cpu-count                PASS    8 online CPUs
+privilege                PASS    effective uid 0
+bpffs                    PASS    /sys/fs/bpf
+cgroup-v2                PASS    /sys/fs/cgroup
+observer_tier=PASS
+kernel_activation=PASS
+capability_tier=Tier 1 candidate

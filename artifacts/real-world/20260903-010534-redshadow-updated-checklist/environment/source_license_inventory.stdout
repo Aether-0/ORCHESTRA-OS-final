@@ -1,0 +1,14 @@
+LICENSE_SHA256=184bebd7587ac5253beb566239d7c4be99b67e25c234125ccf42820f0de924c2
+kernel/sched_ext/bpf/orchestra_sched.bpf.c:1:/* SPDX-License-Identifier: GPL-2.0 */
+kernel/sched_ext/bridge/orchestra_bridge.c:1:/* SPDX-License-Identifier: GPL-2.0 */
+kernel/sched_ext/bridge/orchestra_loader.c:1:/* SPDX-License-Identifier: GPL-2.0 */
+kernel/sched_ext/include/orchestra_abi.h:1:/* SPDX-License-Identifier: GPL-2.0 */
+kernel/sched_ext/include/orchestra_bridge_v1.h:1:/* SPDX-License-Identifier: GPL-2.0 */
+kernel/sched_ext/include/orchestra_control_abi.h:1:/* SPDX-License-Identifier: GPL-2.0 */
+kernel/sched_ext/include/orchestra_controller.h:1:/* SPDX-License-Identifier: GPL-2.0 */
+kernel/sched_ext/include/orchestra_coord.h:1:/* SPDX-License-Identifier: GPL-2.0 */
+kernel/sched_ext/include/orchestra_kernel_v8.h:1:/* SPDX-License-Identifier: GPL-2.0 */
+kernel/sched_ext/include/orchestra_product_abi.h:1:/* SPDX-License-Identifier: GPL-2.0 */
+kernel/sched_ext/orchestra_scx.bpf.c:1:/* SPDX-License-Identifier: GPL-2.0 */
+kernel/sched_ext/orchestra_scx.c:1:/* SPDX-License-Identifier: GPL-2.0 */
+kernel/sched_ext/orchestra_scx_stage7.bpf.c:1:/* SPDX-License-Identifier: GPL-2.0 */

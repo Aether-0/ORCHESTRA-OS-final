@@ -1,0 +1,39 @@
+A  .github/workflows/beta-release.yml
+M  AGENTS.md
+ M "C:\\FastMCP\\boot.log"
+M  README.md
+M  benchmarks/real-machine/README.md
+A  docs/demo/REALTIME_CFS_ORCHESTRA_DEMO.md
+A  docs/demo/REALTIME_ZSTD_CFS_ORCHESTRA_DEMO.md
+M  docs/status/current-state.md
+M  docs/validation/FINAL_VALIDATION_REPORT.md
+M  kernel/sched_ext/README.md
+M  kernel/sched_ext/bridge/orchestra_bridge.c
+M  kernel/sched_ext/orchestra_scx_stage7.bpf.c
+A  scripts/demo_cfs_vs_orchestra.sh
+A  scripts/demo_realworld_cfs_vs_orchestra.sh
+A  scripts/demo_realworld_zstd_cfs_vs_orchestra.sh
+M  tests/unit/test_orchestra_scx_source.py
+?? ORCHESTRA-OS_What_It_Is_And_Is_Not.docx
+?? ORCHESTRA_REDSHADOW_COMPLETE_EVIDENCE_PACKAGE_20260827.zip.sha256
+?? ORCHESTRA_UPDATED_CHECKLIST.md
+?? "Orchestra updated check list .docx"
+?? artifacts/real-world/20260825-042022-redshadow-complete/CURRENT_STATE_REPORT.html
+?? artifacts/real-world/20260827-012330-redshadow-field-fit/
+?? artifacts/real-world/20260827-040139-redshadow-root-confirmation/
+?? artifacts/real-world/20260827-044714-redshadow-ffmpeg/
+?? artifacts/real-world/20260827-050919-redshadow-sqlite/
+?? artifacts/real-world/20260827-084610-redshadow-daily-tool-demo/
+?? artifacts/real-world/20260827-100123-redshadow-daily-use-search/
+?? artifacts/real-world/20260827-101440-redshadow-strength-map/
+?? artifacts/real-world/20260827-103050-redshadow-daily-20of20-search/
+?? artifacts/real-world/20260827-202638-redshadow-strength-confirmation/
+?? artifacts/real-world/20260827-215422-redshadow-fix-plan-verification/
+?? artifacts/real-world/20260827-daily-tools-hypothesis/
+?? artifacts/real-world/20260828-112259-redshadow-adjacent-action-diagnostics/
+?? artifacts/real-world/20260828-132302-redshadow-fix-implementation/
+?? artifacts/real-world/20260901-orchestra-cfs-research-paper/
+?? artifacts/real-world/20260901-orchestra-cfs-validation-report/
+?? artifacts/real-world/20260902-final-research-capability-report/
+?? artifacts/real-world/20260903-010534-redshadow-updated-checklist/
+?? "orchestra os tdps final 6 july.pdf"

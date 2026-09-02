@@ -1,0 +1,16 @@
+01:15:25 Evidence directory: /var/tmp/orchestra-updated-p0-exact-20260903-0117
+01:15:25 CFS baseline: 10000000 fixed iterations
+01:15:25 PASS: CFS baseline elapsed=28ms
+01:15:28 PASS: scheduler loaded through exact loader
+01:15:28 Owned finite forward-progress gate
+01:15:28 PASS: owned finite workload elapsed=56ms
+01:15:28 Action probe: YIELD
+01:15:28 PASS: YIELD request published after ownership gate
+01:15:28 Action probe: MIGRATE
+01:15:28 PASS: MIGRATE request published after ownership gate
+01:15:28 Action probe: THROTTLE
+01:15:28 PASS: THROTTLE request published after ownership gate
+01:15:28 Action probe: SLEEP
+01:15:28 PASS: SLEEP request published after ownership gate
+01:15:28 PASS: scheduler unloaded cleanly
+01:15:28 Complete: failures=0 evidence=/var/tmp/orchestra-updated-p0-exact-20260903-0117

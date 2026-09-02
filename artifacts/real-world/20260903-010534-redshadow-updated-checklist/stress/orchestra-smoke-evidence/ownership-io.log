@@ -1,0 +1,12 @@
+admitted exact TID identity=601169:601169:20116781236646; full-switch mode does not change its Linux policy
+published generation=9 identity=601169:601169:20116781236646 action=RUN
+admitted exact TID identity=601170:601170:20116781679866; full-switch mode does not change its Linux policy
+published generation=10 identity=601170:601170:20116781679866 action=RUN
+admitted exact TID identity=601171:601171:20116782088509; full-switch mode does not change its Linux policy
+published generation=11 identity=601171:601171:20116782088509 action=RUN
+admitted exact TID identity=601172:601172:20116782489316; full-switch mode does not change its Linux policy
+published generation=12 identity=601172:601172:20116782489316 action=RUN
+pid=601169 accepted=15 dispatched=15 running=15 effective=0
+pid=601170 accepted=13 dispatched=13 running=13 effective=0
+pid=601171 accepted=12 dispatched=12 running=12 effective=0
+pid=601172 accepted=10 dispatched=10 running=10 effective=0

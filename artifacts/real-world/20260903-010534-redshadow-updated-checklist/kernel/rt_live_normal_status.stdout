@@ -1,0 +1,11 @@
+scheduler: orchestra_scx_v8
+abi=2 scx_api=70012 epoch=14968793734000 generation=0 policy_generation=0 controller=NORMAL lease=0ns
+signal sequence=0 epoch=14968793734000 published_ns=0 expires_ns=0 tier=0 source_id=0 key_epoch=0 directive=RUN confidence_permille=0 cpu_now_permille=0 cpu_pred_permille=0 decision_cpu_permille=0 memory_pressure_permille=0 thermal_permille=0 s1_permille=0 s2_permille=0 s3_permille=0 s4_permille=0 q_permille=0 controller=NORMAL policy_mode=2 policy_generation=0 flags=0
+runtime_v8 state_index=0 cpu_now=0 cpu_pred=0 memory=0 thermal=0 q=0 s1=0 s2=0 s3=0 s4=0 confidence=0 prediction_generation=0 prediction_fallback=13 flags=48
+policy_v8 active_bank=0 entries=256 generation=0 previous=0 mode=2 controller=NORMAL
+runtime_v10 window=0 scope=2 domain=1088 eligible=0 executed=0 s1=0 s2=0 s3=0 s4=0 q=0 deficit_class=0 primary=0 secondary=0 severity=0 persistence=0 controller=NORMAL controller_generation=1 flags=1
+controller_v10 state=NORMAL generation=1 staging_generation=1 previous_good_generation=1 last_q=0 next_update_ns=0 saturation=0 rollback=0 recovery=0 overrides=0 no_op=0
+controller_actuators jitter=20 switching_penalty=50 consensus_blend=500 migration_threshold=500 yield_threshold=600 throttle_duration_ns=10000000 sleep_defer_ns=20000000 prediction_confidence=500 prediction_horizon_ns=100000000 signal_cadence_ns=10000000 coordination_threshold=700
+controller_telemetry updates=0 actuator_updates=0 last_actuator=0 last_direction=0 saturation=0 rollback=0 recovery=0 no_op=0
+telemetry accepted=0 dispatched=0 running=1682 fallback=0 migrate_target=0 migrate_other=0 timer_ticks=1313 deferred_scans=0 deferred_future=0 deferred_release_fail=0 deferred_cpu_fail=0 enqueue=1669 run_disp=0 yield_disp=0 mig_acc=0 mig_disp=0 throttle_acc=0 throttle_def=0 sleep_acc=0 sleep_def=0 deferred=0 deferred_rel=0 stale_lease=0 bad_id=0 expired=0 bad_cpu=0 map_err=0 signal_acc=0 signal_invalid=0 signal_stale=0
+telemetry_v8 policy_lookup=0 cache_hit=0 cache_miss=0 generation_mismatch=0 state_gen_change=0 policy_gen_change=0 signal_gen_change=0 invalid_index=0 invalid_action=0 unsupported=0 policy_fallback=0 controller_override=0 prediction_fallback=0 policy_commit=0 policy_rollback=0 task_create=0 task_update=0

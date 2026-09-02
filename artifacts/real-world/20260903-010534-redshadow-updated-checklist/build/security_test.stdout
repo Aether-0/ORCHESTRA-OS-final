@@ -1,0 +1,7 @@
+./tests/security/run.sh
+PASS policy-loader security regressions
+PASS policy-loader mutation target iterations=1000 accepted=100 rejected=900
+PASS ABI/state mutation target iterations=50000
+PASS installer/uninstaller path-security regressions
+PASS sched_ext source safety invariants
+PASS security regression suite

@@ -1,0 +1,7 @@
+test,status,details
+cfs_baseline,PASS,elapsed_ms=28
+owned_forward_progress,PASS,elapsed_ms=56;accepted=1 dispatched=1 running=1 effective=0
+action_YIELD,OBSERVED_REQUEST,exact_tid_gate_passed
+action_MIGRATE,OBSERVED_REQUEST,exact_tid_gate_passed
+action_THROTTLE,OBSERVED_REQUEST,exact_tid_gate_passed
+action_SLEEP,OBSERVED_REQUEST,exact_tid_gate_passed

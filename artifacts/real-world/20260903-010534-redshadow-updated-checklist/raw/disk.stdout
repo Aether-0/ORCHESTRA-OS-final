@@ -1,0 +1,16 @@
+Filesystem      Size  Used Avail Use% Mounted on
+udev             16G     0   16G   0% /dev
+tmpfs           3.1G  2.5M  3.1G   1% /run
+/dev/sda2       444G  411G   11G  98% /
+tmpfs            16G  169M   16G   2% /dev/shm
+efivarfs        246K   20K  222K   9% /sys/firmware/efi/efivars
+none            1.0M     0  1.0M   0% /run/credentials/systemd-journald.service
+none            1.0M     0  1.0M   0% /run/credentials/systemd-resolved.service
+tmpfs            16G   69M   16G   1% /tmp
+/dev/sda1       975M  312K  974M   1% /boot/efi
+overlay         444G  411G   11G  98% /var/lib/docker/overlay2/d65438af941e3e9e7568cc5625b05b9bc9ecb5f61ac7a539445bb7440c2bb0f4/merged
+overlay         444G  411G   11G  98% /var/lib/docker/overlay2/7c8fef48eca57f346bd1e57d0c5eed8b502403e0b7a96dac1976984d6c8fbc39/merged
+overlay         444G  411G   11G  98% /var/lib/docker/overlay2/3d5fc24a786ee7d9acf5ce20b8ad6feb0b3481ce9dbd9a2781f746612766da46/merged
+overlay         444G  411G   11G  98% /var/lib/docker/overlay2/5813f48c2894e745c0c978faedaca0437f4eb9cb957fd2617a290871e55364e0/merged
+overlay         444G  411G   11G  98% /var/lib/docker/overlay2/3723f56ff795323b4caf036ed432d73dd6aff8357d0edf53e6ba44c3c36db39f/merged
+tmpfs           3.1G  148K  3.1G   1% /run/user/1000

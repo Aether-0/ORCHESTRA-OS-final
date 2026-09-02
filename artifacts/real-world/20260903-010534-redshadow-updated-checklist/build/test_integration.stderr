@@ -1,0 +1,65 @@
+test_bounded_sleep_aggregate_is_rejected_above_schema_limit (__main__.CsvValidatorTests.test_bounded_sleep_aggregate_is_rejected_above_schema_limit) ... ok
+test_effective_compliance_cannot_exceed_one (__main__.CsvValidatorTests.test_effective_compliance_cannot_exceed_one) ... ok
+test_effective_successes_cannot_exceed_attempts (__main__.CsvValidatorTests.test_effective_successes_cannot_exceed_attempts) ... ok
+test_fatal_action_error_cannot_also_be_effective (__main__.CsvValidatorTests.test_fatal_action_error_cannot_also_be_effective) ... ok
+test_inconsistent_action_totals_are_rejected (__main__.CsvValidatorTests.test_inconsistent_action_totals_are_rejected) ... ok
+test_migration_success_requires_valid_requested_cpu (__main__.CsvValidatorTests.test_migration_success_requires_valid_requested_cpu) ... ok
+test_negative_observed_sleep_is_rejected (__main__.CsvValidatorTests.test_negative_observed_sleep_is_rejected) ... ok
+test_nonfinite_telemetry_is_rejected (__main__.CsvValidatorTests.test_nonfinite_telemetry_is_rejected) ... ok
+test_truncated_v3_row_is_rejected (__main__.CsvValidatorTests.test_truncated_v3_row_is_rejected) ... ok
+test_truncated_v4_row_is_rejected (__main__.CsvValidatorTests.test_truncated_v4_row_is_rejected) ... ok
+test_unknown_fallback_reason_is_rejected (__main__.CsvValidatorTests.test_unknown_fallback_reason_is_rejected) ... ok
+test_v2_row_cannot_be_falsely_labeled_v3 (__main__.CsvValidatorTests.test_v2_row_cannot_be_falsely_labeled_v3) ... ok
+test_v3_row_falsely_labeled_v2_is_rejected (__main__.CsvValidatorTests.test_v3_row_falsely_labeled_v2_is_rejected) ... ok
+test_v3_row_falsely_labeled_v4_is_rejected (__main__.CsvValidatorTests.test_v3_row_falsely_labeled_v4_is_rejected) ... ok
+test_v4_changed_count_cannot_exceed_eligible (__main__.CsvValidatorTests.test_v4_changed_count_cannot_exceed_eligible) ... ok
+test_v4_dominant_count_cannot_exceed_changed (__main__.CsvValidatorTests.test_v4_dominant_count_cannot_exceed_changed) ... ok
+test_v4_invalid_dominant_action_enum_is_rejected (__main__.CsvValidatorTests.test_v4_invalid_dominant_action_enum_is_rejected) ... ok
+test_v4_justified_count_cannot_exceed_changed (__main__.CsvValidatorTests.test_v4_justified_count_cannot_exceed_changed) ... ok
+test_v4_no_change_row_cannot_report_a_burst_window (__main__.CsvValidatorTests.test_v4_no_change_row_cannot_report_a_burst_window) ... ok
+test_v4_no_changes_require_zero_dominant_transition (__main__.CsvValidatorTests.test_v4_no_changes_require_zero_dominant_transition) ... ok
+test_v4_nonburst_row_does_not_carry_forward_burst_count (__main__.CsvValidatorTests.test_v4_nonburst_row_does_not_carry_forward_burst_count) ... ok
+test_v4_nonfinite_oscillation_penalty_is_rejected (__main__.CsvValidatorTests.test_v4_nonfinite_oscillation_penalty_is_rejected) ... ok
+test_v4_rejected_frame_cannot_mark_transition_justified (__main__.CsvValidatorTests.test_v4_rejected_frame_cannot_mark_transition_justified) ... ok
+test_v4_row_falsely_labeled_v3_is_rejected (__main__.CsvValidatorTests.test_v4_row_falsely_labeled_v3_is_rejected) ... ok
+test_v4_s4_burst_cannot_be_negative (__main__.CsvValidatorTests.test_v4_s4_burst_cannot_be_negative) ... ok
+test_v4_s4_burst_cannot_exceed_one (__main__.CsvValidatorTests.test_v4_s4_burst_cannot_exceed_one) ... ok
+test_v4_single_change_is_not_a_population_burst (__main__.CsvValidatorTests.test_v4_single_change_is_not_a_population_burst) ... ok
+test_v4_stale_or_invalid_frame_cannot_mark_transition_justified (__main__.CsvValidatorTests.test_v4_stale_or_invalid_frame_cannot_mark_transition_justified) ... ok
+test_v4_validated_directive_transition_and_reversal (__main__.CsvValidatorTests.test_v4_validated_directive_transition_and_reversal) ... ok
+test_v4_zero_eligible_workers_are_neutral_and_unjustified (__main__.CsvValidatorTests.test_v4_zero_eligible_workers_are_neutral_and_unjustified) ... ok
+test_valid_historical_v2_contract (__main__.CsvValidatorTests.test_valid_historical_v2_contract) ... ok
+test_valid_v3_contract (__main__.CsvValidatorTests.test_valid_v3_contract) ... ok
+test_valid_v4_contract (__main__.CsvValidatorTests.test_valid_v4_contract) ... ok
+test_zero_denominator_policy_is_explicit (__main__.CsvValidatorTests.test_zero_denominator_policy_is_explicit) ... ok
+
+----------------------------------------------------------------------
+Ran 34 tests in 0.049s
+
+OK
+Traceback (most recent call last):
+  File "/home/aether/Documents/ORCHESTRA-OS-final/tests/integration/validate_paper_cpu_csv.py", line 1021, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/home/aether/Documents/ORCHESTRA-OS-final/tests/integration/validate_paper_cpu_csv.py", line 1007, in main
+    rows, schema = validate(
+                   ~~~~~~~~^
+        args.csv_path,
+        ^^^^^^^^^^^^^^
+    ...<5 lines>...
+        args.schema,
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "/home/aether/Documents/ORCHESTRA-OS-final/tests/integration/validate_paper_cpu_csv.py", line 969, in validate
+    last_valid_directive = _validate_v4_row(
+        row,
+    ...<4 lines>...
+        previous_rejections,
+    )
+  File "/home/aether/Documents/ORCHESTRA-OS-final/tests/integration/validate_paper_cpu_csv.py", line 801, in _validate_v4_row
+    raise AssertionError(
+        f"tick {tick}: rejected frame cannot be valid or justify an action transition"
+    )
+AssertionError: tick 10: rejected frame cannot be valid or justify an action transition
+make: *** [Makefile:125: test-integration] Error 1

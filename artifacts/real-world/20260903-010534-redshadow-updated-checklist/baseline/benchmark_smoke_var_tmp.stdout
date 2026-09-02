@@ -1,0 +1,17 @@
+01:13:43 === Real-Machine Benchmark Suite ===
+01:13:43 Repo: /home/aether/Documents/ORCHESTRA-OS-final | allowed CPUs: 0-7 | workload=cpu | Output: /var/tmp/orchestra-updated-benchmark-20260903-0115 | duration=2 seconds
+01:13:43 Worker watchdog: 17s
+01:13:43 --- CFS baseline ---
+01:13:43   cfs: 1 workers, 2 seconds/fixed workload...
+01:13:45     1926ms ctx_delta=36021 accepted=0 dispatched=0 running=0 owned=n/a
+01:13:45   cfs: 2 workers, 2 seconds/fixed workload...
+01:13:47     1913ms ctx_delta=44137 accepted=0 dispatched=0 running=0 owned=n/a
+01:13:47 scx_simple not installed or not executable: /usr/bin/scx_simple; phase blocked
+01:13:47 --- ORCHESTRA ---
+01:13:47 ORCHESTRA blocked: loader is not executable: /home/aether/Documents/ORCHESTRA-OS-final/kernel/sched_ext/bridge/orchestra_loader
+01:13:47 ORCHESTRA comparison phase blocked before attach
+01:13:47 === COMPLETE ===
+scheduler,workload,workers,duration_s,elapsed_ms,ctx_delta,accepted,dispatched,running,effective,owned,notes
+cfs,cpu,1,2,1926,36021,0,0,0,0,n/a,completed
+cfs,cpu,2,2,1913,44137,0,0,0,0,n/a,completed
+Full results: /var/tmp/orchestra-updated-benchmark-20260903-0115

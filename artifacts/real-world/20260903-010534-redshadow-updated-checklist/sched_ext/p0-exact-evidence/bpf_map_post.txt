@@ -1,0 +1,77 @@
+12: hash_of_maps  name cgroup_hash  flags 0x0
+	key 8B  value 4B  max_entries 2048  memlock 164800B
+13: hash  name pid_map  flags 0x0
+	key 4B  value 4B  max_entries 10240  memlock 918976B
+	btf_id 239
+14: hash  name fwmark_map  flags 0x0
+	key 4B  value 4B  max_entries 10240  memlock 918976B
+	btf_id 239
+25: hash  flags 0x0
+	key 4B  value 1B  max_entries 8  memlock 2112B
+	btf_id 239
+27: array  name orch_control  flags 0x0
+	key 4B  value 80B  max_entries 1  memlock 384B
+	btf_id 289
+28: hash  name orch_directives  flags 0x0
+	key 16B  value 112B  max_entries 4096  memlock 788800B
+	btf_id 289
+29: hash  name orch_identity  flags 0x0
+	key 8B  value 16B  max_entries 4096  memlock 361984B
+	btf_id 289
+30: hash  name orch_task_state  flags 0x0
+	key 16B  value 72B  max_entries 4096  memlock 624640B
+	btf_id 289
+31: hash  name orch_task_tel  flags 0x0
+	key 16B  value 104B  max_entries 4096  memlock 755968B
+	btf_id 289
+32: array  name orch_telemetry  flags 0x0
+	key 4B  value 328B  max_entries 1  memlock 632B
+	btf_id 289
+33: array  name orch_defer_tmr  flags 0x0
+	key 4B  value 16B  max_entries 1  memlock 320B
+	btf_id 289
+34: array  name orch_signal  flags 0x0
+	key 4B  value 152B  max_entries 1  memlock 456B
+	btf_id 289
+35: array  name orch_runtime_v8  flags 0x0
+	key 4B  value 208B  max_entries 1  memlock 512B
+	btf_id 289
+36: array  name orch_meta_v8  flags 0x0
+	key 4B  value 88B  max_entries 1  memlock 392B
+	btf_id 289
+37: array  name orch_entry_v8  flags 0x0
+	key 4B  value 88B  max_entries 512  memlock 45360B
+	btf_id 289
+38: hash  name orch_task_v8  flags 0x0
+	key 16B  value 152B  max_entries 4096  memlock 952960B
+	btf_id 289
+39: hash  name orch_diag_v8  flags 0x0
+	key 16B  value 168B  max_entries 4096  memlock 1018624B
+	btf_id 289
+40: array  name orch_tel_v8  flags 0x0
+	key 4B  value 336B  max_entries 1  memlock 640B
+	btf_id 289
+41: array  name orch_coord_v10  flags 0x0
+	key 4B  value 784B  max_entries 2178  memlock 1707856B
+	btf_id 289
+43: array  name orch_ctrl_v10  flags 0x0
+	key 4B  value 2992B  max_entries 1  memlock 3296B
+	btf_id 289
+44: array  name orch_ctrl_tel  flags 0x0
+	key 4B  value 272B  max_entries 1  memlock 576B
+	btf_id 289
+45: array  name orch_runtime10  flags 0x0
+	key 4B  value 168B  max_entries 1  memlock 472B
+	btf_id 289
+46: hash  name orch_task_coord  flags 0x0
+	key 16B  value 120B  max_entries 4096  memlock 821632B
+	btf_id 289
+47: percpu_array  name orch_runtime_sc  flags 0x0
+	key 4B  value 176B  max_entries 1  memlock 1720B
+	btf_id 289
+49: array  name orchestr.rodata  flags 0x480
+	key 4B  value 328B  max_entries 1  memlock 8192B
+	btf_id 289  frozen
+50: array  name orchestr.data  flags 0x0
+	key 4B  value 138B  max_entries 1  memlock 448B
+	btf_id 289

@@ -1,0 +1,26 @@
+01:17:21 === ORCHESTRA Stress Suite ===
+01:17:21 Mode: cfs | Duration: 5s | allowed CPUs: 0-7 | RAM: 31724MB | available: 20813MB
+01:17:21 Memory safety budget: 2 workers x 5203MB = 10406MB
+01:17:21 Phase watchdog: 35s
+01:17:21 Scheduler state before workloads: disabled
+01:17:21 Output: /var/tmp/orchestra-updated-stress-cfs-20260903-0120
+01:17:22 Thermal monitor active; it stops the campaign at a reported critical trip point
+01:17:22 --- CPU Stress (8 workers) ---
+01:17:27   CPU: 5s, 0 errors, ownership=not_applicable
+01:17:27 --- Memory Stress (5203MB) ---
+01:17:27 BLOCKED_MISSING_TOOL: stress is required for memory pressure; disk writes are not a memory substitute
+01:17:27   Memory: done
+01:17:27 --- I/O Stress ---
+01:17:34   I/O: 7s, 0 errors, ownership=not_applicable
+01:17:34 --- Mixed Workload ---
+01:17:39   Mixed: 5s, 0 errors, ownership=not_applicable
+01:17:39 --- Health Check ---
+01:17:39 Scheduler state after workloads: disabled
+01:17:39 === COMPLETE ===
+01:17:39 Results: /var/tmp/orchestra-updated-stress-cfs-20260903-0120/results.csv
+test,duration_s,cpu_workers,memory_mb,io_files,errors,warnings,completed,ownership,notes
+cpu_stress,5,8,0,0,0,0,PASS,not_applicable,
+mem_stress,0,0,10406,0,0,0,BLOCKED_MISSING_TOOL,not_applicable,stress-command-missing
+io_stress,7,0,0,4,0,0,PASS,not_applicable,
+mixed,5,4,0,4,0,0,PASS,not_applicable,
+health_check,0,0,0,0,0,0,PASS,not_applicable,sorted-dmesg-delta

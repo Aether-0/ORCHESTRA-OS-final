@@ -1,0 +1,262 @@
+timestamp=2026-09-03T01:23:12+05:30
+loadavg=2.21 7.43 6.34 4/1637 615777
+uptime=20421.42 107735.23
+sched_state=disabled
+vmstat:
+procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st gu
+ 0  0      0 10101064 2783396 11637516 0  0   421   453 2034    8  8  2 90  0  0  0
+ 0  0      0 10101592 2783404 11637564 0  0     0   236 3124 6910 10  1 89  0  0  0
+ 0  0      0 10096444 2783404 11637560 0  0     0    92 3043 6657 10  1 90  0  0  0
+mpstat:
+Linux 7.0.12+kali-amd64 (redshadow) 	09/03/26 	_x86_64_	(8 CPU)
+
+01:23:14     CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest  %gnice   %idle
+01:23:15     all    8.69    0.00    1.26    0.13    0.00    0.13    0.00    0.00    0.00   89.80
+01:23:15       0   12.87    0.00    0.99    0.00    0.00    0.99    0.00    0.00    0.00   85.15
+01:23:15       1    0.00    0.00    1.02    0.00    0.00    0.00    0.00    0.00    0.00   98.98
+01:23:15       2   24.49    0.00    1.02    0.00    0.00    0.00    0.00    0.00    0.00   74.49
+01:23:15       3    5.00    0.00    1.00    1.00    0.00    0.00    0.00    0.00    0.00   93.00
+01:23:15       4    9.28    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00   90.72
+01:23:15       5    8.00    0.00    2.00    0.00    0.00    0.00    0.00    0.00    0.00   90.00
+01:23:15       6    6.00    0.00    2.00    0.00    0.00    0.00    0.00    0.00    0.00   92.00
+01:23:15       7    4.00    0.00    2.00    0.00    0.00    0.00    0.00    0.00    0.00   94.00
+
+01:23:15     CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest  %gnice   %idle
+01:23:16     all    8.62    0.00    1.01    0.00    0.00    0.00    0.00    0.00    0.00   90.37
+01:23:16       0    6.12    0.00    1.02    0.00    0.00    0.00    0.00    0.00    0.00   92.86
+01:23:16       1   13.00    0.00    1.00    0.00    0.00    0.00    0.00    0.00    0.00   86.00
+01:23:16       2   14.43    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00   85.57
+01:23:16       3    0.00    0.00    1.02    0.00    0.00    0.00    0.00    0.00    0.00   98.98
+01:23:16       4   11.22    0.00    1.02    0.00    0.00    0.00    0.00    0.00    0.00   87.76
+01:23:16       5    1.01    0.00    1.01    0.00    0.00    0.00    0.00    0.00    0.00   97.98
+01:23:16       6   11.88    0.00    2.97    0.00    0.00    0.00    0.00    0.00    0.00   85.15
+01:23:16       7   11.22    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00   88.78
+
+Average:     CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest  %gnice   %idle
+Average:     all    8.65    0.00    1.14    0.06    0.00    0.06    0.00    0.00    0.00   90.08
+Average:       0    9.55    0.00    1.01    0.00    0.00    0.50    0.00    0.00    0.00   88.94
+Average:       1    6.57    0.00    1.01    0.00    0.00    0.00    0.00    0.00    0.00   92.42
+Average:       2   19.49    0.00    0.51    0.00    0.00    0.00    0.00    0.00    0.00   80.00
+Average:       3    2.53    0.00    1.01    0.51    0.00    0.00    0.00    0.00    0.00   95.96
+Average:       4   10.26    0.00    0.51    0.00    0.00    0.00    0.00    0.00    0.00   89.23
+Average:       5    4.52    0.00    1.51    0.00    0.00    0.00    0.00    0.00    0.00   93.97
+Average:       6    8.96    0.00    2.49    0.00    0.00    0.00    0.00    0.00    0.00   88.56
+Average:       7    7.58    0.00    1.01    0.00    0.00    0.00    0.00    0.00    0.00   91.41
+pidstat_w:
+Linux 7.0.12+kali-amd64 (redshadow) 	09/03/26 	_x86_64_	(8 CPU)
+
+01:23:16      UID       PID   cswch/s nvcswch/s  Command
+01:23:17        0        14     35.64      0.00  ksoftirqd/0
+01:23:17        0        15     48.51      0.00  rcu_preempt
+01:23:17        0        37      0.99      0.00  ksoftirqd/3
+01:23:17        0        42      0.99      0.00  migration/4
+01:23:17        0        80      1.98      0.00  kcompactd0
+01:23:17        0       430     16.83      0.00  kworker/2:1H-i915_cleanup
+01:23:17        0       440     17.82      0.00  kworker/3:1H-i915_cleanup
+01:23:17        0       665      3.96      0.00  irq/163-iwlwifi:default_queue
+01:23:17        0       668      0.99      0.00  irq/165-iwlwifi:queue_2
+01:23:17        0       855      0.99      0.00  haveged
+01:23:17      989       864      0.99      0.00  dbus-daemon
+01:23:17        0      1025      1.98      0.00  NetworkManager
+01:23:17      990      1197      0.99      0.00  systemd-oomd
+01:23:17     1001      2840      0.99      0.00  gunicorn
+01:23:17     1001      2861      0.99      0.00  gunicorn
+01:23:17      999      2868      9.90      0.00  redis-server
+01:23:17      101      3085      1.98      0.00  nginx
+01:23:17     1001      3220      0.99      0.00  gunicorn
+01:23:17     1001      3221      0.99      0.00  gunicorn
+01:23:17     1000      3352      1.98      0.00  flask
+01:23:17     1000      3353      9.90      0.00  dbus-daemon
+01:23:17     1000      3543    130.69      0.00  gnome-shell
+01:23:17     1000      3689      0.99      0.00  gsd-sharing
+01:23:17     1000      3895      9.90      0.00  xdg-desktop-por
+01:23:17     1000      5918    128.71      1.98  gnome-terminal-
+01:23:17     1000      6366      1.98      0.00  gnome-text-edit
+01:23:17     1000      7168      1.98      0.00  chrome
+01:23:17     1000      7221      0.99      0.00  chrome
+01:23:17     1000      7226      0.99      0.00  chrome
+01:23:17     1000      7246      0.99      0.00  chrome
+01:23:17     1000     35868      0.99      0.00  chrome
+01:23:17     1000     63706     39.60      0.00  sudo
+01:23:17        0    486754    103.96      0.00  kworker/u32:1+pm
+01:23:17     1000    487382      8.91     30.69  pentestcode
+01:23:17        0    487577      6.93      0.00  kworker/2:0-events
+01:23:17        0    487712      0.99      0.00  kworker/7:2-events
+01:23:17        0    492325      6.93      0.00  kworker/1:1-events
+01:23:17        0    494697     97.03      0.00  kworker/u32:3-events_unbound
+01:23:17     1000    495799     15.84      0.00  brave
+01:23:17     1000    495925      9.90      0.00  brave
+01:23:17        0    504885      2.97      0.00  kworker/3:0-i915-unordered
+01:23:17        0    505689      2.97      0.00  kworker/6:2-i915-unordered
+01:23:17     1000    507537     67.33      0.00  chrome
+01:23:17     1000    507937     70.30      0.00  chrome
+01:23:17     1000    508306      0.99      0.00  chrome
+01:23:17        0    513133      2.97      0.00  kworker/4:1-events
+01:23:17        0    520270     30.69      0.00  kworker/u32:2-events_unbound
+01:23:17        0    521714     67.33      0.00  kworker/u33:3-i915_flip
+01:23:17        0    527217    112.87      0.00  kworker/0:2-i915-unordered
+01:23:17     1000    529046      9.90      0.00  python3
+01:23:17        0    554896      5.94      0.00  kworker/5:1-i915-unordered
+01:23:17     1000    569150      2.97      0.00  chrome
+01:23:17     1000    571184      1.98      0.00  chrome
+01:23:17     1000    571880      9.90      0.00  soffice.bin
+01:23:17     1000    615685      0.99      0.00  chrome
+01:23:17        0    615823      0.99      0.00  pidstat
+
+01:23:17      UID       PID   cswch/s nvcswch/s  Command
+01:23:18        0        14     32.00      0.00  ksoftirqd/0
+01:23:18        0        15     39.00      0.00  rcu_preempt
+01:23:18        0        25      1.00      0.00  ksoftirqd/1
+01:23:18        0        31      2.00      0.00  ksoftirqd/2
+01:23:18        0        49      1.00      0.00  ksoftirqd/5
+01:23:18        0        80      2.00      0.00  kcompactd0
+01:23:18        0       280      3.00      0.00  kworker/0:1H-kblockd
+01:23:18        0       332      3.00      0.00  jbd2/sda2-8
+01:23:18        0       430      1.00      0.00  kworker/2:1H-i915_cleanup
+01:23:18        0       440     23.00      0.00  kworker/3:1H-i915_cleanup
+01:23:18        0       665      3.00      0.00  irq/163-iwlwifi:default_queue
+01:23:18        0       669      1.00      0.00  irq/166-iwlwifi:queue_3
+01:23:18        0       673      1.00      0.00  irq/170-iwlwifi:queue_7
+01:23:18        0      1148      9.00      0.00  kworker/4:1H-i915_cleanup
+01:23:18     1001      2840      1.00      0.00  gunicorn
+01:23:18     1001      2861      1.00      0.00  gunicorn
+01:23:18      999      2868     10.00      0.00  redis-server
+01:23:18     1001      3220      2.00      0.00  gunicorn
+01:23:18     1001      3221      2.00      0.00  gunicorn
+01:23:18     1000      3352      2.00      0.00  flask
+01:23:18     1000      3353     10.00      0.00  dbus-daemon
+01:23:18     1000      3543    126.00      0.00  gnome-shell
+01:23:18     1000      3895     10.00      0.00  xdg-desktop-por
+01:23:18     1000      5918    131.00      0.00  gnome-terminal-
+01:23:18     1000      6366      2.00      0.00  gnome-text-edit
+01:23:18     1000      7168      1.00      0.00  chrome
+01:23:18     1000     63706     40.00      0.00  sudo
+01:23:18     1000    487382      8.00      8.00  pentestcode
+01:23:18        0    487577      3.00      0.00  kworker/2:0-events
+01:23:18        0    487712      1.00      0.00  kworker/7:2-mm_percpu_wq
+01:23:18        0    492325      3.00      0.00  kworker/1:1-events
+01:23:18        0    494697     60.00      0.00  kworker/u32:3-events_unbound
+01:23:18     1000    495799     17.00      0.00  brave
+01:23:18     1000    495842      1.00      0.00  brave
+01:23:18     1000    495844      1.00      0.00  brave
+01:23:18     1000    495854      1.00      0.00  brave
+01:23:18     1000    495925     16.00      0.00  brave
+01:23:18        0    504885      1.00      0.00  kworker/3:0-mm_percpu_wq
+01:23:18        0    505689      3.00      0.00  kworker/6:2-i915-unordered
+01:23:18     1000    507537     66.00      0.00  chrome
+01:23:18     1000    507937     68.00      0.00  chrome
+01:23:18     1000    507961      1.00      0.00  chrome
+01:23:18     1000    508306      1.00      0.00  chrome
+01:23:18        0    513133      2.00      0.00  kworker/4:1-events
+01:23:18        0    520270     92.00      0.00  kworker/u32:2-events_unbound
+01:23:18        0    521714     66.00      0.00  kworker/u33:3-i915_flip
+01:23:18        0    527217    116.00      0.00  kworker/0:2-i915-unordered
+01:23:18     1000    529046     10.00      0.00  python3
+01:23:18        0    554896      3.00      0.00  kworker/5:1-i915-unordered
+01:23:18     1000    569150      2.00      0.00  chrome
+01:23:18     1000    571184      2.00      0.00  chrome
+01:23:18     1000    571880     10.00      0.00  soffice.bin
+01:23:18        0    614944      1.00      0.00  kworker/0:3-events
+01:23:18        0    615823      1.00      0.00  pidstat
+
+Average:      UID       PID   cswch/s nvcswch/s  Command
+Average:        0        14     33.83      0.00  ksoftirqd/0
+Average:        0        15     43.78      0.00  rcu_preempt
+Average:        0        25      0.50      0.00  ksoftirqd/1
+Average:        0        31      1.00      0.00  ksoftirqd/2
+Average:        0        37      0.50      0.00  ksoftirqd/3
+Average:        0        42      0.50      0.00  migration/4
+Average:        0        49      0.50      0.00  ksoftirqd/5
+Average:        0        80      1.99      0.00  kcompactd0
+Average:        0       280      1.49      0.00  kworker/0:1H-kblockd
+Average:        0       332      1.49      0.00  jbd2/sda2-8
+Average:        0       430      8.96      0.00  kworker/2:1H-i915_cleanup
+Average:        0       440     20.40      0.00  kworker/3:1H-i915_cleanup
+Average:        0       665      3.48      0.00  irq/163-iwlwifi:default_queue
+Average:        0       668      0.50      0.00  irq/165-iwlwifi:queue_2
+Average:        0       669      0.50      0.00  irq/166-iwlwifi:queue_3
+Average:        0       673      0.50      0.00  irq/170-iwlwifi:queue_7
+Average:        0       855      0.50      0.00  haveged
+Average:      989       864      0.50      0.00  dbus-daemon
+Average:        0      1025      1.00      0.00  NetworkManager
+Average:        0      1148      4.48      0.00  kworker/4:1H-i915_cleanup
+Average:      990      1197      0.50      0.00  systemd-oomd
+Average:     1001      2840      1.00      0.00  gunicorn
+Average:     1001      2861      1.00      0.00  gunicorn
+Average:      999      2868      9.95      0.00  redis-server
+Average:      101      3085      1.00      0.00  nginx
+Average:     1001      3220      1.49      0.00  gunicorn
+Average:     1001      3221      1.49      0.00  gunicorn
+Average:     1000      3352      1.99      0.00  flask
+Average:     1000      3353      9.95      0.00  dbus-daemon
+Average:     1000      3543    128.36      0.00  gnome-shell
+Average:     1000      3689      0.50      0.00  gsd-sharing
+Average:     1000      3895      9.95      0.00  xdg-desktop-por
+Average:     1000      5918    129.85      1.00  gnome-terminal-
+Average:     1000      6366      1.99      0.00  gnome-text-edit
+Average:     1000      7168      1.49      0.00  chrome
+Average:     1000      7221      0.50      0.00  chrome
+Average:     1000      7226      0.50      0.00  chrome
+Average:     1000      7246      0.50      0.00  chrome
+Average:     1000     35868      0.50      0.00  chrome
+Average:     1000     63706     39.80      0.00  sudo
+Average:        0    486754     52.24      0.00  kworker/u32:1+pm
+Average:     1000    487382      8.46     19.40  pentestcode
+Average:        0    487577      4.98      0.00  kworker/2:0-events
+Average:        0    487712      1.00      0.00  kworker/7:2-mm_percpu_wq
+Average:        0    492325      4.98      0.00  kworker/1:1-events
+Average:        0    494697     78.61      0.00  kworker/u32:3-events_unbound
+Average:     1000    495799     16.42      0.00  brave
+Average:     1000    495842      0.50      0.00  brave
+Average:     1000    495844      0.50      0.00  brave
+Average:     1000    495854      0.50      0.00  brave
+Average:     1000    495925     12.94      0.00  brave
+Average:        0    504885      1.99      0.00  kworker/3:0-mm_percpu_wq
+Average:        0    505689      2.99      0.00  kworker/6:2-i915-unordered
+Average:     1000    507537     66.67      0.00  chrome
+Average:     1000    507937     69.15      0.00  chrome
+Average:     1000    507961      0.50      0.00  chrome
+Average:     1000    508306      1.00      0.00  chrome
+Average:        0    513133      2.49      0.00  kworker/4:1-events
+Average:        0    520270     61.19      0.00  kworker/u32:2-events_unbound
+Average:        0    521714     66.67      0.00  kworker/u33:3-i915_flip
+Average:        0    527217    114.43      0.00  kworker/0:2-i915-unordered
+Average:     1000    529046      9.95      0.00  python3
+Average:        0    554896      4.48      0.00  kworker/5:1-i915-unordered
+Average:     1000    569150      2.49      0.00  chrome
+Average:     1000    571184      1.99      0.00  chrome
+Average:     1000    571880      9.95      0.00  soffice.bin
+Average:        0    614944      0.50      0.00  kworker/0:3-events
+Average:     1000    615685      0.50      0.00  chrome
+Average:        0    615823      1.00      0.00  pidstat
+meminfo:
+MemTotal:       32486364 kB
+MemFree:        10099240 kB
+MemAvailable:   22157732 kB
+Buffers:         2783444 kB
+Cached:          9481024 kB
+SwapCached:            0 kB
+Active:         10840772 kB
+Inactive:        7190908 kB
+Active(anon):    7665216 kB
+Inactive(anon):        0 kB
+Active(file):    3175556 kB
+Inactive(file):  7190908 kB
+Unevictable:     1508532 kB
+Mlocked:           20540 kB
+SwapTotal:      25787388 kB
+SwapFree:       25787388 kB
+Zswap:                 0 kB
+Zswapped:              0 kB
+Dirty:              3900 kB
+Writeback:             0 kB
+AnonPages:       7073436 kB
+Mapped:          1870428 kB
+Shmem:           1892276 kB
+KReclaimable:    2156600 kB
+stat_context:
+ctxt 97829159
+processes 615843
+procs_running 1
+procs_blocked 0

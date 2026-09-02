@@ -1,0 +1,19 @@
+ORCHESTRA-OS target-matched sched_ext build
+repository=/home/aether/Documents/ORCHESTRA-OS-final
+running_kernel=7.0.12+kali-amd64
+kernel_source=/var/tmp/orchestra-kernel-source-7.0.12/linux-source-7.0
+source_version=7.0.12
+build_dir=/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source
+bpf_uapi=/var/tmp/orchestra-kernel-source-7.0.12/linux-source-7.0/tools/include/uapi/linux/bpf.h
+bpf_doc=/var/tmp/orchestra-kernel-source-7.0.12/linux-source-7.0/scripts/bpf_doc.py
+bpf_helper_defs=/var/tmp/orchestra-kernel-source-7.0.12/linux-source-7.0/tools/lib/bpf/bpf_helper_defs.h
+bpf_source=/home/aether/Documents/ORCHESTRA-OS-final/kernel/sched_ext/bpf/orchestra_sched.bpf.c
+architecture=x86_64
+Generating /var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/vmlinux.h from /sys/kernel/btf/vmlinux
+Generating libbpf helper definitions from selected UAPI
+Building /var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_scx_stage7.bpf.o
+Building /var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_bridge
+Building /var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_loader
+libbpf_link=libbpf.so.1
+BUILD_COMPLETE
+manifest=/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/build-manifest.txt

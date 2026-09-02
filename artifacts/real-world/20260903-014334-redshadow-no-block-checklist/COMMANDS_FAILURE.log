@@ -1,0 +1,1 @@
+timestamp=2026-09-03T01:44:00+05:30	cwd=/home/aether/Documents/ORCHESTRA-OS-final	command=prediction-transport-session shell orchestration (initial attempt; --load completed before worker assignment)	rc=1	stdout=signal/prediction_transport/load.stdout;signal/prediction_transport/state_loaded.stdout	stderr=signal/prediction_transport/attempt1.stderr

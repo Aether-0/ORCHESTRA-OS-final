@@ -1,0 +1,13 @@
+/usr/bin/make
+/usr/bin/gcc
+/usr/bin/clang
+/usr/bin/python3
+/usr/sbin/bpftool
+/usr/bin/vmstat
+/usr/bin/mpstat
+/usr/bin/pidstat
+/usr/bin/chrt
+/usr/bin/taskset
+/usr/bin/zstd
+/usr/bin/ffmpeg
+/usr/bin/sqlite3

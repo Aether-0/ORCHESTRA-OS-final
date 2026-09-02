@@ -1,0 +1,156 @@
+./tests/unit/run.sh
+Running GCC ASan+UBSan unit tests
+[PASS] sha256_hmac_known_vectors
+[PASS] canonical_128_byte_serialization
+[PASS] frame_verification_matrix
+[PASS] publication_canonical_equivalence
+[PASS] publication_fault_injection
+[PASS] directive_boundaries_and_precedence
+[PASS] state_schema_v2_alignment
+[PASS] epsilon_schedule
+[PASS] prediction_and_baseline_fallback
+[PASS] normalized_geometric_mean
+[PASS] coordination_metric_scenarios
+[PASS] s4_burst_basic_semantics
+[PASS] s4_burst_directive_and_oscillation
+[PASS] s4_burst_invalid_and_zero_semantics
+[PASS] s4_burst_history_and_random_invariants
+[PASS] state_conditioned_coherence
+[PASS] first_decision_has_no_s4_penalty
+[PASS] effective_action_rules
+[PASS] migrate_restores_affinity
+[PASS] bounded_run_action_execution
+[PASS] bounded_yield_action_execution
+[PASS] effective_metric_aggregation
+[PASS] difference_reward_local_dominance
+[PASS] difference_reward_aggregate_equivalence
+[PASS] controller_mapping_rate_and_bounds
+[PASS] predictor_calibration_and_noise
+[PASS] strict_cli_numeric_parsing
+[PASS] policy_aggregation_excludes_rt
+[PASS] policy_atomic_save_uses_private_temp
+[PASS] consensus_blending_and_timeout
+PASS summary: 30/30 named unit tests passed
+Running GCC ASan+UBSan generation-publication thread stress
+reader=0 attempts=8090 verified=1948 valid=1948 no-new=6142 unstable=0 retries=129 retry-exhaustions=0 invalid-frame-reads=0 regressions=0 duplicates=0 final=2000
+reader=1 attempts=14243 verified=1972 valid=1972 no-new=12271 unstable=0 retries=95 retry-exhaustions=0 invalid-frame-reads=0 regressions=0 duplicates=0 final=2000
+reader=2 attempts=4632 verified=1796 valid=1796 no-new=2836 unstable=0 retries=261 retry-exhaustions=0 invalid-frame-reads=0 regressions=0 duplicates=0 final=2000
+reader=3 attempts=9777 verified=1688 valid=1688 no-new=8089 unstable=0 retries=482 retry-exhaustions=0 invalid-frame-reads=0 regressions=0 duplicates=0 final=2000
+stress-summary publisher-success=2000 publisher-attempts=2577 publisher-contention=577 read-attempts=36742 verified=7404 retries=967 retry-exhaustions=0 unstable=0 hmac=0 invalid-fields=0 invalid-schema=0 invalid-tier=0 invalid-source=0 invalid-directive=0 invalid-sequence=0 invalid-key-epoch=0 stale=0 torn-frame-detections=0 regressions=0 accepted-duplicates=0 reader-crashes=0 reader-hangs=0 hook-yields=12640
+PASS generation publication thread stress
+Running GCC ASan+UBSan bridge parser/ABI tests
+PASS bridge parser/ABI/publication-source tests
+Running GCC ASan+UBSan native coordination/controller tests
+Running GCC ASan+UBSan legacy-publication reference unit tests
+[PASS] sha256_hmac_known_vectors
+[PASS] canonical_128_byte_serialization
+[PASS] frame_verification_matrix
+[PASS] publication_canonical_equivalence
+[PASS] publication_fault_injection
+[PASS] directive_boundaries_and_precedence
+[PASS] state_schema_v2_alignment
+[PASS] epsilon_schedule
+[PASS] prediction_and_baseline_fallback
+[PASS] normalized_geometric_mean
+[PASS] coordination_metric_scenarios
+[PASS] s4_burst_basic_semantics
+[PASS] s4_burst_directive_and_oscillation
+[PASS] s4_burst_invalid_and_zero_semantics
+[PASS] s4_burst_history_and_random_invariants
+[PASS] state_conditioned_coherence
+[PASS] first_decision_has_no_s4_penalty
+[PASS] effective_action_rules
+[PASS] migrate_restores_affinity
+[PASS] bounded_run_action_execution
+[PASS] bounded_yield_action_execution
+[PASS] effective_metric_aggregation
+[PASS] difference_reward_local_dominance
+[PASS] difference_reward_aggregate_equivalence
+[PASS] controller_mapping_rate_and_bounds
+[PASS] predictor_calibration_and_noise
+[PASS] strict_cli_numeric_parsing
+[PASS] policy_aggregation_excludes_rt
+[PASS] policy_atomic_save_uses_private_temp
+[PASS] consensus_blending_and_timeout
+PASS summary: 30/30 named unit tests passed
+Checking direct GCC legacy-reference source build
+Running Clang policy-warning unit tests
+[PASS] sha256_hmac_known_vectors
+[PASS] canonical_128_byte_serialization
+[PASS] frame_verification_matrix
+[PASS] publication_canonical_equivalence
+[PASS] publication_fault_injection
+[PASS] directive_boundaries_and_precedence
+[PASS] state_schema_v2_alignment
+[PASS] epsilon_schedule
+[PASS] prediction_and_baseline_fallback
+[PASS] normalized_geometric_mean
+[PASS] coordination_metric_scenarios
+[PASS] s4_burst_basic_semantics
+[PASS] s4_burst_directive_and_oscillation
+[PASS] s4_burst_invalid_and_zero_semantics
+[PASS] s4_burst_history_and_random_invariants
+[PASS] state_conditioned_coherence
+[PASS] first_decision_has_no_s4_penalty
+[PASS] effective_action_rules
+[PASS] migrate_restores_affinity
+[PASS] bounded_run_action_execution
+[PASS] bounded_yield_action_execution
+[PASS] effective_metric_aggregation
+[PASS] difference_reward_local_dominance
+[PASS] difference_reward_aggregate_equivalence
+[PASS] controller_mapping_rate_and_bounds
+[PASS] predictor_calibration_and_noise
+[PASS] strict_cli_numeric_parsing
+[PASS] policy_aggregation_excludes_rt
+[PASS] policy_atomic_save_uses_private_temp
+[PASS] consensus_blending_and_timeout
+PASS summary: 30/30 named unit tests passed
+Running Clang generation-publication thread stress
+reader=0 attempts=10188 verified=1965 valid=1965 no-new=8223 unstable=0 retries=336 retry-exhaustions=0 invalid-frame-reads=0 regressions=0 duplicates=0 final=2000
+reader=1 attempts=12915 verified=1987 valid=1987 no-new=10928 unstable=0 retries=716 retry-exhaustions=0 invalid-frame-reads=0 regressions=0 duplicates=0 final=2000
+reader=2 attempts=10442 verified=1970 valid=1970 no-new=8472 unstable=0 retries=336 retry-exhaustions=0 invalid-frame-reads=0 regressions=0 duplicates=0 final=2000
+reader=3 attempts=4066 verified=1599 valid=1599 no-new=2467 unstable=0 retries=386 retry-exhaustions=0 invalid-frame-reads=0 regressions=0 duplicates=0 final=2000
+stress-summary publisher-success=2000 publisher-attempts=2527 publisher-contention=527 read-attempts=37611 verified=7521 retries=1774 retry-exhaustions=0 unstable=0 hmac=0 invalid-fields=0 invalid-schema=0 invalid-tier=0 invalid-source=0 invalid-directive=0 invalid-sequence=0 invalid-key-epoch=0 stale=0 torn-frame-detections=0 regressions=0 accepted-duplicates=0 reader-crashes=0 reader-hangs=0 hook-yields=13885
+PASS generation publication thread stress
+Running Clang bridge parser/ABI tests
+PASS bridge parser/ABI/publication-source tests
+Running Clang native coordination/controller tests
+Running Clang legacy-publication reference unit tests
+[PASS] sha256_hmac_known_vectors
+[PASS] canonical_128_byte_serialization
+[PASS] frame_verification_matrix
+[PASS] publication_canonical_equivalence
+[PASS] publication_fault_injection
+[PASS] directive_boundaries_and_precedence
+[PASS] state_schema_v2_alignment
+[PASS] epsilon_schedule
+[PASS] prediction_and_baseline_fallback
+[PASS] normalized_geometric_mean
+[PASS] coordination_metric_scenarios
+[PASS] s4_burst_basic_semantics
+[PASS] s4_burst_directive_and_oscillation
+[PASS] s4_burst_invalid_and_zero_semantics
+[PASS] s4_burst_history_and_random_invariants
+[PASS] state_conditioned_coherence
+[PASS] first_decision_has_no_s4_penalty
+[PASS] effective_action_rules
+[PASS] migrate_restores_affinity
+[PASS] bounded_run_action_execution
+[PASS] bounded_yield_action_execution
+[PASS] effective_metric_aggregation
+[PASS] difference_reward_local_dominance
+[PASS] difference_reward_aggregate_equivalence
+[PASS] controller_mapping_rate_and_bounds
+[PASS] predictor_calibration_and_noise
+[PASS] strict_cli_numeric_parsing
+[PASS] policy_aggregation_excludes_rt
+[PASS] policy_atomic_save_uses_private_temp
+[PASS] consensus_blending_and_timeout
+PASS summary: 30/30 named unit tests passed
+Checking direct Clang legacy-reference source build
+Running benchmark-validator unit tests
+Running signal-publication microbenchmark-runner unit tests
+Running sched_ext source safety invariants
+PASS sched_ext source safety invariants
+All requested unit-test compiler passes completed

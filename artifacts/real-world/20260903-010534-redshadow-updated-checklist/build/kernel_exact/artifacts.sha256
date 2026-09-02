@@ -1,0 +1,8 @@
+7702b498930fdea55d89c0c2010a7e468e3110799e76f7611fa0a544358ef555  /var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/build-manifest.txt
+1fcff8272f53f4f4aac57e3d6ee89dd4d81809d03aec89bdf1ac2c0c65a9751e  /var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/build.log
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  /var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/libbpf-generate.log
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  /var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/libbpf-header-check.log
+7ab2e7248342b65f74d8655da0b4b04215d2a8426b79d5d82f3035fad22f8f91  /var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_bridge
+d6b35436598722d17d8b446e38ab1cb31aaa1402b2a0e6e56dd20aee7f08c2bf  /var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_loader
+1d6820f0df25afd376cbb2e154471391211428aa1fede82558cf4127962ce400  /var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_scx_stage7.bpf.o
+96b223c8eaa9763f6caa0998188cf632aa0133c096bf526edc0043db3e675a51  /var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/vmlinux.h

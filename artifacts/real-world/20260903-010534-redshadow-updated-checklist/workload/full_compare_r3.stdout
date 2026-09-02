@@ -1,0 +1,27 @@
+01:16:44 === Real-Machine Benchmark Suite ===
+01:16:44 Repo: /home/aether/Documents/ORCHESTRA-OS-final | allowed CPUs: 0-7 | workload=cpu | Output: /var/tmp/orchestra-updated-compare-r3-20260903-0118 | duration=2 seconds
+01:16:44 Worker watchdog: 17s
+01:16:44 --- CFS baseline ---
+01:16:44   cfs: 1 workers, 2 seconds/fixed workload...
+01:16:46     1660ms ctx_delta=33592 accepted=0 dispatched=0 running=0 owned=n/a
+01:16:46   cfs: 2 workers, 2 seconds/fixed workload...
+01:16:48     1804ms ctx_delta=36418 accepted=0 dispatched=0 running=0 owned=n/a
+01:16:48   cfs: 4 workers, 2 seconds/fixed workload...
+01:16:50     1987ms ctx_delta=37027 accepted=0 dispatched=0 running=0 owned=n/a
+01:16:50 scx_simple not installed or not executable: /usr/bin/scx_simple; phase blocked
+01:16:50 --- ORCHESTRA ---
+01:16:59   orchestra: 1 workers, 2 seconds/fixed workload...
+01:17:01     1234ms ctx_delta=11907 accepted=2 dispatched=2 running=2 owned=yes
+01:17:01   orchestra: 2 workers, 2 seconds/fixed workload...
+01:17:03     1406ms ctx_delta=16758 accepted=11 dispatched=11 running=11 owned=yes
+01:17:03   orchestra: 4 workers, 2 seconds/fixed workload...
+01:17:05     1092ms ctx_delta=16403 accepted=42 dispatched=42 running=40 owned=yes
+01:17:05 === COMPLETE ===
+scheduler,workload,workers,duration_s,elapsed_ms,ctx_delta,accepted,dispatched,running,effective,owned,notes
+cfs,cpu,1,2,1660,33592,0,0,0,0,n/a,completed
+cfs,cpu,2,2,1804,36418,0,0,0,0,n/a,completed
+cfs,cpu,4,2,1987,37027,0,0,0,0,n/a,completed
+orchestra,cpu,1,2,1234,11907,2,2,2,0,yes,completed
+orchestra,cpu,2,2,1406,16758,11,11,11,0,yes,completed
+orchestra,cpu,4,2,1092,16403,42,42,40,0,yes,completed
+Full results: /var/tmp/orchestra-updated-compare-r3-20260903-0118

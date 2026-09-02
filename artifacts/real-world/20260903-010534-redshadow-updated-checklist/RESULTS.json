@@ -1,0 +1,37 @@
+{
+  "campaign_id": "20260903-010534-redshadow-updated-checklist",
+  "started_date": "2026-09-03",
+  "timezone": "Asia/Kolkata",
+  "host": "redshadow",
+  "repository_head": "94664aeb001d8b3552245aedfd78254fbb5f13b8",
+  "kernel": "7.0.12+kali-amd64",
+  "source_docx": "Orchestra updated check list .docx",
+  "source_docx_sha256": "b3e047049b63a470f9ebd37f08d1e35bafd7061028eeca37a29176a3cadd426d",
+  "markdown": "ORCHESTRA_UPDATED_CHECKLIST.md",
+  "markdown_sha256": "0f2630d3ae5dbc50c43dca43bfa62caa778087ebbd58fcdaae14aa393fe98c02",
+  "checklist_items": 587,
+  "phase_count": 36,
+  "checklist_status_counts": {
+    "PASS": 189,
+    "N/A": 3,
+    "INCONCLUSIVE": 93,
+    "BLOCKED": 301,
+    "FAIL": 1
+  },
+  "test_result_counts": {
+    "PASS": 28,
+    "FAIL": 3,
+    "BLOCKED": 4,
+    "INCONCLUSIVE": 1
+  },
+  "final_sched_ext_state": "disabled",
+  "source_modified_by_campaign": false,
+  "claim_boundary": "KERNEL_PROTOTYPED / bounded EXPERIMENTALLY_VALIDATED; not DEPLOYMENT_READY",
+  "artifacts": {
+    "commands": "COMMANDS.log",
+    "checklist_ledger": "CHECKLIST_STATUS.csv",
+    "test_results": "TEST_RESULTS.csv",
+    "implementation_matrix": "IMPLEMENTATION_MATRIX.csv",
+    "report": "REAL_WORLD_TEST_REPORT.md"
+  }
+}

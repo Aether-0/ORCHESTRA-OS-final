@@ -1,0 +1,35 @@
+Usage: /var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_bridge COMMAND [OPTIONS]
+  --status [--target-pid TID]
+  --stream   (binary canonical-engine request/response stream)
+  --policy-entry --policy-state-index N --action RUN|SLEEP|MIGRATE|THROTTLE|YIELD
+      [--policy-commit] [--policy-mode ID] [--controller-state STATE]
+  --policy-commit   (atomically activate the inactive v8 policy bank)
+  --policy-abort    (restore the inactive bank from the active bank)
+  --publish --action RUN|SLEEP|MIGRATE|THROTTLE|YIELD --target-pid TID
+      [--target-cpu CPU] [--slice-ns NS] [--not-before-ns MONO_NS]
+      [--throttle-period-ns NS] [--throttle-budget-ns NS]
+      [--expiry-ns DURATION_NS] [--lease-ns NS] [--dry-run]
+      [--controller-state STATE] [--policy-mode ID] [--policy-generation N]
+      [--require-signal]
+  --signal-publish --signal-sequence N
+      [--signal-max-age-ns NS] [--signal-tier N] [--signal-source-id N]
+      [--signal-key-epoch N] [--signal-directive ACTION]
+      [--signal-state-schema-version N] [--signal-prediction-used 0|1]
+      [--signal-confidence-permille N] [--signal-cpu-now-permille N]
+      [--signal-cpu-pred-permille N] [--signal-decision-cpu-permille N]
+      [--signal-memory-pressure-permille N] [--signal-thermal-permille N]
+      [--signal-s1-permille N] [--signal-s2-permille N]
+      [--signal-s3-permille N] [--signal-s4-permille N]
+      [--signal-q-permille N]
+  --clear [--target-pid TID]
+  --opt-in --target-pid TID   (identity admission only; exact TID)
+  --pin-maps --control-map-id ID --directive-map-id ID
+      --identity-map-id ID --task-map-id ID --task-telemetry-map-id ID
+      --telemetry-map-id ID --defer-timer-map-id ID --signal-map-id ID
+      --runtime-v8-map-id ID --policy-meta-v8-map-id ID
+      --policy-entry-v8-map-id ID --task-v8-map-id ID
+      --diag-v8-map-id ID --tel-v8-map-id ID
+      --coord-v10-map-id ID --coord-cpu-v10-map-id ID
+      --controller-v10-map-id ID --controller-tel-v10-map-id ID
+      --runtime-v10-map-id ID --task-coord-v10-map-id ID
+      (timer map must already be pinned before attach; use orchestra_loader)

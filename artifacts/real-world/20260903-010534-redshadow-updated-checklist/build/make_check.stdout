@@ -1,0 +1,6 @@
+make -C orchestra_paper_cpu_demo check
+make[1]: Entering directory '/home/aether/Documents/ORCHESTRA-OS-final/orchestra_paper_cpu_demo'
+cc -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wformat=2 -Werror -fsyntax-only orchestra_paper_cpu.c
+make[1]: Leaving directory '/home/aether/Documents/ORCHESTRA-OS-final/orchestra_paper_cpu_demo'
+DOC_LINKS_PASS (15 maintained documents)
+machine-path: docs/demo/REALTIME_CFS_ORCHESTRA_DEMO.md:22:cd /home/aether/Documents/ORCHESTRA-OS-final

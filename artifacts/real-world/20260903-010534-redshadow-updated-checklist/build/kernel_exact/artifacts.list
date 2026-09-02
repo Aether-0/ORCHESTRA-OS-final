@@ -1,0 +1,9 @@
+/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/build-manifest.txt 1011
+/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/build.log 1310
+/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/libbpf-generate.log 0
+/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/libbpf-header-check.log 0
+/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/libbpf/bpf_helper_defs.h 175871
+/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_bridge 59864
+/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_loader 26840
+/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/orchestra_scx_stage7.bpf.o 1229440
+/var/tmp/orchestra-os-build-20260903-updated-checklist-kernel-source/vmlinux.h 2885656

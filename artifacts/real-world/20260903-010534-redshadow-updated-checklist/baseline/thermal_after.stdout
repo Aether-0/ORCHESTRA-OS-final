@@ -1,0 +1,8 @@
+thermal_zone0 acpitz 48000
+thermal_zone1 pch_cannonlake 54000
+thermal_zone2 INT3400 Thermal 20000
+thermal_zone3 SEN1 1050
+thermal_zone4 SEN2 40050
+thermal_zone5 B0D4 48050
+thermal_zone6 iwlwifi_1 61000
+thermal_zone7 x86_pkg_temp 70000

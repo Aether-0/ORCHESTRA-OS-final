@@ -1,0 +1,137 @@
+20: lsm  name restrict_filesystems  tag 31efb7c56239148b  gpl
+	loaded_at 2026-09-02T19:42:56+0530  uid 0
+	xlated 520B  jited 297B  memlock 4096B  map_ids 12
+	btf_id 72
+21: cgroup_device  name sd_devices  tag 4ea3934a7fabf5c3  gpl
+	loaded_at 2026-09-02T19:42:56+0530  uid 0
+	xlated 504B  jited 322B  memlock 4096B
+22: cgroup_skb  name sd_fw_egress  tag 772db7720b2728e9  gpl
+	loaded_at 2026-09-02T19:42:56+0530  uid 0
+	xlated 64B  jited 67B  memlock 4096B
+23: cgroup_skb  name sd_fw_ingress  tag 772db7720b2728e9  gpl
+	loaded_at 2026-09-02T19:42:56+0530  uid 0
+	xlated 64B  jited 67B  memlock 4096B
+24: cgroup_device  name sd_devices  tag 4b13b8318fb7df93  gpl
+	loaded_at 2026-09-02T19:42:56+0530  uid 0
+	xlated 464B  jited 301B  memlock 4096B
+25: cgroup_device  name sd_devices  tag a97c143260cd9940  gpl
+	loaded_at 2026-09-02T19:42:56+0530  uid 0
+	xlated 416B  jited 271B  memlock 4096B
+26: cgroup_device  name sd_devices  tag a97c143260cd9940  gpl
+	loaded_at 2026-09-02T19:42:56+0530  uid 0
+	xlated 416B  jited 271B  memlock 4096B
+27: cgroup_skb  name sd_fw_egress  tag 772db7720b2728e9  gpl
+	loaded_at 2026-09-02T19:42:56+0530  uid 0
+	xlated 64B  jited 67B  memlock 4096B
+28: cgroup_skb  name sd_fw_ingress  tag 772db7720b2728e9  gpl
+	loaded_at 2026-09-02T19:42:56+0530  uid 0
+	xlated 64B  jited 67B  memlock 4096B
+29: cgroup_skb  name sd_fw_egress  tag 772db7720b2728e9  gpl
+	loaded_at 2026-09-02T19:42:56+0530  uid 0
+	xlated 64B  jited 67B  memlock 4096B
+30: cgroup_skb  name sd_fw_ingress  tag 772db7720b2728e9  gpl
+	loaded_at 2026-09-02T19:42:56+0530  uid 0
+	xlated 64B  jited 67B  memlock 4096B
+31: cgroup_device  name sd_devices  tag a97c143260cd9940  gpl
+	loaded_at 2026-09-02T19:42:58+0530  uid 0
+	xlated 416B  jited 271B  memlock 4096B
+32: cgroup_device  name sd_devices  tag a97c143260cd9940  gpl
+	loaded_at 2026-09-02T19:42:58+0530  uid 0
+	xlated 416B  jited 271B  memlock 4096B
+33: cgroup_device  name sd_devices  tag b3333f074dcc518c  gpl
+	loaded_at 2026-09-02T19:42:58+0530  uid 0
+	xlated 184B  jited 114B  memlock 4096B
+34: cgroup_device  name sd_devices  tag 4b13b8318fb7df93  gpl
+	loaded_at 2026-09-02T19:42:58+0530  uid 0
+	xlated 464B  jited 301B  memlock 4096B
+35: cgroup_device  name sd_devices  tag 33ad703a7e68bbfb  gpl
+	loaded_at 2026-09-02T19:42:58+0530  uid 0
+	xlated 792B  jited 493B  memlock 4096B
+36: cgroup_skb  name sd_fw_egress  tag 772db7720b2728e9  gpl
+	loaded_at 2026-09-02T19:42:58+0530  uid 0
+	xlated 64B  jited 67B  memlock 4096B
+37: cgroup_skb  name sd_fw_ingress  tag 772db7720b2728e9  gpl
+	loaded_at 2026-09-02T19:42:58+0530  uid 0
+	xlated 64B  jited 67B  memlock 4096B
+38: cgroup_device  name sd_devices  tag a97c143260cd9940  gpl
+	loaded_at 2026-09-02T19:42:58+0530  uid 0
+	xlated 416B  jited 271B  memlock 4096B
+42: cgroup_device  name sd_devices  tag 4b13b8318fb7df93  gpl
+	loaded_at 2026-09-02T19:43:00+0530  uid 0
+	xlated 464B  jited 301B  memlock 4096B
+43: cgroup_skb  name sd_fw_egress  tag 772db7720b2728e9  gpl
+	loaded_at 2026-09-02T19:43:00+0530  uid 0
+	xlated 64B  jited 67B  memlock 4096B
+44: cgroup_skb  name sd_fw_ingress  tag 772db7720b2728e9  gpl
+	loaded_at 2026-09-02T19:43:00+0530  uid 0
+	xlated 64B  jited 67B  memlock 4096B
+47: cgroup_sock  name split_tunnel  tag 096f627a9ea414b9  gpl
+	loaded_at 2026-09-02T19:43:02+0530  uid 0
+	xlated 352B  jited 225B  memlock 4096B  map_ids 14,13
+	btf_id 239
+51: cgroup_skb  name sd_fw_egress  tag 772db7720b2728e9  gpl
+	loaded_at 2026-09-02T19:43:03+0530  uid 0
+	xlated 64B  jited 67B  memlock 4096B
+52: cgroup_skb  name sd_fw_ingress  tag 772db7720b2728e9  gpl
+	loaded_at 2026-09-02T19:43:03+0530  uid 0
+	xlated 64B  jited 67B  memlock 4096B
+55: cgroup_device  name sd_devices  tag 461f9f5162fd8042  gpl
+	loaded_at 2026-09-02T19:43:07+0530  uid 0
+	xlated 472B  jited 307B  memlock 4096B
+59: cgroup_device  tag b8f4fb5f08605bc5
+	loaded_at 2026-09-02T19:43:07+0530  uid 0
+	xlated 552B  jited 369B  memlock 4096B
+60: cgroup_device  name sd_devices  tag 461f9f5162fd8042  gpl
+	loaded_at 2026-09-02T19:43:07+0530  uid 0
+	xlated 472B  jited 307B  memlock 4096B
+64: cgroup_device  tag b8f4fb5f08605bc5
+	loaded_at 2026-09-02T19:43:07+0530  uid 0
+	xlated 552B  jited 369B  memlock 4096B
+65: cgroup_device  name sd_devices  tag 461f9f5162fd8042  gpl
+	loaded_at 2026-09-02T19:43:07+0530  uid 0
+	xlated 472B  jited 307B  memlock 4096B
+69: cgroup_device  tag b8f4fb5f08605bc5
+	loaded_at 2026-09-02T19:43:07+0530  uid 0
+	xlated 552B  jited 369B  memlock 4096B
+70: cgroup_device  name sd_devices  tag 461f9f5162fd8042  gpl
+	loaded_at 2026-09-02T19:43:07+0530  uid 0
+	xlated 472B  jited 307B  memlock 4096B
+74: cgroup_device  tag b8f4fb5f08605bc5
+	loaded_at 2026-09-02T19:43:07+0530  uid 0
+	xlated 552B  jited 369B  memlock 4096B
+75: cgroup_device  name sd_devices  tag 461f9f5162fd8042  gpl
+	loaded_at 2026-09-02T19:43:07+0530  uid 0
+	xlated 472B  jited 307B  memlock 4096B
+79: cgroup_device  tag b8f4fb5f08605bc5
+	loaded_at 2026-09-02T19:43:07+0530  uid 0
+	xlated 552B  jited 369B  memlock 4096B
+80: cgroup_device  name sd_devices  tag 4b13b8318fb7df93  gpl
+	loaded_at 2026-09-02T19:43:08+0530  uid 0
+	xlated 464B  jited 301B  memlock 4096B
+81: cgroup_skb  name sd_fw_egress  tag 772db7720b2728e9  gpl
+	loaded_at 2026-09-02T19:43:08+0530  uid 0
+	xlated 64B  jited 67B  memlock 4096B
+82: cgroup_skb  name sd_fw_ingress  tag 772db7720b2728e9  gpl
+	loaded_at 2026-09-02T19:43:08+0530  uid 0
+	xlated 64B  jited 67B  memlock 4096B
+86: cgroup_device  name sd_devices  tag db1fded75eca904a  gpl
+	loaded_at 2026-09-02T20:42:59+0530  uid 0
+	xlated 1712B  jited 1060B  memlock 4096B
+91: socket_filter  tag 2ce110f227b215d0
+	loaded_at 2026-09-03T00:12:41+0530  uid 0
+	xlated 848B  jited 467B  memlock 4096B  map_ids 25
+94: cgroup_skb  name sd_fw_egress  tag 772db7720b2728e9  gpl
+	loaded_at 2026-09-03T00:29:40+0530  uid 0
+	xlated 64B  jited 67B  memlock 4096B
+95: cgroup_skb  name sd_fw_ingress  tag 772db7720b2728e9  gpl
+	loaded_at 2026-09-03T00:29:40+0530  uid 0
+	xlated 64B  jited 67B  memlock 4096B
+99: cgroup_device  name sd_devices  tag a97c143260cd9940  gpl
+	loaded_at 2026-09-03T01:07:04+0530  uid 0
+	xlated 416B  jited 271B  memlock 4096B
+100: cgroup_skb  name sd_fw_egress  tag 772db7720b2728e9  gpl
+	loaded_at 2026-09-03T01:07:04+0530  uid 0
+	xlated 64B  jited 67B  memlock 4096B
+101: cgroup_skb  name sd_fw_ingress  tag 772db7720b2728e9  gpl
+	loaded_at 2026-09-03T01:07:04+0530  uid 0
+	xlated 64B  jited 67B  memlock 4096B

@@ -1,0 +1,3 @@
+2: tracing  prog 20  
+	prog_type lsm  attach_type lsm_mac  
+	target_obj_id 1  target_btf_id 68139  

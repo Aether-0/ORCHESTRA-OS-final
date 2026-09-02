@@ -1,0 +1,14 @@
+make: Entering directory '/home/aether/Documents/ORCHESTRA-OS-final'
+make -C orchestra_paper_cpu_demo
+make[1]: Entering directory '/home/aether/Documents/ORCHESTRA-OS-final/orchestra_paper_cpu_demo'
+make[1]: Nothing to be done for 'all'.
+make[1]: Leaving directory '/home/aether/Documents/ORCHESTRA-OS-final/orchestra_paper_cpu_demo'
+make: Leaving directory '/home/aether/Documents/ORCHESTRA-OS-final'
+make: Entering directory '/home/aether/Documents/ORCHESTRA-OS-final'
+cc -O2 -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
+	-Wformat=2 -Werror -I"kernel/sched_ext/include" \
+	"kernel/sched_ext/bridge/orchestra_bridge.c" \
+	-o "/var/tmp/orchestra-os-build-20260903-updated-checklist/orchestra_bridge"
+make: Leaving directory '/home/aether/Documents/ORCHESTRA-OS-final'
+build_dir=/var/tmp/orchestra-os-build-20260903-updated-checklist
+BUILD_COMPLETE

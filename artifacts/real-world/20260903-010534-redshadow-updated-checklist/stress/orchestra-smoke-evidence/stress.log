@@ -1,0 +1,20 @@
+01:18:02 === ORCHESTRA Stress Suite ===
+01:18:02 Mode: orchestra | Duration: 5s | allowed CPUs: 0-7 | RAM: 31724MB | available: 21163MB
+01:18:02 Memory safety budget: 2 workers x 5290MB = 10580MB
+01:18:02 Phase watchdog: 35s
+01:18:02 Scheduler state before workloads: enabled
+01:18:02 Output: /var/tmp/orchestra-updated-stress-orchestra-20260903-0121
+01:18:02 Thermal monitor active; it stops the campaign at a reported critical trip point
+01:18:02 --- CPU Stress (8 workers) ---
+01:18:08   CPU: 6s, 0 errors, ownership=yes
+01:18:08 --- Memory Stress (5290MB) ---
+01:18:08 BLOCKED_OWNERSHIP_NOT_PROVEN: stress --vm creates child workers without an exact-TID opt-in protocol
+01:18:08   Memory: done
+01:18:08 --- I/O Stress ---
+01:18:13   I/O: 5s, 0 errors, ownership=yes
+01:18:13 --- Mixed Workload ---
+01:18:19   Mixed: 6s, 0 errors, ownership=yes
+01:18:19 --- Health Check ---
+01:18:19 Scheduler state after workloads: enabled
+01:18:19 === COMPLETE ===
+01:18:19 Results: /var/tmp/orchestra-updated-stress-orchestra-20260903-0121/results.csv
