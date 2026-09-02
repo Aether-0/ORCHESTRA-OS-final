@@ -1,6 +1,6 @@
 # Evidence calculations and audit trail
 
-This file records the derived quantities used in the manuscript. The source
+This file records the derived quantities used in the report. The source
 CSV/JSON files remain the authoritative raw evidence included in `data/`.
 
 ## Parameter register
@@ -13,7 +13,7 @@ ORCHESTRA bridge parameters.
 
 ## Fixed-work comparison (FW3)
 
-For each workload/worker row, the manuscript reports the arithmetic mean and
+For each workload/worker row, the report gives the arithmetic mean and
 sample standard deviation of three CFS and three ownership-proven ORCHESTRA
 runs. The displayed ratio is:
 

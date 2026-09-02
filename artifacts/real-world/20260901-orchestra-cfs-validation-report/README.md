@@ -1,7 +1,7 @@
-# ORCHESTRA-OS versus Linux CFS: publication package
+# ORCHESTRA-OS versus Linux CFS: validation report package
 
-This directory contains the publication-ready manuscript and the compact,
-machine-readable evidence set used to produce it.
+This directory contains the formal, publication-ready validation report and
+the compact, machine-readable evidence set used to produce it.
 
 Author: **S.W. ZAW**. The real-world validation records and companion evidence
 supplement are the author's project archives; exact provenance and source
@@ -9,12 +9,12 @@ hashes are recorded in `PROVENANCE.md`.
 
 ## Deliverables
 
-- `ORCHESTRA_OS_CFS_COMPARATIVE_RESEARCH_PAPER.pdf` — rendered manuscript.
-- `ORCHESTRA_OS_CFS_COMPARATIVE_RESEARCH_PAPER.tex` — reproducible LaTeX source.
+- `ORCHESTRA_OS_CFS_VALIDATION_REPORT.pdf` — rendered validation report.
+- `ORCHESTRA_OS_CFS_VALIDATION_REPORT.tex` — reproducible LaTeX source.
 - `PROVENANCE.md` — source identity, evidence classes, and claim boundaries.
 - `DATA_DICTIONARY.md` — definitions for the included evidence tables.
 - `EVIDENCE_CALCULATIONS.md` — formulas and independently auditable derived
-  quantities used in the manuscript.
+  quantities used in the report.
 - `data/parameter_inventory.csv` — source-backed ORCHESTRA parameters, host CFS
   baseline observations, and the evidence boundary for each comparison.
 - `FIGURE_INDEX.md` — figure purposes, evidence classes, and source mapping.
@@ -36,15 +36,15 @@ acceleration.
 
 In matched fixed-work trials, ORCHESTRA was slower than the CFS baseline for
 pure CPU work and directionally faster in the small mixed CPU/I/O sample. The
-paper reports both results and does not claim a universal speedup.
+report presents both results and does not claim a universal speedup.
 
 ## Reproduction boundary
 
-The paper uses the primary simulation study and the author-controlled
+This report uses the primary simulation study and the author-controlled
 real-machine validation archive as source documents, plus the later
 ownership-gated campaign tables preserved in this repository. The raw
 boot-journal fixture remains in the author-controlled real-world archive; its
 dimensions and digest are recorded in `PROVENANCE.md` and the evidence package.
 
 No ORCHESTRA implementation, kernel/BPF source, test, or benchmark script was
-modified to create this package.
+modified to create this report package.

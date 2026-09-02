@@ -5,13 +5,13 @@
 From this directory:
 
 ```text
-pdflatex -interaction=nonstopmode -halt-on-error -file-line-error ORCHESTRA_OS_CFS_COMPARATIVE_RESEARCH_PAPER.tex
-pdflatex -interaction=nonstopmode -halt-on-error -file-line-error ORCHESTRA_OS_CFS_COMPARATIVE_RESEARCH_PAPER.tex
+pdflatex -interaction=nonstopmode -halt-on-error -file-line-error ORCHESTRA_OS_CFS_VALIDATION_REPORT.tex
+pdflatex -interaction=nonstopmode -halt-on-error -file-line-error ORCHESTRA_OS_CFS_VALIDATION_REPORT.tex
 ```
 
 Both invocations returned zero. The second pass resolves cross-references and
-citations. The output is a seven-page PDF with embedded vector graphs and
-flowcharts.
+citations. The output is a seven-page validation report with embedded vector
+graphs and flowcharts.
 
 ## Verification performed
 
@@ -21,7 +21,7 @@ flowcharts.
 - Pages containing the evidence-chain, simulation, fixed-work, foreground,
   service-cost, bottleneck, and field-fit figures were rendered and visually
   inspected.
-- No forbidden project label or full-name author form appears in the manuscript
+- No forbidden project label or full-name author form appears in the report
   source, PDF text, provenance, or compact evidence package.
 - The parameter register is included and its CFS host snapshot is labelled as a
   baseline observation rather than a semantic equivalence claim.

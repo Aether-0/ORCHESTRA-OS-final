@@ -102,7 +102,7 @@
 \end{center}
 \vspace{0.28em}
 \begin{minipage}{0.965\textwidth}
-\noindent\textbf{Abstract---}This paper determines where the current ORCHESTRA-OS scheduling prototype is stronger than the Linux default CFS path, where it is weaker, and where its use is justified by evidence. The study combines the pre-kernel simulation study, the author-controlled real-machine validation archive, and the later ownership-gated bare-metal evidence tables preserved in the repository. The test host is Kali GNU/Linux Rolling x86\_64 on \hostid, running Linux \texttt{7.0.12+kali-amd64}. The comparison is claim-bounded: a simulation result is not a hardware result, a successful BPF attach is not task ownership, and an elapsed-time difference is not a causal scheduler benefit without workload and action evidence.
+\noindent\textbf{Abstract---}This validation report determines where the current ORCHESTRA-OS scheduling prototype is stronger than the Linux default CFS path, where it is weaker, and where its use is justified by evidence. The study combines the pre-kernel simulation study, the author-controlled real-machine validation archive, and the later ownership-gated bare-metal evidence tables preserved in the repository. The test host is Kali GNU/Linux Rolling x86\_64 on \hostid, running Linux \texttt{7.0.12+kali-amd64}. The comparison is claim-bounded: a simulation result is not a hardware result, a successful BPF attach is not task ownership, and an elapsed-time difference is not a causal scheduler benefit without workload and action evidence.
 
 The strongest measured capability is selective foreground protection. In a held-out 20-pair experiment, four ImageMagick foreground resizes completed 74.24\% faster with ORCHESTRA while eight explicitly deferrable bzip2 workers received a 10-ms-per-second service budget. All 20 pairs won, all 160 foreground outputs verified, exact task ownership passed in every ORCHESTRA phase, and effective THROTTLE deferrals occurred in every phase. The corresponding background CPU service fell 97.69\%; therefore the result is service reallocation, not free total acceleration. A five-pair fixed-log experiment also favored ORCHESTRA, but CFS reached 96--97\,$^\circ$C and the result is thermally confounded and exploratory.
 
@@ -124,7 +124,7 @@ The practical question is not whether one scheduler can win one benchmark. It is
 Which observable workload shape makes ORCHESTRA's explicit signal, ownership, and action machinery useful relative to CFS, what cost does that policy impose, and which claimed capabilities remain outside the evidence?
 \end{quote}
 
-The study follows the authority order in the repository: the architectural research paper, the author-controlled real-machine validation archive, repository design and validation records, and the preserved raw result tables. The original research paper is explicitly a pre-kernel simulation study~\cite{simpaper}; its simulated coordination and prediction values are used as design evidence, not as Linux measurements. The real-machine manuscript is treated as a prior evidence synthesis~\cite{valpaper}. The current repository revision and later bare-metal campaign are identified in the provenance package accompanying this paper~\cite{repo}.
+The study follows the authority order in the repository: the architectural research paper, the author-controlled real-machine validation archive, repository design and validation records, and the preserved raw result tables. The original research paper is explicitly a pre-kernel simulation study~\cite{simpaper}; its simulated coordination and prediction values are used as design evidence, not as Linux measurements. The real-machine validation report is treated as a prior evidence synthesis~\cite{valpaper}. The current repository revision and later bare-metal campaign are identified in the provenance package accompanying this report~\cite{repo}.
 
 The evidence ladder is deliberately strict. We use \evidence{SIMULATED} for the pre-kernel study, \evidence{USERSPACE-VALIDATED} for API and control-plane checks without kernel ownership, \evidence{KERNEL-PROTOTYPED} for target-matched build/attach and source contracts, and \evidence{EXPERIMENTALLY-VALIDATED (BOUNDED)} only when repeated real-machine observations satisfy the stated ownership, correctness, and recovery gates. We never use the word ``better'' without naming whether it means lower foreground latency, stronger policy control, lower overhead, or a different safety property.
 
@@ -146,7 +146,7 @@ The evidence ladder is deliberately strict. We use \evidence{SIMULATED} for the 
   \draw[flowarrow] (correct)--(result);
   \node[font=\scriptsize\bfseries,above=0.08in of act] {valid performance claim gate};
 \end{tikzpicture}
-\caption{The evidence chain used in this paper. A timing row without the middle ownership and action gates is reported as an observation or as inconclusive, not as proof that ORCHESTRA caused the difference.}
+\caption{The evidence chain used in this report. A timing row without the middle ownership and action gates is reported as an observation or as inconclusive, not as proof that ORCHESTRA caused the difference.}
 \label{fig:evidence-chain}
 \end{figure*}
 
@@ -256,7 +256,7 @@ The same study found a controller--target mismatch, a reward/directive contradic
 
 The target is Kali GNU/Linux Rolling x86\_64 on \hostid. The recorded CPU is an Intel Core i5-10310U with 4 physical cores and 8 logical CPUs, one NUMA node, and approximately 31 GiB RAM. The kernel is Linux \texttt{7.0.12+kali-amd64}. The repository revision audited for the runtime campaign is \texttt{94664aeb001d8b3552245aedfd78254fbb5f13b8}; the worktree was dirty, so the campaign records the distinction between committed and uncommitted state. The exact target-matched build generated BTF from the running kernel and passed the verifier/attach gate. The final scheduler state was disabled and unrelated BPF state was preserved.
 
-This manuscript is a synthesis of the completed campaign archive; it does not
+This report is a synthesis of the completed campaign archive; it does not
 impute fresh heavy-run values. Tool, thermal, topology, and storage boundaries
 recorded during testing remain part of the interpretation.
 
@@ -467,7 +467,7 @@ The result should not be explained as a universal scheduler cost. It is a small 
 
 The prior field evidence reproduced a mechanism bottleneck. The initial log screen recorded five timing wins but zero THROTTLE deferrals, so those timings were not treated as action-causal evidence. When a fresh THROTTLE directive followed RUN before budget consumption, the early below-budget enqueue path could return after inserting a limited slice without synchronizing the task-state generation/action. The subsequent running callback saw a generation mismatch and returned before setting the running flag; the stopping callback therefore did not accumulate runtime, so the budget could remain below threshold and no deferral occurred. A short RUN warm-up before THROTTLE changed the controlled diagnostic from zero deferrals to 48 deferrals and 40 releases.
 
-The later controlled-v6 protocol included the warm-up and observed 248 deferrals and 208 releases across five ORCHESTRA pairs. The diagnosis is high confidence because source control flow and timing-controlled before/after behavior agree, but the paper does not claim that the underlying implementation has been repaired merely because the campaign's later matrix passed. This is a weakness to regression-test before relying on automated transitions.
+The later controlled-v6 protocol included the warm-up and observed 248 deferrals and 208 releases across five ORCHESTRA pairs. The diagnosis is high confidence because source control flow and timing-controlled before/after behavior agree, but this report does not claim that the underlying implementation has been repaired merely because the campaign's later matrix passed. This is a weakness to regression-test before relying on automated transitions.
 
 \begin{figure}[t]
 \centering
@@ -541,7 +541,7 @@ For pure CPU/HPC saturation, uncontrolled database latency, internally multi-thr
 
 The original paper's most important parameter lessons are architectural rather than numerical. The corrected $Q$ must include temporal stability so synchronized mass-switching cannot look healthy. A controller must actuate the deficient submetric, not merely mutate a convenient parameter. Reward and directive boundaries must agree. State bins must align with decision thresholds. Persistent exploration imposes a compliance ceiling. Difference rewards are needed when individual actions affect population-level coordination. Finally, the failed online-adaptive Kalman result warns against assuming that more online adaptation is automatically better when process and observation noise are not identifiable.
 
-The current kernel path represents these concepts unevenly. It exposes live bounded coordination records and controller state, but a broad $S_1$--$S_4$ population study was not completed. The correct comparison posture is not to assign a fabricated $Q_{\mathrm{CFS}}$: CFS has no corresponding ORCHESTRA signal/action index, and the paper does not define a valid cross-system mapping. Similarly, the userspace HMAC result is not a kernel authentication result, and a one-node migration result is not NUMA-aware scheduling validation.
+The current kernel path represents these concepts unevenly. It exposes live bounded coordination records and controller state, but a broad $S_1$--$S_4$ population study was not completed. The correct comparison posture is not to assign a fabricated $Q_{\mathrm{CFS}}$: CFS has no corresponding ORCHESTRA signal/action index, and this report does not define a valid cross-system mapping. Similarly, the userspace HMAC result is not a kernel authentication result, and a one-node migration result is not NUMA-aware scheduling validation.
 
 The RT evidence is bounded but useful. FIFO, RR, and DEADLINE tasks were refused adaptive admission; normal tasks coexisted, and the short FIFO/RR contention probe kept protected tasks outside the adaptive path while normal tasks remained owned. The DEADLINE contention launch was environment-blocked by EPERM. None of these observations establishes deadline latency, hard-real-time isolation, starvation freedom, or priority-inversion freedom.
 
@@ -549,7 +549,7 @@ The RT evidence is bounded but useful. FIFO, RR, and DEADLINE tasks were refused
 
 The 20-pair photo experiment is the strongest quantitative result because it has 20 paired comparisons, balanced order, output verification, ownership, action, and recovery gates. Its descriptive interval and raw rows are preserved. It still represents one host, one kernel, one input family, one action policy, and one service trade-off. The five-pair log experiment is a screen under a thermal boundary, not a preregistered confirmation. The fixed-work table uses the repository’s required three repetitions for an exploratory comparison; it should be expanded to at least five repetitions with randomized order, thermal control, and complete end-state snapshots before any broad performance claim. The 47-row checklist normalizes to 38 PASS, 2 preserved FAIL, 7 BLOCKED, 0 INCONCLUSIVE, and 0 N/A; the two failures remain visible as preserved harness/attempt records.
 
-The paper's compact evidence directory includes all raw comparison rows used in the figures, the action matrix, checklist and test status, longrun table, signal microbenchmark summary, target build manifest, parameter register, diagnosis, and data dictionary. The author-controlled journal fixture is represented by its record count, byte count, expected output identity, and digest in the evidence package. The manuscript source uses no generated numerical value that is not present in those evidence tables or the cited primary documents.
+This report's compact evidence directory includes all raw comparison rows used in the figures, the action matrix, checklist and test status, longrun table, signal microbenchmark summary, target build manifest, parameter register, diagnosis, and data dictionary. The author-controlled journal fixture is represented by its record count, byte count, expected output identity, and digest in the evidence package. The report source uses no generated numerical value that is not present in those evidence tables or the cited primary documents.
 
 \begin{table}[t]
 \centering\scriptsize
@@ -611,7 +611,7 @@ G. Ganesan and P. Vaithiyanathan, ``ORCHESTRA-OS: Simulation-Driven Architectura
 \AUTHOR, ``ORCHESTRA-OS Real-Machine Validation Archive: Field Fit and Bottleneck Evidence,'' version 2, 27 Aug. 2026. Author-controlled real-world evidence archive; source identity is recorded by SHA-256 in the accompanying provenance file.
 
 \bibitem{repo}
-\AUTHOR, ``ORCHESTRA-OS Real-World Evidence Supplement,'' companion archive, 1 Sep. 2026. It contains the reproducibility files cited in this paper; complete revision and checksum information are recorded in the provenance record.
+\AUTHOR, ``ORCHESTRA-OS Real-World Evidence Supplement,'' companion archive, 1 Sep. 2026. It contains the reproducibility files cited in this report; complete revision and checksum information are recorded in the provenance record.
 
 \bibitem{schedext}
 Linux Kernel Documentation, ``sched\_ext: BPF extensible scheduler class,'' Linux kernel documentation, accessed 1 Sep. 2026. The target-specific attach/build boundary is also documented in the repository's kernel and installation guides.

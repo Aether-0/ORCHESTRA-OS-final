@@ -16,13 +16,13 @@
 
 ## Authorship and archive ownership
 
-The manuscript author is **S.W. ZAW**. The real-world validation records and
+The report author is **S.W. ZAW**. The real-world validation records and
 the companion evidence supplement are treated as the author's project archives.
-The paper uses descriptive archive citations so the references remain readable;
+This report uses descriptive archive citations so the references remain readable;
 exact source hashes and the reproducible file map are retained here.
 
 The host inventory and runtime campaign identify the same Kali kernel and
-hardware. This publication is a synthesis of the completed campaign archive;
+hardware. This report is a synthesis of the completed campaign archive;
 the tool, thermal, topology, and storage boundaries recorded during testing
 remain part of the evidence interpretation.
 
@@ -36,12 +36,12 @@ names and SHA-256 rather than by their original filenames.
 | SIM | Original ORCHESTRA-OS TDPS research paper, 6 Jul 2026 | 12 | `9af8f45412e2f7d8be89f108965372caa2c420f917c7b612c3b4a86ab626561d` | simulation design, corrected coordination metric, negative predictor result, design principles |
 | VAL | S.W. ZAW, real-machine validation archive, version 2, 27 Aug 2026 | 9 | `9183288c560183d84f40134fd5d5f561cb0de07727d99f4941dc4fa63df0ebaa` | prior real-machine synthesis, field-fit protocol, 20-pair result, log workload, bottleneck diagnosis |
 
-The manuscript does not promote the simulation paper's results to hardware
+The report does not promote the simulation paper's results to hardware
 results. Simulation values are labelled `SIMULATED`; hardware values are
 labelled `EXPERIMENTALLY VALIDATED` only within their stated host, workload,
 and protocol envelope.
 
-## Evidence IDs used in the paper
+## Evidence IDs used in this report
 
 | ID | Included table or source | Main evidence |
 |---|---|---|
@@ -99,7 +99,7 @@ foreground TSV and output digest are preserved in the evidence package.
 
 ## Negative evidence retained
 
-The paper retains the pure-CPU slowdown, the incomplete `scx_simple` comparison,
+The report retains the pure-CPU slowdown, the incomplete `scx_simple` comparison,
 the missing `stress`/memory row, the one-node NUMA limit, the absent distributed
 backend, the lack of a kernel HMAC verifier, the thermally confounded log screen,
 and the early RUN-to-THROTTLE transition diagnosis. No unsuccessful observation
