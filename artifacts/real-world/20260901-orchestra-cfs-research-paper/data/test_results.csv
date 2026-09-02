@@ -1,0 +1,20 @@
+test,status,key_result,evidence
+make_clean_make_test,PASS,all userspace regression suites passed,tests/primary_regression_final.stdout
+make_check,PASS,repository checks passed,tests/make_check.stdout
+exact_target_build,PASS,BPF bridge loader built,build/target/build-manifest.txt
+runtime_fix_retry,PASS,81/81 assertions passed,sched_ext/runtime/passing-matrix/results.csv
+benchmark_cpu_repetitions,PASS,three CFS/ORCHESTRA repetitions at 1/2/4/8 workers,performance/benchmark-r2/results.csv
+benchmark_mixed_repetitions,PASS,three CFS/ORCHESTRA repetitions at 1/2/4 workers,performance/benchmark-m1/results.csv
+stress_smoke,PASS,5 seconds per CPU/I/O/mixed phase,stress/orchestra-5/results.csv
+stress_medium,PASS,30 seconds per CPU/I/O/mixed phase on CPUs 0-1,stress/orchestra-30/results.csv
+long_soak,PASS,600 seconds each CPU/I/O/mixed with ownership,longrun/orchestra-600/results.csv
+RT_policy_matrix,PASS,FIFO/RR/DEADLINE refused by bridge,rt/policy_matrix.txt
+RT_FIFO_RR_contention,PASS,FIFO/RR contention with normal ownership,rt/contention-v2/contention_matrix.txt
+RT_DEADLINE_contention,BLOCKED_BY_ENVIRONMENT,chrt returned EPERM in contention launch,rt/contention-v2/deadline.rt.stderr
+RT_contention_path_guard,FAIL_PRESERVED,user-owned BPF path rejected by loader safety gate,rt/contention-v1/load.stderr
+userspace_HMAC_tamper,PASS,hmac=176 and hmac=35 rejected frames,integrity/userspace-r1/*.log
+userspace_HMAC_microbenchmark,PASS,12/12 runs; zero HMAC/invalid/stale failures,integrity/microbenchmark-v1/benchmark_result.json
+kernel_freshness_replay,PASS,replay rc=10 and signal_stale=694,integrity/kernel_matrix.txt
+NUMA_same_node,PASS,171 migrations to CPU1 on node0,numa/migration_status.txt
+loopback_network,PASS,CFS 32 MiB and ORCHESTRA 64 MiB byte-complete,distributed/loopback_retry*_matrix.txt
+distributed_scheduler,BLOCKED_NOT_IMPLEMENTED,no distributed backend,distributed/loopback_blocked_matrix.txt

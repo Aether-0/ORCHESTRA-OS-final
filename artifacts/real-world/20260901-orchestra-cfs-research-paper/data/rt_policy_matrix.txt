@@ -1,0 +1,6 @@
+timestamp=2026-08-28T21:57:40+05:30
+load_rc=0 state=enabled
+fifo policy_rc=0 opt_in_rc=6 publish_rc=6 wait_rc=0
+rr policy_rc=0 opt_in_rc=6 publish_rc=6 wait_rc=0
+deadline policy_rc=0 opt_in_rc=6 publish_rc=6 wait_rc=0
+unload_rc=0 state_after=disabled timestamp_after=2026-08-28T21:57:51+05:30
