@@ -79,9 +79,11 @@ guarantees are not claimed.
    require ownership proof and workload-specific controlled evidence.
 6. Distributed scheduling, distro package signing, production security review,
    external fuzzing, and dependency/SCA review remain outside this release.
-   Release assets include SPDX SBOMs and CI build-provenance attestations; the
-   repository's bounded local mutation targets do not replace independent
-   fuzzing or kernel-runtime testing.
+   Release assets include SPDX SBOMs and checksums. CI build-provenance
+   attestations are published when GitHub supports them for the repository
+   visibility and ownership type; user-owned private repositories do not have
+   that hosted capability. The repository's bounded local mutation targets do
+   not replace independent fuzzing or kernel-runtime testing.
 
 ## Next release gates
 
