@@ -45,4 +45,21 @@ if tracked_secret_file=$(git ls-files | grep -En \
     exit 1
 fi
 
+# External actions execute third-party code in CI. Require an immutable full
+# commit SHA; local actions under ./ remain tied to this repository revision.
+workflow_uses=$(git grep -nI -E \
+    'uses:[[:space:]]*[^[:space:]#]+' -- \
+    '.github/*.yml' '.github/*.yaml' '.github/**/*.yml' '.github/**/*.yaml' \
+    2>/dev/null || true)
+if [ -n "$workflow_uses" ]; then
+    unpinned_actions=$(printf '%s\n' "$workflow_uses" | grep -Ev \
+        'uses:[[:space:]]*(\./[^[:space:]#]+|[^[:space:]#]+@[0-9a-fA-F]{40})([[:space:]]|#|$)' \
+        || true)
+    if [ -n "$unpinned_actions" ]; then
+        echo "unpinned-workflow-action: $unpinned_actions" >&2
+        echo "SECURITY_SCAN_FAIL" >&2
+        exit 1
+    fi
+fi
+
 echo "SECURITY_SCAN_PASS"

@@ -1469,6 +1469,32 @@ static bool test_effective_metric_aggregation(void) {
     return true;
 }
 
+static bool test_worker_sequence_completion_gate(void) {
+    worker_block_t workers;
+    action_observation_t observation = test_observation(ACT_RUN);
+    const uint64_t sequence = UINT64_C(73);
+
+    test_init_workers(&workers, 2);
+    CHECK(!workers_completed_sequence(&workers, sequence));
+
+    for (int index = 0; index < workers.worker_count; ++index) {
+        test_set_worker_snapshot(&workers.worker[index], ACT_RUN, ACT_RUN,
+                                 sequence, true, false, false);
+    }
+    CHECK(!workers_completed_sequence(&workers, sequence));
+
+    test_set_action_observation(&workers.worker[0], &observation, sequence);
+    CHECK(!workers_completed_sequence(&workers, sequence));
+    test_set_action_observation(&workers.worker[1], &observation, sequence);
+    CHECK(workers_completed_sequence(&workers, sequence));
+
+    atomic_store(&workers.worker[1].action_sequence, sequence - 1u);
+    CHECK(!workers_completed_sequence(&workers, sequence));
+    atomic_store(&workers.worker[1].exempt_rt, 1);
+    CHECK(workers_completed_sequence(&workers, sequence));
+    return true;
+}
+
 static bool test_difference_reward_local_dominance(void) {
     worker_block_t workers;
     test_init_workers(&workers, 3);
@@ -1897,6 +1923,7 @@ int main(void) {
         {"bounded_run_action_execution", test_bounded_run_action_execution},
         {"bounded_yield_action_execution", test_bounded_yield_action_execution},
         {"effective_metric_aggregation", test_effective_metric_aggregation},
+        {"worker_sequence_completion_gate", test_worker_sequence_completion_gate},
         {"difference_reward_local_dominance", test_difference_reward_local_dominance},
         {"difference_reward_aggregate_equivalence", test_difference_reward_aggregate_equivalence},
         {"controller_mapping_rate_and_bounds", test_controller_mapping_rate_and_bounds},

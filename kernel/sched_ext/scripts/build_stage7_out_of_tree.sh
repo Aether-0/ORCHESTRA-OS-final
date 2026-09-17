@@ -184,9 +184,10 @@ clang -O2 -target bpf -g -nostdinc -D__BPF__ \
 
 echo "Building $BRIDGE"
 cc -O2 -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
-    -Wformat=2 -Werror -I"$REPO_ROOT/kernel/sched_ext/include" \
+    -Wformat=2 -Werror -D_FORTIFY_SOURCE=2 -fstack-protector-strong -fPIE \
+    -I"$REPO_ROOT/kernel/sched_ext/include" \
     "$REPO_ROOT/kernel/sched_ext/bridge/orchestra_bridge.c" \
-    -o "$BRIDGE"
+    -o "$BRIDGE" -Wl,-z,relro,-z,now -Wl,-z,noexecstack -pie
 
 echo "Building $LOADER"
 LIBBPF_INCLUDES=(
@@ -217,11 +218,13 @@ done
 echo "libbpf_link=$LIBBPF_SONAME"
 cc -O2 -std=c11 -Wall -Wextra -Wpedantic \
     -Wconversion -Wshadow -Wformat=2 -Werror \
+    -D_FORTIFY_SOURCE=2 -fstack-protector-strong -fPIE \
     "${LIBBPF_DEFINES[@]}" \
     "${LIBBPF_INCLUDES[@]}" \
     -I"$REPO_ROOT/kernel/sched_ext/include" \
     "$REPO_ROOT/kernel/sched_ext/bridge/orchestra_loader.c" \
     -o "$LOADER" -Wl,-rpath,/usr/lib/x86_64-linux-gnu \
+    -Wl,-z,relro,-z,now -Wl,-z,noexecstack -pie \
     -l:"$LIBBPF_SONAME"
 
 # Keep root-facing artifacts non-writable by group/other even when the build

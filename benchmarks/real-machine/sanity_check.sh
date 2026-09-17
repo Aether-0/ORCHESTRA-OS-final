@@ -41,5 +41,10 @@ else
 fi
 
 echo ""
-echo "Network: $(ip addr show | grep 'inet ' | grep -v 127.0.0 | awk '{print $2}' | head -1)"
+echo "Network: $(ip addr show | awk '
+    /inet / && $2 !~ /^127[.]0[.]0[.]1\// && !found {
+        print $2
+        found = 1
+    }
+')"
 echo "Disk:   $(df -h / | awk 'NR==2{print $4}') free"

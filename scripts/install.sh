@@ -41,6 +41,16 @@ if [ "$(id -u)" -ne 0 ]; then
     fi
 fi
 
+# A normal system install is invoked through sudo after an unprivileged build.
+# Trust artifacts owned by either the effective installer user or sudo's
+# original caller, while still rejecting artifacts owned by an unrelated
+# account or writable by a group/other users.
+INSTALLER_UID=$(id -u)
+CALLER_UID=$INSTALLER_UID
+if [ "$INSTALLER_UID" -eq 0 ] && [[ ${SUDO_UID:-} =~ ^[0-9]+$ ]]; then
+    CALLER_UID=$SUDO_UID
+fi
+
 safe_source_artifact() {
     local path=$1 permissions owner
 
@@ -48,7 +58,7 @@ safe_source_artifact() {
     [ ! -L "$path" ] || return 1
     orchestra_safe_path_chain "$(dirname -- "$path")" || return 1
     owner=$(stat -c '%u' -- "$path" 2>/dev/null) || return 1
-    [ "$owner" = "$(id -u)" ] || return 1
+    [ "$owner" = "$INSTALLER_UID" ] || [ "$owner" = "$CALLER_UID" ] || return 1
     permissions=$(stat -c '%A' -- "$path" 2>/dev/null) || return 1
     [ "${permissions:5:1}" != w ] || return 1
     [ "${permissions:8:1}" != w ] || return 1
@@ -58,7 +68,7 @@ require_source_artifact() {
     local label=$1 path=$2
     if ! safe_source_artifact "$path"; then
         echo "unsafe $label source artifact: $path" >&2
-        echo "refusing to copy a missing, symlinked, or group/world-writable artifact as root" >&2
+        echo "refusing a missing, symlinked, foreign-owned, or group/world-writable artifact" >&2
         exit 1
     fi
 }
@@ -113,6 +123,27 @@ if [ -e "$INSTALL_MARKER" ] || [ -L "$INSTALL_MARKER" ]; then
        [ "$(stat -c '%a' -- "$INSTALL_MARKER" 2>/dev/null)" != 644 ] ||
        ! grep -qx 'ORCHESTRA_INSTALL_MANIFEST_V1' "$INSTALL_MARKER"; then
         echo "refusing to overwrite an unverified ORCHESTRA installation: $LIB_ROOT" >&2
+        exit 1
+    fi
+    expected_script=$(awk -F= '$1 == "script_sha256" { print $2; exit }' \
+        "$INSTALL_MARKER")
+    if [[ ! "$expected_script" =~ ^[[:xdigit:]]{64}$ ]] ||
+       [ ! -f "$LIB_ROOT/scripts/orchestra" ] ||
+       [ -L "$LIB_ROOT/scripts/orchestra" ] ||
+       [ "$(sha256sum -- "$LIB_ROOT/scripts/orchestra" | awk '{print $1}')" != "$expected_script" ]; then
+        echo "refusing to overwrite a modified installed control script" >&2
+        exit 1
+    fi
+    if find "$LIB_ROOT" -mindepth 1 -type l -print -quit | grep -q .; then
+        echo "refusing to overwrite an installation containing symlinks: $LIB_ROOT" >&2
+        exit 1
+    fi
+    if ! cmp -s \
+        <(awk '/^entries_begin$/{inside=1; next} /^entries_end$/{inside=0} inside{print}' \
+            "$INSTALL_MARKER" | LC_ALL=C sort) \
+        <(find "$LIB_ROOT" -mindepth 1 ! -path "$INSTALL_MARKER" \
+            -printf '%y\t%P\n' | LC_ALL=C sort); then
+        echo "refusing to overwrite an installation containing untracked or missing paths" >&2
         exit 1
     fi
 elif [ -e "$LIB_ROOT" ] || [ -L "$LIB_ROOT" ]; then
@@ -171,6 +202,9 @@ fi
 if [ -f "$BUILD_DIR/orchestra_bridge" ]; then
     require_source_artifact "bridge" "$BUILD_DIR/orchestra_bridge"
 fi
+if [ -f "$BUILD_DIR/orchestra_paper_cpu" ]; then
+    require_source_artifact "userspace executable" "$BUILD_DIR/orchestra_paper_cpu"
+fi
 
 # Validate all externally supplied kernel artifacts before creating any
 # destination directories. A failed --no-build/--with-kernel install must not
@@ -197,6 +231,11 @@ safe_install_file "$REPO_ROOT/scripts/install.sh" "$LIB_ROOT/scripts/install.sh"
 safe_install_file "$REPO_ROOT/scripts/uninstall.sh" "$LIB_ROOT/scripts/uninstall.sh" 0755
 safe_install_file "$REPO_ROOT/scripts/policy_load.py" "$LIB_ROOT/scripts/policy_load.py" 0755
 safe_install_file "$REPO_ROOT/VERSION" "$LIB_ROOT/VERSION" 0644
+safe_install_file "$REPO_ROOT/LICENSE" "$LIB_ROOT/LICENSE" 0644
+if [ -f "$BUILD_DIR/orchestra_paper_cpu" ]; then
+    safe_install_file "$BUILD_DIR/orchestra_paper_cpu" \
+        "$LIB_ROOT/build/orchestra_paper_cpu" 0755
+fi
 if [ -f "$BUILD_DIR/orchestra_bridge" ]; then
     safe_install_file "$BUILD_DIR/orchestra_bridge" "$LIB_ROOT/build/orchestra_bridge" 0755
 fi

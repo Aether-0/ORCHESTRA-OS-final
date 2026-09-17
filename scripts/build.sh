@@ -41,6 +41,7 @@ if [ "$want_userspace$want_bridge$want_kernel" = 000 ]; then
 fi
 
 case "$BUILD_DIR" in
+    ""|/) echo "refusing to use the filesystem root as a build directory" >&2; exit 2 ;;
     /var/tmp/orchestra-os-build-*|/tmp/orchestra-os-build-*|/*) ;;
     *) echo "build directory must be an absolute path" >&2; exit 2 ;;
 esac
@@ -57,6 +58,16 @@ fi
 
 if [ "$want_userspace" -eq 1 ]; then
     make -C "$REPO_ROOT" userspace
+    userspace_binary="$REPO_ROOT/orchestra_paper_cpu_demo/orchestra_paper_cpu"
+    if [ ! -f "$userspace_binary" ] || [ -L "$userspace_binary" ]; then
+        echo "userspace build did not produce a safe regular binary: $userspace_binary" >&2
+        exit 1
+    fi
+    if ! orchestra_safe_destination_file "$BUILD_DIR/orchestra_paper_cpu"; then
+        echo "unsafe userspace build destination: $BUILD_DIR/orchestra_paper_cpu" >&2
+        exit 1
+    fi
+    install -m 0755 -- "$userspace_binary" "$BUILD_DIR/orchestra_paper_cpu"
 fi
 if [ "$want_bridge" -eq 1 ]; then
     ORCHESTRA_BUILD_DIR="$BUILD_DIR" make -C "$REPO_ROOT" bridge

@@ -711,15 +711,18 @@ static bool parse_proc_stat_start(const char *line, uint64_t *start_ticks)
     char copy[4096];
     char *save = NULL;
     char *token;
+    size_t copy_len;
     unsigned int field = 3;
 
     if (!line || !start_ticks)
         return false;
     right = strrchr(line, ')');
-    if (!right || right[1] != ' ' ||
-        strlen(right + 2) >= sizeof(copy))
+    if (!right || right[1] != ' ')
         return false;
-    strcpy(copy, right + 2);
+    copy_len = strlen(right + 2);
+    if (copy_len >= sizeof(copy))
+        return false;
+    memcpy(copy, right + 2, copy_len + 1u);
     for (token = strtok_r(copy, " ", &save); token;
          token = strtok_r(NULL, " ", &save), field++) {
         if (field == 22)
