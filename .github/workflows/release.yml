@@ -331,6 +331,7 @@ jobs:
           sha256sum -c dist/SHA256SUMS
           python3 -m json.tool dist/RELEASE_MANIFEST.json >/dev/null
       - name: Attest release assets
+        if: github.event.repository.visibility == 'public'
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
         with:
           subject-path: |
@@ -342,6 +343,7 @@ jobs:
             dist/SHA256SUMS
             dist/RELEASE_MANIFEST.json
       - name: Verify artifact attestations
+        if: github.event.repository.visibility == 'public'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -354,6 +356,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+          REPOSITORY_VISIBILITY: ${{ github.event.repository.visibility }}
         run: |
           set -euo pipefail
           cat > release-notes.md <<'EOF'
@@ -366,9 +369,23 @@ jobs:
           real-time guarantees, distributed scheduling, kernel-side HMAC
           authentication, or universal performance improvement.
 
-          Verify SHA256SUMS and the GitHub artifact attestation for every asset
-          before installation.
+          Verify SHA256SUMS before installation. SPDX SBOMs are included for
+          every native package.
           EOF
+          if [ "$REPOSITORY_VISIBILITY" = public ]; then
+            cat >> release-notes.md <<'EOF'
+
+          GitHub build-provenance attestations cover every published asset.
+          Verify each attestation before installation.
+          EOF
+          else
+            cat >> release-notes.md <<'EOF'
+
+          GitHub does not provide hosted attestations for user-owned private
+          repositories. This release therefore publishes checksums and SPDX
+          SBOMs without claiming a GitHub-hosted attestation.
+          EOF
+          fi
           gh release create "$RELEASE_TAG" \
             dist/*.deb dist/*.rpm dist/*.apk dist/*.spdx.json \
             dist/*.tar.gz \

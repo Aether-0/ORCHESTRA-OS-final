@@ -109,7 +109,8 @@ Before kernel activation:
 The repository has source-level invariants and userspace validation for input
 bounds, schema/generation/freshness behavior, policy lifecycle, fallback,
 artifact checks, and cleanup ownership. The `1.0.0` release adds checksummed
-native packages, SPDX SBOMs, and CI provenance attestations. Cryptographic
+native packages and SPDX SBOMs. CI provenance attestations are conditional on
+GitHub support for the repository visibility and ownership type. Cryptographic
 signal authentication inside the kernel transport and production penetration
 testing remain outside the research-stable claim.
 
