@@ -248,10 +248,12 @@ jobs:
             [ -f "$package" ] || continue
             ./packaging/generate-sbom.sh "$package" "$package.spdx.json"
           done
-          find dist -maxdepth 1 -type f \
-            \( -name '*.deb' -o -name '*.rpm' -o -name '*.apk' -o -name '*.spdx.json' \) \
-            -print | LC_ALL=C sort | xargs -r sha256sum > dist/SHA256SUMS
-          sha256sum dist/orchestra-os-${RELEASE_VERSION}-source.tar.gz >> dist/SHA256SUMS
+          (
+            cd dist
+            find . -maxdepth 1 -type f \
+              \( -name '*.deb' -o -name '*.rpm' -o -name '*.apk' -o -name '*.spdx.json' -o -name '*.tar.gz' \) \
+              -print | LC_ALL=C sort | xargs -r sha256sum > SHA256SUMS
+          )
           python3 - <<'PY'
           import hashlib
           import json
@@ -328,7 +330,7 @@ jobs:
             exit 1
           }
           test -s dist/SHA256SUMS
-          sha256sum -c dist/SHA256SUMS
+          (cd dist && sha256sum -c SHA256SUMS)
           python3 -m json.tool dist/RELEASE_MANIFEST.json >/dev/null
       - name: Attest release assets
         if: github.event.repository.visibility == 'public'
