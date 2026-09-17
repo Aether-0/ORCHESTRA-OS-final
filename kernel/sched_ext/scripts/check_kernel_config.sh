@@ -56,7 +56,7 @@ for req in "${required_configs[@]}"; do
     name="${req%%=*}"
     expected="${req#*=}"
     actual=$(echo "$CONFIG" | grep "^${name}=" || echo "${name}=notset")
-    if echo "$actual" | grep -q "^${name}=${expected}$"; then
+    if [ "$actual" = "${name}=${expected}" ]; then
         ok "$req"
     else
         echo "MISSING: $name (required: $expected, got: $actual)" >&2
@@ -68,7 +68,7 @@ for opt in "${optional_configs[@]}"; do
     name="${opt%%=*}"
     expected="${opt#*=}"
     actual=$(echo "$CONFIG" | grep "^${name}=" || echo "${name}=notset")
-    if echo "$actual" | grep -q "^${name}=${expected}$"; then
+    if [ "$actual" = "${name}=${expected}" ]; then
         ok "$opt"
     else
         info "  (optional) $opt → got $actual"

@@ -34,12 +34,22 @@ config_value() {
     local key=$1 file value
     for file in "/boot/config-$kernel" "/usr/lib/modules/$kernel/config"; do
         if [ -r "$file" ]; then
-            value=$(sed -n "s/^${key}=//p" "$file" | head -1)
+            value=$(awk -v key="$key" '
+                index($0, key "=") == 1 && !found {
+                    print substr($0, length(key) + 2)
+                    found = 1
+                }
+            ' "$file")
             [ -n "$value" ] && { echo "$value"; return; }
         fi
     done
     if [ -r /proc/config.gz ] && have_command zcat; then
-        value=$(zcat /proc/config.gz 2>/dev/null | sed -n "s/^${key}=//p" | head -1 || true)
+        value=$(zcat /proc/config.gz 2>/dev/null | awk -v key="$key" '
+            index($0, key "=") == 1 && !found {
+                print substr($0, length(key) + 2)
+                found = 1
+            }
+        ' || true)
         [ -n "$value" ] && { echo "$value"; return; }
     fi
     echo unknown

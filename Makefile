@@ -4,6 +4,8 @@ ORCHESTRA_INCLUDE_DIR := kernel/sched_ext/include
 ORCHESTRA_BRIDGE_DIR := kernel/sched_ext/bridge
 LIBBPF_CFLAGS := $(shell pkg-config --cflags libbpf 2>/dev/null)
 LIBBPF_LIBS := $(shell pkg-config --libs libbpf 2>/dev/null || echo '-lbpf -lelf -lz')
+ORCHESTRA_HARDENING_CFLAGS ?= -D_FORTIFY_SOURCE=2 -fstack-protector-strong -fPIE
+ORCHESTRA_HARDENING_LDFLAGS ?= -Wl,-z,relro,-z,now -Wl,-z,noexecstack -pie
 
 .PHONY: all userspace bridge product kernel-bpf check test test-unit \
 	test-integration security-test package clean clean-product
@@ -14,19 +16,23 @@ userspace:
 	$(MAKE) -C orchestra_paper_cpu_demo
 
 bridge:
-	@case "$(ORCHESTRA_BUILD_DIR)" in /*) ;; *) echo "ORCHESTRA_BUILD_DIR must be absolute" >&2; exit 2 ;; esac
+	@case "$(ORCHESTRA_BUILD_DIR)" in ""|/) echo "refusing to use the filesystem root as a build directory" >&2; exit 2 ;; /*) ;; *) echo "ORCHESTRA_BUILD_DIR must be absolute" >&2; exit 2 ;; esac
 	@case "$(ORCHESTRA_BUILD_DIR)" in $(CURDIR)|$(CURDIR)/*) echo "refusing build output inside repository" >&2; exit 2 ;; esac
 	@bash -c '. "$(CURDIR)/scripts/path_safety.sh" && orchestra_ensure_private_dir "$$1"' -- "$(ORCHESTRA_BUILD_DIR)"
 	@[ ! -L "$(ORCHESTRA_BUILD_DIR)/orchestra_bridge" ] && [ ! -L "$(ORCHESTRA_BUILD_DIR)/orchestra_loader" ]
 	$(CC) -O2 -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
-		-Wformat=2 -Werror -I"$(ORCHESTRA_INCLUDE_DIR)" \
+		-Wformat=2 -Werror $(ORCHESTRA_HARDENING_CFLAGS) \
+		-I"$(ORCHESTRA_INCLUDE_DIR)" \
 		"$(ORCHESTRA_BRIDGE_DIR)/orchestra_bridge.c" \
-		-o "$(ORCHESTRA_BUILD_DIR)/orchestra_bridge"
+		-o "$(ORCHESTRA_BUILD_DIR)/orchestra_bridge" \
+		$(ORCHESTRA_HARDENING_LDFLAGS)
 	@if printf '#include <bpf/libbpf.h>\n' | $(CC) $(LIBBPF_CFLAGS) -E - >/dev/null 2>&1; then \
 		$(CC) -O2 -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
-			-Wformat=2 -Werror $(LIBBPF_CFLAGS) -I"$(ORCHESTRA_INCLUDE_DIR)" \
+			-Wformat=2 -Werror $(ORCHESTRA_HARDENING_CFLAGS) \
+			$(LIBBPF_CFLAGS) -I"$(ORCHESTRA_INCLUDE_DIR)" \
 			"$(ORCHESTRA_BRIDGE_DIR)/orchestra_loader.c" \
-			-o "$(ORCHESTRA_BUILD_DIR)/orchestra_loader" $(LIBBPF_LIBS); \
+			-o "$(ORCHESTRA_BUILD_DIR)/orchestra_loader" \
+			$(ORCHESTRA_HARDENING_LDFLAGS) $(LIBBPF_LIBS); \
 	else \
 		echo "BLOCKED_MISSING_LIBBPF_HEADERS: bridge built; loader deferred"; \
 	fi
@@ -107,6 +113,7 @@ check:
 		tests/security/run.sh tests/security/test_install_paths.sh \
 		benchmarks/real-machine/benchmark_suite.sh \
 		benchmarks/real-machine/full_compare.sh \
+		benchmarks/real-machine/sanity_check.sh \
 		benchmarks/real-machine/stress_suite.sh \
 		benchmarks/stage9/benchmark_compare.sh \
 		kernel/sched_ext/scripts/build_stage7_out_of_tree.sh \

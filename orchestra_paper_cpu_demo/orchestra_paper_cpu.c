@@ -1366,6 +1366,34 @@ static bool read_worker_snapshot(const worker_state_t *ws, worker_snapshot_t *ou
     return false;
 }
 
+static bool workers_completed_sequence(const worker_block_t *workers,
+                                       uint64_t sequence) {
+    int eligible = 0;
+
+    for (int i = 0; i < workers->worker_count; ++i) {
+        worker_snapshot_t snapshot;
+
+        if (!read_worker_snapshot(&workers->worker[i], &snapshot)) return false;
+        if (snapshot.exempt_rt || !snapshot.alive) continue;
+        eligible++;
+        if (snapshot.accepted_sequence != sequence ||
+            snapshot.action_sequence != sequence ||
+            !snapshot.action_attempted)
+            return false;
+    }
+    return eligible > 0;
+}
+
+static void wait_for_worker_sequence(const worker_block_t *workers,
+                                     uint64_t sequence, uint64_t deadline_ns) {
+    const struct timespec pause = {.tv_sec = 0, .tv_nsec = 500000};
+
+    while (!g_stop && monotonic_ns() < deadline_ns) {
+        if (workers_completed_sequence(workers, sequence)) return;
+        (void)nanosleep(&pause, NULL);
+    }
+}
+
 static bool read_cpu_sample(cpu_sample_t *s) {
     FILE *f = fopen("/proc/stat", "r");
     if (!f) return false;
@@ -4292,6 +4320,14 @@ int main(int argc, char **argv) {
 
         /* Let workers observe the new signal and choose/execute an action. */
         sleep_until_ns(next_publish_ns + interval_ns / 2u);
+        /* Worker actions are asynchronous. Give every eligible worker the
+         * remainder of this publication interval to complete the current
+         * sequence before taking the coordination snapshot. A genuinely late
+         * worker remains incomplete and is reflected by S1/S2 and deadline
+         * telemetry; the wait never crosses the next publication deadline. */
+        if (mode == MODE_BASELINE)
+            wait_for_worker_sequence(workers, applied.sequence,
+                                     next_publish_ns + interval_ns);
 
         double metric_forecast_error = mode == MODE_BASELINE ? 0.0 : forecast_error;
         coord_metrics_t metrics = compute_metrics(workers, &applied,

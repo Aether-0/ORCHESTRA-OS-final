@@ -32,6 +32,22 @@ jobs:
           make check
           make test
 
+      - name: Clang static analysis
+        run: |
+          set -euo pipefail
+          common_flags=(
+            --analyze
+            -std=c11
+            -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wformat=2
+            -Xanalyzer -analyzer-output=text
+          )
+          clang "${common_flags[@]}" \
+            orchestra_paper_cpu_demo/orchestra_paper_cpu.c -o /dev/null
+          clang "${common_flags[@]}" -Ikernel/sched_ext/include \
+            kernel/sched_ext/bridge/orchestra_bridge.c -o /dev/null
+          clang "${common_flags[@]}" \
+            kernel/sched_ext/scripts/fixed_work.c -o /dev/null
+
       - name: Validate scripts and documentation
         run: |
           bash -n scripts/*.sh examples/*/*.sh

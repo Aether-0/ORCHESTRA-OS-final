@@ -12,7 +12,11 @@ elif [ -r "$SCRIPT_DIR/../lib/orchestra-os/VERSION" ]; then
     INSTALL_ROOT=${ORCHESTRA_INSTALL_ROOT:-$(CDPATH= cd -- "$SCRIPT_DIR/../lib/orchestra-os" && pwd)}
     SOURCE_ROOT="$INSTALL_ROOT"
     TOOL_DIR="$INSTALL_ROOT/scripts"
-    DEFAULT_BUILD_DIR=${ORCHESTRA_PACKAGE_BUILD_DIR:-/var/lib/orchestra-os/build}
+    if [ -f "$INSTALL_ROOT/.package-managed" ]; then
+        DEFAULT_BUILD_DIR=${ORCHESTRA_PACKAGE_BUILD_DIR:-/var/lib/orchestra-os/build}
+    else
+        DEFAULT_BUILD_DIR="$INSTALL_ROOT/build"
+    fi
     DEFAULT_CONFIG_ROOT=${ORCHESTRA_CONFIG_DIR:-/etc/orchestra-os}
 else
     INSTALL_ROOT=${ORCHESTRA_INSTALL_ROOT:-$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)}
@@ -30,8 +34,13 @@ BRIDGE=${ORCHESTRA_BRIDGE:-$BUILD_DIR/orchestra_bridge}
 LOADER=${ORCHESTRA_LOADER:-$BUILD_DIR/orchestra_loader}
 BPF_OBJECT=${ORCHESTRA_BPF:-$BUILD_DIR/orchestra_scx_stage7.bpf.o}
 BUILD_MANIFEST=${ORCHESTRA_BUILD_MANIFEST:-$BUILD_DIR/build-manifest.txt}
-CONFIG_ROOT=${ORCHESTRA_CONFIG_DIR:-$DEFAULT_CONFIG_ROOT}
 PACKAGE_MARKER="$INSTALL_ROOT/.package-managed"
+if [ -f "$PACKAGE_MARKER" ]; then
+    PAPER_CPU=${ORCHESTRA_PAPER_CPU:-$INSTALL_ROOT/orchestra_paper_cpu_demo/orchestra_paper_cpu}
+else
+    PAPER_CPU=${ORCHESTRA_PAPER_CPU:-$BUILD_DIR/orchestra_paper_cpu}
+fi
+CONFIG_ROOT=${ORCHESTRA_CONFIG_DIR:-$DEFAULT_CONFIG_ROOT}
 CHECK_SYSTEM="$TOOL_DIR/check-system.sh"
 BUILD_TOOL="$TOOL_DIR/build.sh"
 POLICY_TOOL="$TOOL_DIR/policy_load.py"
@@ -52,6 +61,7 @@ commands:
   check-system [--json|--strict] discover host capability tiers
   build [--userspace|--bridge|--kernel|--all]
                                   build selected artifacts outside the source tree
+  paper-cpu [OPTIONS]             run the maintained userspace research workload
   install [--with-kernel]         install from source (package-managed installs refuse this)
   enable                          attach the target-matched sched_ext object (root)
   run [--interval SEC]            attach, monitor, and detach on exit (root)
@@ -74,8 +84,8 @@ require_root() {
 }
 
 require_tool_file() {
-    if [ ! -x "$1" ] && [ ! -f "$1" ]; then
-        echo "ORCHESTRA tool not found: $1" >&2
+    if [ ! -f "$1" ] || [ -L "$1" ] || [ ! -x "$1" ]; then
+        echo "ORCHESTRA executable tool is missing or unsafe: $1" >&2
         echo "build from the source tree or set ORCHESTRA_INSTALL_ROOT/ORCHESTRA_BUILD_DIR" >&2
         exit 1
     fi
@@ -317,6 +327,10 @@ case "$cmd" in
         require_tool_file "$BUILD_TOOL"
         "$BUILD_TOOL" "$@"
         ;;
+    paper-cpu)
+        require_tool_file "$PAPER_CPU"
+        exec "$PAPER_CPU" "$@"
+        ;;
     status)
         echo "product=ORCHESTRA-OS"
         echo "version=$VERSION"
@@ -455,6 +469,15 @@ case "$cmd" in
         if [ -f "$PACKAGE_MARKER" ]; then
             echo "this installation is package-managed; use apt, dnf, or apk to change it" >&2
             exit 1
+        fi
+        if [ ! -f "$SOURCE_ROOT/Makefile" ]; then
+            package_no_build=0
+            for argument in "$@"; do
+                [ "$argument" != --no-build ] || package_no_build=1
+            done
+            if [ "$package_no_build" -eq 0 ]; then
+                set -- "$@" --no-build
+            fi
         fi
         exec "$TOOL_DIR/install.sh" "$@"
         ;;
