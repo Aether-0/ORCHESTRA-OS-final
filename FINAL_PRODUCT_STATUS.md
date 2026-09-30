@@ -5,12 +5,12 @@
 | Field | Value |
 | --- | --- |
 | Product | ORCHESTRA-OS |
-| Version | `1.0.0` |
+| Version | `1.0.1-rc1` |
 | Product ABI | 1.0.0 |
 | Bridge ABI | v2 |
 | Kernel state/policy ABI | v8 |
 | Native coordination/controller ABI | v10 |
-| Release class | Research-stable public release |
+| Release class | Offline hardening candidate; kernel runtime unverified for this candidate |
 | Current evidence class | Userspace validated; kernel prototyped with bounded target-specific experimental validation |
 
 ## Implemented subsystems

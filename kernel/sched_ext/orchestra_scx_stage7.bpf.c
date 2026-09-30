@@ -1295,10 +1295,10 @@ static __always_inline void orchestra_controller_gate(
             if (decision->directive.throttle_budget_ns < BRIDGE_SLICE_MIN_NS)
                 decision->directive.throttle_budget_ns = BRIDGE_SLICE_MIN_NS;
         } else if (original == ORCHESTRA_ACTION_SLEEP) {
-            decision->directive.not_before_ns = now +
+            decision->directive.not_before_ns = orchestra_controller_deadline_v10(now,
                 orchestra_controller_clamp_duration(
                     view.sleep_defer_ns, BRIDGE_SLICE_MIN_NS,
-                    BRIDGE_SLEEP_MAX_NS);
+                    BRIDGE_SLEEP_MAX_NS));
         }
     } else if (original != ORCHESTRA_ACTION_RUN) {
         decision->directive.action = ORCHESTRA_ACTION_RUN;
@@ -1942,7 +1942,8 @@ static ORCHESTRA_NOINLINE void orchestra_record_result(
         else
             hot->sleep_deadline_ns = 0;
         if (dir->action == ORCHESTRA_ACTION_THROTTLE)
-            hot->throttle_deadline_ns = now + dir->throttle_period_ns;
+            hot->throttle_deadline_ns = orchestra_controller_deadline_v10(
+                now, dir->throttle_period_ns);
         else
             hot->throttle_deadline_ns = 0;
         if (source == ORCHESTRA_DECISION_SOURCE_POLICY &&

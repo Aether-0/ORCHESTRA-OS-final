@@ -3,8 +3,8 @@
 ORCHESTRA-OS is a research-grade, capability-tiered Linux scheduling
 prototype that coordinates observed runtime state, bounded prediction,
 policy, controller gates, and sched_ext actions. The current product line is
-`1.0.0`, a research-stable release for the observer/control plane and native
-package lifecycle. Privileged sched_ext verifier, attachment, ownership, and
+`1.0.1-rc1`, an offline-validated hardening candidate based on the research-stable
+`1.0.0` observer/control plane and native package lifecycle. Privileged sched_ext verifier, attachment, ownership, and
 hardware-runtime behavior remain target-specific experimental gates.
 
 The safe default is observer/userspace operation. Kernel scheduling is
@@ -217,3 +217,15 @@ over CFS/EEVDF is claimed.
 The product licensing notice is in [`LICENSE`](LICENSE). Kernel-facing files
 carry their own GPL-2.0 SPDX notices, and inherited research/third-party
 material retains its component license.
+
+## Hardening candidate
+
+See [candidate changes and validation](docs/validation/HARDENING_1_0_1.md).
+`bash scripts/realworld_artifact_bundle.sh /absolute/build-directory` checks
+one explicit root-owned runtime bundle without loading it. Kernel identity,
+file hashes and path permissions must all match. No fallback replaces an
+explicit invalid bundle.
+
+`scripts/verify-release.sh` validates historical tar/CycloneDX bundles from
+trusted publishers; it runs the packaged version/help commands. Native
+DEB/RPM/APK releases instead use their published SHA256SUMS and SPDX records.

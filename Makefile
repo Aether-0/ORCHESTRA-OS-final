@@ -111,6 +111,8 @@ check:
 	@python3 -m json.tool experiments/manifests/paper_cpu_exploratory_v4.json >/dev/null
 	@bash -n tests/unit/run.sh tests/integration/run.sh \
 		tests/security/run.sh tests/security/test_install_paths.sh \
+		tests/security/test_artifact_bundle.sh \
+		tests/security/test_release_verifier.sh \
 		benchmarks/real-machine/benchmark_suite.sh \
 		benchmarks/real-machine/full_compare.sh \
 		benchmarks/real-machine/sanity_check.sh \
