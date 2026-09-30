@@ -31,4 +31,7 @@ UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
 bash "$TEST_DIR/test_install_paths.sh"
 python3 "$ROOT/tests/unit/test_orchestra_scx_source.py"
 
+bash "$TEST_DIR/test_release_verifier.sh"
+python3 "$TEST_DIR/test_policy_liveness.py"
+bash "$TEST_DIR/test_artifact_bundle.sh"
 echo "PASS security regression suite"

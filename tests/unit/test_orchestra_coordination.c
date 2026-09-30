@@ -149,6 +149,11 @@ static void test_controller_state_integrity(void)
 
 int main(void)
 {
+    assert(orchestra_controller_deadline_v10(100, 20) == 120);
+    assert(orchestra_controller_deadline_v10(ORCHESTRA_U64_MAX - 2, 3) ==
+           ORCHESTRA_U64_MAX);
+    assert(orchestra_controller_deadline_v10(ORCHESTRA_U64_MAX, 0) ==
+           ORCHESTRA_U64_MAX);
     test_fixed_point_metrics();
     test_deficit_classification();
     test_causal_actuator_matrix();

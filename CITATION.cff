@@ -1,7 +1,6 @@
 cff-version: 1.2.0
 title: ORCHESTRA-OS
-version: 1.0.0
-date-released: 2026-08-29
+version: 1.0.1-rc1
 authors:
   - family-names: Aether-0
 repository-code: https://github.com/Aether-0/ORCHESTRA-OS-Public

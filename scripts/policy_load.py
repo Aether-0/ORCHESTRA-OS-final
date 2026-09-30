@@ -115,7 +115,7 @@ def _read_policy_bytes(path: Path) -> bytes:
     try:
         descriptor = os.open(
             path,
-            os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0),
+            os.O_RDONLY | os.O_NONBLOCK | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0),
         )
     except OSError as error:
         raise ValueError(f"cannot open policy file: {error}") from error
@@ -268,8 +268,14 @@ def validate_policy_document(
 def run_bridge(command: list[str], timeout: float = BRIDGE_COMMAND_TIMEOUT_SECONDS) -> int:
     """Run one bounded bridge operation; never wait forever on a bad map path."""
 
+    if timeout <= 0:
+        print("policy publication deadline exhausted", file=sys.stderr)
+        return 124
     try:
         return subprocess.run(command, check=False, timeout=timeout).returncode
+    except OSError as error:
+        print(f"cannot execute bridge: {error}", file=sys.stderr)
+        return 126
     except subprocess.TimeoutExpired:
         print(
             f"bridge command timed out after {timeout:.0f}s: {shlex.join(command)}",
@@ -306,13 +312,12 @@ def main() -> int:
         remaining = deadline - time.monotonic()
         result_code = run_bridge(
             command,
-            timeout=min(BRIDGE_COMMAND_TIMEOUT_SECONDS, max(0.1, remaining)),
+            timeout=min(BRIDGE_COMMAND_TIMEOUT_SECONDS, remaining),
         )
         if result_code != 0:
-            abort_remaining = deadline - time.monotonic()
             abort_result_code = run_bridge(
                 [args.bridge, "--policy-abort"],
-                timeout=min(BRIDGE_COMMAND_TIMEOUT_SECONDS, max(0.1, abort_remaining)),
+                timeout=BRIDGE_COMMAND_TIMEOUT_SECONDS,
             )
             if abort_result_code != 0:
                 print(
@@ -325,13 +330,12 @@ def main() -> int:
     remaining = deadline - time.monotonic()
     result_code = run_bridge(
         commit,
-        timeout=min(BRIDGE_COMMAND_TIMEOUT_SECONDS, max(0.1, remaining)),
+        timeout=min(BRIDGE_COMMAND_TIMEOUT_SECONDS, remaining),
     )
     if result_code != 0:
-        abort_remaining = deadline - time.monotonic()
         abort_result_code = run_bridge(
             [args.bridge, "--policy-abort"],
-            timeout=min(BRIDGE_COMMAND_TIMEOUT_SECONDS, max(0.1, abort_remaining)),
+            timeout=BRIDGE_COMMAND_TIMEOUT_SECONDS,
         )
         if abort_result_code != 0:
             print(
