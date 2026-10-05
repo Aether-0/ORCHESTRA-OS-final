@@ -15,14 +15,26 @@ jobs:
       epoch: ${{ steps.meta.outputs.epoch }}
       matrix: ${{ steps.meta.outputs.matrix }}
     steps:
-    - &id001
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
     - id: meta
-      run: "set -euo pipefail\nversion=$(tr -d '\\n' < VERSION)\npublish=false\nif [[ \"$GITHUB_REF\" == refs/tags/v*\
-        \ ]]; then\n  test \"$GITHUB_REF_NAME\" = \"v$version\"\n  publish=true\nfi\necho \"version=$version\" >>\
-        \ \"$GITHUB_OUTPUT\"\necho \"publish=$publish\" >> \"$GITHUB_OUTPUT\"\necho \"epoch=$(git show -s --format=%ct\
-        \ HEAD)\" >> \"$GITHUB_OUTPUT\"\necho \"matrix=$(python3 -c 'import json; print(json.dumps(json.load(open(\"\
-        packaging/release-targets.json\")),separators=(\",\",\":\"))))')\" >> \"$GITHUB_OUTPUT\"\n"
+      run: |
+        set -euo pipefail
+        version=$(tr -d '\n' < VERSION)
+        publish=false
+        if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+          test "$GITHUB_REF_NAME" = "v$version"
+          publish=true
+        fi
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+        echo "publish=$publish" >> "$GITHUB_OUTPUT"
+        echo "epoch=$(git show -s --format=%ct HEAD)" >> "$GITHUB_OUTPUT"
+        python3 - <<'PYMATRIX'
+        import json, os
+        matrix=json.load(open('packaging/release-targets.json'))
+        assert len(matrix['include']) == 35
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+            output.write('matrix='+json.dumps(matrix,separators=(',',':'))+'\n')
+        PYMATRIX
   source-gate:
     needs: metadata
     runs-on: ${{ matrix.runner }}
@@ -33,29 +45,22 @@ jobs:
         - ubuntu-24.04
         - ubuntu-24.04-arm
     steps:
-    - *id001
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
     - name: Install regression tools
-      run: 'sudo apt-get update -qq
-
-        sudo apt-get install -y -qq build-essential clang python3'
+      run: |-
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq build-essential clang python3
     - name: Full source regression and publication gate
-      run: 'set -euo pipefail
-
+      run: |-
+        set -euo pipefail
         make clean
-
         make
-
         make check
-
         make test
-
         bash -n scripts/*.sh packaging/*.sh packaging/openrc/orchestra
-
         python3 scripts/check-doc-links.py
-
         scripts/security-scan.sh
-
-        git diff --check'
+        git diff --check
   package:
     needs:
     - metadata
@@ -67,7 +72,7 @@ jobs:
       max-parallel: 8
       matrix: ${{ fromJSON(needs.metadata.outputs.matrix) }}
     steps:
-    - *id001
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
     - name: Build and smoke-test native package
       env:
         IMAGE: ${{ matrix.image }}
@@ -79,39 +84,22 @@ jobs:
         TARGET: ${{ matrix.name }}
         SOURCE_DATE_EPOCH: ${{ needs.metadata.outputs.epoch }}
         OUT_DIR: ${{ runner.temp }}/orchestra-${{ matrix.name }}
-      run: 'set -uo pipefail
-
+      run: |
+        set -uo pipefail
         mkdir -p "$OUT_DIR"
-
-        docker run --rm --platform "linux/$CONTAINER_ARCH" --env DISTRO --env FAMILY --env FORMAT --env PACKAGE_ARCH
-        --env SOURCE_DATE_EPOCH --env ORCHESTRA_PACKAGE_CONTAINER=1 --volume "$GITHUB_WORKSPACE:/src:ro" --volume
-        "$OUT_DIR:/out" "$IMAGE" /bin/sh /src/packaging/ci-build-target.sh > "$OUT_DIR/$TARGET.log" 2>&1
-
+        docker run --rm --platform "linux/$CONTAINER_ARCH" --env DISTRO --env FAMILY --env FORMAT --env PACKAGE_ARCH --env SOURCE_DATE_EPOCH --env ORCHESTRA_PACKAGE_CONTAINER=1 --volume "$GITHUB_WORKSPACE:/src:ro" --volume "$OUT_DIR:/out" "$IMAGE" /bin/sh /src/packaging/ci-build-target.sh > "$OUT_DIR/$TARGET.log" 2>&1
         status=$?
-
         export BUILD_STATUS="$status"
-
-        python3 - <<''PYRESULT''
-
+        python3 - <<'PYRESULT'
         import json,os,subprocess
-
         from pathlib import Path
-
-        record={k.lower():os.environ[k] for k in (''TARGET'',''DISTRO'',''IMAGE'',''FORMAT'',''PACKAGE_ARCH'',''BUILD_STATUS'')}
-
-        record[''status'']=''PASS'' if record[''build_status'']==''0'' else ''FAIL''
-
-        record[''source_commit'']=subprocess.check_output([''git'',''rev-parse'',''HEAD''],text=True).strip()
-
-        Path(os.environ[''OUT_DIR''],os.environ[''TARGET'']+''-result.json'').write_text(json.dumps(record,indent=2)+''\n'')
-
+        record={k.lower():os.environ[k] for k in ('TARGET','DISTRO','IMAGE','FORMAT','PACKAGE_ARCH','BUILD_STATUS')}
+        record['status']='PASS' if record['build_status']=='0' else 'FAIL'
+        record['source_commit']=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+        Path(os.environ['OUT_DIR'],os.environ['TARGET']+'-result.json').write_text(json.dumps(record,indent=2)+'\n')
         PYRESULT
-
         cat "$OUT_DIR/$TARGET.log"
-
         exit "$status"
-
-        '
     - name: Preserve package results and failures
       if: always()
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -120,6 +108,7 @@ jobs:
         path: ${{ runner.temp }}/orchestra-${{ matrix.name }}/*
         if-no-files-found: error
         retention-days: 30
+    name: ${{ matrix.name }}
   aggregate:
     needs:
     - metadata
@@ -128,7 +117,7 @@ jobs:
     if: always() && needs.source-gate.result == 'success'
     runs-on: ubuntu-24.04
     steps:
-    - *id001
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
     - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
       with:
         pattern: orchestra-package-*
@@ -138,18 +127,13 @@ jobs:
       env:
         RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
         SOURCE_DATE_EPOCH: ${{ needs.metadata.outputs.epoch }}
-      run: 'set -euo pipefail
-
+      run: |
+        set -euo pipefail
         ./scripts/source-tarball.sh "dist/orchestra-os-$RELEASE_VERSION-source.tar.gz"
 
-
         python3 packaging/aggregate-release.py dist
-
         (cd dist && find . -maxdepth 1 -type f ! -name SHA256SUMS -print | LC_ALL=C sort | xargs sha256sum > SHA256SUMS)
-
         (cd dist && sha256sum -c SHA256SUMS)
-
-        '
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
       with:
         name: orchestra-release-bundles
@@ -168,7 +152,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-    - *id001
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
     - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
       with:
         name: orchestra-release-bundles
