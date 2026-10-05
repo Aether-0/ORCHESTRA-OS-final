@@ -102,7 +102,7 @@ jobs:
         exit "$status"
     - name: Preserve package results and failures
       if: always()
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
         name: orchestra-package-${{ matrix.name }}
         path: ${{ runner.temp }}/orchestra-${{ matrix.name }}/*
@@ -134,7 +134,7 @@ jobs:
         python3 packaging/aggregate-release.py dist
         (cd dist && find . -maxdepth 1 -type f ! -name SHA256SUMS -print | LC_ALL=C sort | xargs sha256sum > SHA256SUMS)
         (cd dist && sha256sum -c SHA256SUMS)
-    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
         name: orchestra-release-bundles
         path: dist
