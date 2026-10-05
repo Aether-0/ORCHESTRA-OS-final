@@ -171,7 +171,7 @@ EOF
             --info "origin:orchestra-os" \
             --info "description:ORCHESTRA-OS research-stable scheduler control plane" \
             --info "license:MIT AND GPL-2.0-only" \
-            --info "url:https://github.com/Aether-0/ORCHESTRA-OS" \
+            --info "url:https://github.com/Aether-0/ORCHESTRA-OS-final" \
             --info "depends:bash python3 coreutils libbpf libelf zlib zstd-libs" \
             --output "$OUTPUT/$artifact" >/dev/null
         ;;

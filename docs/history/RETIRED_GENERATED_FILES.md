@@ -21,5 +21,5 @@ have a separate, complete checksum manifest under `docs/paper/`.
 
 The retired Linux-header inventory references the companion repository
 https://github.com/Aether-0/ORCHESTRA-OS/tree/280687019a7d58bdcebdcd66bb2859d2250f4072,
-not a commit newly created in ORCHESTRA-OS-final. The additional retired runtime
-binaries from this repository are listed in `upstream-final-retired-artifacts.json`.
+not a commit newly created in ORCHESTRA-OS-final. No additional runtime
+binaries were removed from ORCHESTRA-OS-final during this synchronization.

@@ -10,7 +10,7 @@
 | Bridge ABI | v2 |
 | Kernel state/policy ABI | v8 |
 | Native coordination/controller ABI | v10 |
-| Release class | Research source release; kernel runtime unverified for this release |
+| Release class | Research software and native packages; kernel runtime unverified for this release |
 | Current evidence class | Userspace validated; kernel prototyped with bounded target-specific experimental validation |
 
 ## Implemented subsystems
@@ -53,6 +53,11 @@
 | Distributed tier | Not implemented |
 
 ## Validation status
+
+Runtime observations below are historical upstream records, not new kernel
+validation performed by the v1.1.0 packaging pipeline. Native package PASS
+results are reported separately in each release PLATFORM_RESULTS.md.
+
 
 The complete gate table is in
 [`docs/validation/FINAL_VALIDATION_REPORT.md`](docs/validation/FINAL_VALIDATION_REPORT.md).

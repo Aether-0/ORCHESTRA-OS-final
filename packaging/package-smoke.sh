@@ -87,7 +87,6 @@ case "$FORMAT" in
         command=/usr/bin/orchestra
         "$command" version | grep -Fx "ORCHESTRA-OS $EXPECTED_VERSION"
         "$command" paper-cpu --help >/dev/null
-        "$command" paper-cpu --help >/dev/null
         check_native_cli /var/lib/orchestra-os/build/orchestra_bridge 1
         check_native_cli /var/lib/orchestra-os/build/orchestra_loader 2
         test -f /usr/lib/orchestra-os/.package-managed
