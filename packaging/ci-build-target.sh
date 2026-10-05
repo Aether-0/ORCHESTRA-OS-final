@@ -27,6 +27,32 @@ case "$FAMILY" in
         ;;
     *) echo "Unknown build family: $FAMILY" >&2; exit 2 ;;
 esac
+# Older distro libbpf/UAPI headers cannot describe safe struct_ops ownership.
+# Supply the build dependency without changing ORCHESTRA implementation.
+if ! printf '#include <bpf/bpf.h>\nint main(void) { struct bpf_link_info i = {0}; (void)bpf_map_get_info_by_fd; (void)bpf_link_get_info_by_fd; return i.struct_ops.map_id + BPF_LINK_TYPE_STRUCT_OPS; }\n' | cc -Werror -fsyntax-only -x c - >/dev/null 2>&1; then
+    dependency=$(mktemp -d /tmp/orchestra-libbpf.XXXXXX)
+    ORCHESTRA_LIBBPF_ARCHIVE="$dependency/libbpf-v1.7.0.tar.gz"
+    export ORCHESTRA_LIBBPF_ARCHIVE
+    python3 - <<'PYDOWNLOAD'
+import hashlib, os, urllib.request
+archive=os.environ['ORCHESTRA_LIBBPF_ARCHIVE']
+url='https://github.com/libbpf/libbpf/archive/refs/tags/v1.7.0.tar.gz'
+with urllib.request.urlopen(url, timeout=120) as response:
+    data=response.read()
+if hashlib.sha256(data).hexdigest() != '7ab5feffbf78557f626f2e3e3204788528394494715a30fc2070fcddc2051b7b':
+    raise SystemExit('libbpf source checksum mismatch')
+open(archive, 'wb').write(data)
+PYDOWNLOAD
+    tar -xf "$ORCHESTRA_LIBBPF_ARCHIVE" -C "$dependency"
+    prefix="$dependency/install"
+    make -C "$dependency/libbpf-1.7.0/src" -j2 BUILD_STATIC_ONLY=1 PREFIX="$prefix" LIBDIR="$prefix/lib" install
+    # The loader uses the bundled static library and native libelf/zlib.
+    sed -i '/^Libs:/s/$/ -lelf -lz/' "$prefix/lib/pkgconfig/libbpf.pc"
+    C_INCLUDE_PATH="$dependency/libbpf-1.7.0/include/uapi:$prefix/include${C_INCLUDE_PATH:+:$C_INCLUDE_PATH}"
+    PKG_CONFIG_PATH="$prefix/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+    export C_INCLUDE_PATH PKG_CONFIG_PATH
+    echo 'BUILD_DEPENDENCY libbpf=1.7.0 linkage=static source_sha256=7ab5feffbf78557f626f2e3e3204788528394494715a30fc2070fcddc2051b7b'
+fi
 work=$(mktemp -d /tmp/orchestra-native-source.XXXXXX)
 cp -a /src/. "$work/"
 cd "$work"

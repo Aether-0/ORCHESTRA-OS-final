@@ -128,3 +128,9 @@ echo "stage=$STAGE"
 echo "version=$VERSION"
 echo "distribution=$DISTRO"
 echo "architecture=$ARCH"
+
+# Preserve the full upstream source and license notices for a bundled libbpf.
+if [ -n "${ORCHESTRA_LIBBPF_ARCHIVE:-}" ]; then
+    install -m 0644 "$ORCHESTRA_LIBBPF_ARCHIVE" \
+        "$STAGE/usr/share/doc/orchestra-os/libbpf-v1.7.0-source.tar.gz"
+fi

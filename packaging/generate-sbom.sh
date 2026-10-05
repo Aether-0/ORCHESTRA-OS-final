@@ -56,5 +56,20 @@ cat > "$OUTPUT" <<EOF
   }]
 }
 EOF
+if [ -n "${ORCHESTRA_LIBBPF_ARCHIVE:-}" ]; then
+    python3 - "$OUTPUT" <<'PYLIBBPF'
+import json, sys
+from pathlib import Path
+path=Path(sys.argv[1]); document=json.loads(path.read_text())
+document['packages'].append({
+    'SPDXID':'SPDXRef-Package-libbpf', 'name':'libbpf', 'versionInfo':'1.7.0',
+    'downloadLocation':'https://github.com/libbpf/libbpf/archive/refs/tags/v1.7.0.tar.gz',
+    'filesAnalyzed':False, 'licenseConcluded':'NOASSERTION',
+    'licenseDeclared':'BSD-2-Clause OR LGPL-2.1-only', 'copyrightText':'NOASSERTION',
+    'checksums':[{'algorithm':'SHA256','checksumValue':'7ab5feffbf78557f626f2e3e3204788528394494715a30fc2070fcddc2051b7b'}]})
+document['relationships'].append({'spdxElementId':'SPDXRef-Package-orchestra-os','relationshipType':'STATIC_LINK','relatedSpdxElement':'SPDXRef-Package-libbpf'})
+path.write_text(json.dumps(document,indent=2)+'\n')
+PYLIBBPF
+fi
 python3 -m json.tool "$OUTPUT" >/dev/null
 echo "SBOM_COMPLETE $OUTPUT"

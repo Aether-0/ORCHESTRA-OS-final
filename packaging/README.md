@@ -17,3 +17,9 @@ The SPDX SBOM records package identity and artifact checksum with filesAnalyzed
 false; it is not a complete dependency inventory. Logs, checksums, source TAR/ZIP
 and GitHub provenance accompany releases. Tag vVERSION triggers publication;
 manual workflow dispatch performs a build-only preflight.
+
+For older native libbpf/UAPI headers, CI builds checksum-pinned upstream
+libbpf 1.7.0 as a static loader dependency. Its full source and license notices
+are included in the affected packages and identified in their SBOMs. This
+changes the build dependency, not the scheduler source or runtime safety gates.
+A current sched_ext-capable kernel is still required for scheduler activation.
