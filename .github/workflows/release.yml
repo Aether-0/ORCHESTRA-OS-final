@@ -15,7 +15,7 @@ jobs:
       epoch: ${{ steps.meta.outputs.epoch }}
       matrix: ${{ steps.meta.outputs.matrix }}
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
     - id: meta
       run: |
         set -euo pipefail
@@ -45,7 +45,7 @@ jobs:
         - ubuntu-24.04
         - ubuntu-24.04-arm
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
     - name: Install regression tools
       run: |-
         sudo apt-get update -qq
@@ -72,7 +72,7 @@ jobs:
       max-parallel: 8
       matrix: ${{ fromJSON(needs.metadata.outputs.matrix) }}
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
     - name: Build and smoke-test native package
       env:
         IMAGE: ${{ matrix.image }}
@@ -117,7 +117,7 @@ jobs:
     if: always() && needs.source-gate.result == 'success'
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
     - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
       with:
         pattern: orchestra-package-*
@@ -152,7 +152,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
     - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
       with:
         name: orchestra-release-bundles
