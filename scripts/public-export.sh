@@ -42,21 +42,13 @@ paths=(
     CITATION.cff
     CODE_OF_CONDUCT.md
     CONTRIBUTING.md
-    FINAL_PRODUCT_STATUS.md
     LICENSE
     LIMITATIONS.md
     Makefile
     NOTICE
-    ORCHESTRA-OS-Final-Report.md
     README.md
-    SECURITY_AUDIT.md
-    SECURITY_FINDINGS.md
-    SECURITY_TESTING.md
-    SECURITY_VALIDATION_REPORT.md
     SUPPORT.md
-    THREAT_MODEL.md
     VERSION
-    WORK_PACKAGE_DESCRIPTION.md
     .gitignore
     .github/SECURITY.md
     .github/workflows/build-sched-ext.yml
@@ -101,7 +93,7 @@ tar -C "$ROOT" \
     --exclude='*/.pytest_cache' \
     -cf - "${paths[@]}" | tar -C "$DEST" -xf -
 
-for required in README.md LICENSE VERSION Makefile packaging/build-package.sh \
+for required in README.md LICENSE VERSION Makefile docs/status/FINAL_PRODUCT_STATUS.md packaging/build-package.sh \
     scripts/security-scan.sh .github/workflows/release.yml; do
     [ -f "$DEST/$required" ] || {
         echo "required public export path missing: $required" >&2
@@ -132,4 +124,9 @@ if sensitive=$(grep -RInI -E \
     exit 1
 fi
 
+# Git tracks executable bits; normalize public file/directory permissions so
+# archives reproduce across checkouts with different group-write defaults.
+find "$DEST" -type d -exec chmod 0755 {} +
+find "$DEST" -type f ! -perm -100 ! -perm -010 ! -perm -001 -exec chmod 0644 {} +
+find "$DEST" -type f \( -perm -100 -o -perm -010 -o -perm -001 \) -exec chmod 0755 {} +
 echo "PUBLIC_EXPORT_PASS $DEST"

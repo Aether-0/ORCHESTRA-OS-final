@@ -167,10 +167,17 @@ jobs:
     - name: Publish latest release
       env:
         GH_TOKEN: ${{ github.token }}
-      run: "set -euo pipefail\nversion=$(tr -d '\\n' < VERSION)\ntest \"$GITHUB_REF_NAME\" = \"v$version\"\ncp dist/PLATFORM_RESULTS.md\
-        \ release-notes.md\ncat >> release-notes.md <<'EOF'\n\nIncludes native userspace tools and bridge, source\
-        \ TAR/ZIP, SHA-256 checksums,\npackage-level SPDX SBOMs, logs, and GitHub build provenance. Installation\
-        \ does\nnot enable sched_ext. Kernel artifacts require a target-matched build and are\nnot shipped. Package\
-        \ smoke tests are not kernel runtime validation. Submitted\npaper evidence and historical negative results\
-        \ remain available in docs/paper.\nEOF\ngh release create \"$GITHUB_REF_NAME\" dist/* --repo \"$GITHUB_REPOSITORY\"\
-        \ --verify-tag --latest --title \"ORCHESTRA-OS $GITHUB_REF_NAME \u2014 Linux packages\" --notes-file release-notes.md\n"
+      run: |
+        set -euo pipefail
+        version=$(tr -d '\n' < VERSION)
+        test "$GITHUB_REF_NAME" = "v$version"
+        cp dist/PLATFORM_RESULTS.md release-notes.md
+        cat >> release-notes.md <<'EOF'
+
+        Includes native userspace tools and bridge, source TAR/ZIP, SHA-256 checksums,
+        package-sboms.zip, build-evidence.zip, and GitHub build provenance. Installation does
+        not enable sched_ext. Kernel artifacts require a target-matched build and are
+        not shipped. Package smoke tests are not kernel runtime validation. Submitted
+        paper evidence and historical negative results remain available in docs/paper.
+        EOF
+        gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --verify-tag --latest --title "ORCHESTRA-OS $GITHUB_REF_NAME — Linux packages" --notes-file release-notes.md

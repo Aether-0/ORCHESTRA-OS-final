@@ -1,11 +1,11 @@
 # Security policy
 
-ORCHESTRA-OS is a research source release with an
+ORCHESTRA-OS is a research software release with an
 experimental sched_ext path. Read the full
 [security model](../docs/security/SECURITY.md) before enabling it on a host.
-The current release does not claim kernel-side cryptographic signal authentication,
-signed release provenance, or privileged runtime validation on every supported
-kernel.
+Release assets include GitHub build-provenance attestations. These do not
+establish kernel-side cryptographic signal authentication or privileged runtime
+validation on every supported kernel.
 
 Report suspected vulnerabilities privately through GitHub Security Advisories
 for the public repository. Do not include secrets, private keys, kernel dumps,

@@ -8,14 +8,14 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCES = [
+REQUIRED = [
     ROOT / "README.md",
-    ROOT / "FINAL_PRODUCT_STATUS.md",
-    ROOT / "SECURITY_AUDIT.md",
-    ROOT / "SECURITY_FINDINGS.md",
-    ROOT / "SECURITY_TESTING.md",
-    ROOT / "SECURITY_VALIDATION_REPORT.md",
-    ROOT / "THREAT_MODEL.md",
+    ROOT / "docs/status/FINAL_PRODUCT_STATUS.md",
+    ROOT / "docs/security/SECURITY_AUDIT.md",
+    ROOT / "docs/security/SECURITY_FINDINGS.md",
+    ROOT / "docs/security/SECURITY_TESTING.md",
+    ROOT / "docs/security/SECURITY_VALIDATION_REPORT.md",
+    ROOT / "docs/security/THREAT_MODEL.md",
     ROOT / "LIMITATIONS.md",
     ROOT / "docs/architecture/ORCHESTRA_OS_ARCHITECTURE.md",
     ROOT / "docs/installation/INSTALL.md",
@@ -26,6 +26,9 @@ SOURCES = [
     ROOT / "docs/releases/v1.0.0-research-stable.md",
     ROOT / "docs/validation/FINAL_VALIDATION_REPORT.md",
 ]
+EXCLUDED = ("artifacts/", "docs/history/", "docs/paper/data/", "docs/paper/audit/")
+SOURCES = sorted({*REQUIRED, *(path for path in ROOT.rglob("*.md")
+    if ".git" not in path.parts and not path.relative_to(ROOT).as_posix().startswith(EXCLUDED))})
 LINK = re.compile(r"!?(?:\[[^\]]*\])\(([^)]+)\)")
 
 

@@ -1,10 +1,16 @@
 # Installing ORCHESTRA-OS
 
-This guide installs the current `1.0.0` product tools. The installer does
+This guide installs the current `1.1.1` research software. The installer does
 not enable sched_ext and does not change boot configuration, sysctls, CPU
 governors, or unrelated BPF state.
 
 ## 1. Native packages
+
+See the [current download guide](../releases/v1.1.1.md) and the release's
+PLATFORM_RESULTS.md for the actual distribution/architecture results.
+Native compilation and package smoke tests cover x86_64 and ARM64; kernel
+runtime compatibility remains a separate target-specific gate.
+
 
 The recommended installation uses the distro-native package for the current
 architecture from the GitHub Release. Packages are observer-only: they do not

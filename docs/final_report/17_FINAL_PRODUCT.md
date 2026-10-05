@@ -1,7 +1,7 @@
 # 17. Final Product
 
 > Historical report. It is not the current security or runtime status
-> document. Use `FINAL_PRODUCT_STATUS.md`, `SECURITY_AUDIT.md`, and the
+> document. Use [product status](../status/FINAL_PRODUCT_STATUS.md), [security audit](../security/SECURITY_AUDIT.md), and the
 > maintained installation/usage guides for current claims and commands.
 
 ## ORCHESTRA-OS Complete System

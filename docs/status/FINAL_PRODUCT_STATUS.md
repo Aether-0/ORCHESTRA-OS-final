@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Product | ORCHESTRA-OS |
-| Version | `1.1.0` |
+| Version | `1.1.1` |
 | Product ABI | 1.0.0 |
 | Bridge ABI | v2 |
 | Kernel state/policy ABI | v8 |
@@ -45,7 +45,7 @@
 | sched_ext attach and ownership | Kernel-prototyped; current-host exact-TID gate passed |
 | RUN/YIELD/MIGRATE/THROTTLE/SLEEP backend semantics | Implemented in prototype; limited current-host effective-action evidence |
 | Signal integrity | Generation/freshness/schema/identity checks implemented; kernel cryptographic verification not claimed |
-| Privileged artifact integrity | Root-owned/non-symlink/non-writable checks and build-manifest hashes; signed provenance not claimed |
+| Privileged artifact integrity | Root-owned/non-symlink/non-writable checks and build-manifest hashes; release packages also have GitHub build provenance; runtime signature verification is not implied |
 | Prediction | Bounded fixed-point consumption and fallback implemented; hardware convergence pending |
 | S1/S2/S3/S4/Q | Native source/controller contract implemented; limited current-host live report |
 | Controller | Bounded source contract implemented; limited actuator adaptation/recovery observed |
@@ -55,12 +55,12 @@
 ## Validation status
 
 Runtime observations below are historical upstream records, not new kernel
-validation performed by the v1.1.0 packaging pipeline. Native package PASS
+validation performed by the v1.1.1 packaging pipeline. Native package PASS
 results are reported separately in each release PLATFORM_RESULTS.md.
 
 
 The complete gate table is in
-[`docs/validation/FINAL_VALIDATION_REPORT.md`](docs/validation/FINAL_VALIDATION_REPORT.md).
+[`docs/validation/FINAL_VALIDATION_REPORT.md`](../validation/FINAL_VALIDATION_REPORT.md).
 The current host has passed a controlled target-matched verifier, attach,
 ownership, action, and unload gate. It is still a research-grade release
 artifact, not deployment-ready. The stable claim is limited to the

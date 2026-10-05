@@ -84,17 +84,23 @@ if [[ "$DISTRO" == alpine* ]] && [ -f "$ROOT/packaging/openrc/orchestra" ]; then
         "$STAGE/etc/init.d/orchestra"
 fi
 
-for document in README.md FINAL_PRODUCT_STATUS.md LIMITATIONS.md LICENSE; do
-    [ -f "$ROOT/$document" ] || continue
-    install -m 0644 "$ROOT/$document" \
-        "$STAGE/usr/share/doc/orchestra-os/$document"
+for document in LICENSE NOTICE LIMITATIONS.md; do
+    install -m 0644 "$ROOT/$document" "$STAGE/usr/share/doc/orchestra-os/$document"
 done
-for document in docs/installation/INSTALL.md docs/security/SECURITY.md \
-    docs/releases/v1.0.0-research-stable.md; do
-    [ -f "$ROOT/$document" ] || continue
-    install -m 0644 "$ROOT/$document" \
-        "$STAGE/usr/share/doc/orchestra-os/$(basename -- "$document")"
-done
+cat > "$STAGE/usr/share/doc/orchestra-os/README.md" <<EOF
+# ORCHESTRA-OS $VERSION installed documentation
+
+Complete source documentation is installed at /usr/lib/orchestra-os/README.md.
+Current status: /usr/lib/orchestra-os/docs/status/FINAL_PRODUCT_STATUS.md.
+Security model: /usr/lib/orchestra-os/docs/security/SECURITY.md.
+
+Online documentation:
+https://github.com/Aether-0/ORCHESTRA-OS-final/tree/v$VERSION/docs
+
+Run orchestra version, orchestra check-system or orchestra status to inspect
+this installation. Package installation does not enable sched_ext. Kernel
+activation requires an explicit administrator action and a target-matched build.
+EOF
 
 cat > "$PAYLOAD/.package-managed" <<EOF
 ORCHESTRA_PACKAGE_MANAGED_V1

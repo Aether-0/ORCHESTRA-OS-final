@@ -11,7 +11,7 @@ Full source regressions run independently on x86_64 and ARM64. Native target
 checks cover compilation and package lifecycle, not kernel runtime execution.
 DEB dependencies are resolved from native binaries; RPM dependencies use the
 native dependency generator. Packages do not activate sched_ext or ship a
-kernel-independent BPF object. See the [release guide](../docs/releases/v1.1.0.md).
+kernel-independent BPF object. See the [release guide](../docs/releases/v1.1.1.md).
 
 The SPDX SBOM records package identity and artifact checksum with filesAnalyzed
 false; it is not a complete dependency inventory. Logs, checksums, source TAR/ZIP
@@ -23,3 +23,8 @@ libbpf 1.7.0 as a static loader dependency. Its full source and license notices
 are included in the affected packages and identified in their SBOMs. This
 changes the build dependency, not the scheduler source or runtime safety gates.
 A current sched_ext-capable kernel is still required for scheduler activation.
+
+Detailed logs and result JSON are published in build-evidence.zip; individual
+SPDX records are published in package-sboms.zip. Each bundle includes an inner
+SHA256SUMS and is verified before the individual page assets are removed.
+The outer release manifest maps every passing target to its package filename.

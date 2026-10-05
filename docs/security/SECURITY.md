@@ -1,12 +1,12 @@
 # ORCHESTRA-OS security model
 
 The current hardening assessment and evidence package are maintained in the
-root documents [`SECURITY_AUDIT.md`](../../SECURITY_AUDIT.md),
-[`SECURITY_FINDINGS.md`](../../SECURITY_FINDINGS.md),
-[`THREAT_MODEL.md`](../../THREAT_MODEL.md),
-[`SECURITY_TESTING.md`](../../SECURITY_TESTING.md),
+security documents [`SECURITY_AUDIT.md`](SECURITY_AUDIT.md),
+[`SECURITY_FINDINGS.md`](SECURITY_FINDINGS.md),
+[`THREAT_MODEL.md`](THREAT_MODEL.md),
+[`SECURITY_TESTING.md`](SECURITY_TESTING.md),
 [`LIMITATIONS.md`](../../LIMITATIONS.md), and
-[`SECURITY_VALIDATION_REPORT.md`](../../SECURITY_VALIDATION_REPORT.md).
+[`SECURITY_VALIDATION_REPORT.md`](SECURITY_VALIDATION_REPORT.md).
 
 ORCHESTRA-OS changes kernel scheduling only through an explicitly installed,
 target-matched sched_ext artifact set and an administrator-controlled loader.
@@ -14,7 +14,7 @@ The security objective is fail-closed scheduling control: an invalid or stale
 input must become observed-state/RUN/conventional scheduling, not an
 unbounded kernel action.
 
-This document describes the current release-candidate boundary. It is not a
+This document describes the current research-release boundary. It is not a
 claim that the prototype has completed a production security review.
 
 ## Trust boundaries

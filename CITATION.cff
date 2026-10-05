@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "Please cite the software version used and record its experiment artifacts."
 title: ORCHESTRA-OS
-version: 1.1.0
+version: 1.1.1
 authors:
   - family-names: Zaw
     given-names: San Wana

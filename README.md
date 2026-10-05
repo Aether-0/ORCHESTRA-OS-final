@@ -60,7 +60,7 @@ Temporal stability S4 is retained to detect synchronized switching.
 | Deployment, universal speedup, hard RT, distributed scheduling | Not established by this release. |
 
 See [research-to-code mapping](docs/research/RESEARCH_TO_CODE.md) and
-[current product status](FINAL_PRODUCT_STATUS.md). Kernel maps use identity,
+[current product status](docs/status/FINAL_PRODUCT_STATUS.md). Kernel maps use identity,
 schema, and freshness gates; this is not a claim of kernel-side cryptographic
 signal authentication. Userspace HMAC experiments are identified separately.
 
@@ -71,14 +71,27 @@ git clone https://github.com/Aether-0/ORCHESTRA-OS-final.git
 cd ORCHESTRA-OS-final
 ```
 
-For a fixed version, check out `v1.1.0`. The [latest release](https://github.com/Aether-0/ORCHESTRA-OS-final/releases/latest)
+For a fixed version, check out `v1.1.1`. The [latest release](https://github.com/Aether-0/ORCHESTRA-OS-final/releases/latest)
 provides source ZIP/TAR.GZ and native packages for passing Linux targets,
 `SHA256SUMS`, package SBOMs, build provenance, and platform results.
-Verify downloads with `sha256sum -c SHA256SUMS` before extraction.
-Version 1.1.0 adds the cleaned paper documentation and a 35-target native
-package pipeline. Scheduler implementation and tests retain the reviewed
+Verify selected downloads with `sha256sum --ignore-missing -c SHA256SUMS`
+before extraction. GitHub provenance provides a separate authenticity check.
+Version 1.1.1 simplifies documentation navigation and bundles detailed
+build evidence and SPDX records. The 35-target native package pipeline is retained. Scheduler implementation and tests retain the reviewed
 upstream revision `4c1fb8a`. Historical paper measurements belong
 to their recorded artifacts, not automatically to this release.
+
+## Choose a release download
+
+For installation, choose the native package matching your distribution version
+and CPU architecture. The release's `PLATFORM_RESULTS.md` lists actual passing
+targets. Use your distribution's package manager to install or remove it.
+Installation does not enable sched_ext.
+
+Source ZIP/TAR archives are for building or reviewing the project.
+`build-evidence.zip` contains detailed logs/results; `package-sboms.zip` contains
+per-package SPDX records. Both include checksums for extracted contents.
+See the [release guide](docs/releases/v1.1.1.md) for the download map.
 
 ## Validate without loading a scheduler
 
@@ -109,15 +122,17 @@ Optional userspace/bridge build, into an external build directory:
 The optional loader needs libbpf development headers. For target-matched
 kernel build, installation, activation, telemetry, and scoped unload, use the
 [installation](docs/installation/INSTALL.md) and [usage](docs/usage/USAGE.md)
-guides. Native packages and hosted attestations are not included in this
-source release. Kernel activation requires explicit administrator action.
+guides. Native packages and GitHub build-provenance attestations accompany
+the release. Kernel activation requires explicit administrator action.
 
 ## Repository layout
 
 ```text
-ORCHESTRA-OS/
+ORCHESTRA-OS-final/
 ├── docs/                    Paper guide, evidence tables, architecture and operator guides
 │   ├── paper/               Data dictionary, provenance, checksummed tables and protocol
+│   ├── security/            Security model, threat model and hardening reports
+│   ├── status/              Current software status and historical handoff links
 │   ├── validation/          Dated software validation and hardening reports
 │   └── history/             Earlier reports and checklists
 ├── orchestra_paper_cpu_demo/ Canonical userspace prototype
@@ -130,13 +145,13 @@ ORCHESTRA-OS/
 ├── scripts/                 Build, capability, lifecycle and release tools
 ├── config/                  Example policies and service configuration
 ├── examples/                Documented usage examples
-├── packaging/               Separate native-package tooling
+├── packaging/               Native package tooling and 35-target release CI
 ├── research/                Non-canonical exploratory prototypes
 └── artifacts/               Historical measurements, logs and failure records
 ```
 
 Start with the [documentation index](docs/README.md). Historical campaigns
-are indexed in [artifacts/README.md](https://github.com/Aether-0/ORCHESTRA-OS-final/blob/v1.1.0/artifacts/README.md); their outcomes and
+are indexed in [artifacts/README.md](https://github.com/Aether-0/ORCHESTRA-OS-final/blob/v1.1.1/artifacts/README.md); their outcomes and
 protocols apply to their recorded revisions. The copied Linux header tree
 and generated host binaries are excluded from the current publication.
 Their inventory and prior Git revision remain recorded for provenance.
