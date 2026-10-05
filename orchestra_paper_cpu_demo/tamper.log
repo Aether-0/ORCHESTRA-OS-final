@@ -1,8 +1,0 @@
-ORCHESTRA-OS paper-only real-CPU userspace prototype
-Collecting 1-second calibration trace...
-calibration samples=20 fixed_gain=0.010 sigma_obs=0.00100 jitter_floor=0.00150
-[rt-bypass] worker 0 could not enter SCHED_FIFO: Operation not permitted; deterministic userspace loop retained
-workers=4 eligible=3 rt-exempt=1 mode=orchestra tick=100ms tamper-every=2
-CSV metrics are written to stdout.
-
-Finished.

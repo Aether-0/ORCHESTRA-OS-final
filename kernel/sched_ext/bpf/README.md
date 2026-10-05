@@ -8,4 +8,4 @@ for existing scripts and historical evidence.
 There must be one scheduler implementation and one ABI contract. Do not add a
 second callback implementation under a versioned stage directory. Build the
 entry point with `scripts/build.sh --kernel` or the target-matched builder
-documented in [INSTALL.md](../../docs/installation/INSTALL.md).
+documented in [INSTALL.md](../../../docs/installation/INSTALL.md).

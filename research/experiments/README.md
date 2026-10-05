@@ -8,6 +8,6 @@ or kernel-prototyped evidence for the core research path.
 
 | Path | Status | Why non-canonical |
 | --- | --- | --- |
-| `process-group-prototype/` | Exploratory | Implements process groups, group runnable budgets, and coordinator-driven restart behavior excluded from the approved architecture (see repository `AGENTS.md` §3). |
+| `process-group-prototype/` | Exploratory | Implements process groups, group runnable budgets, and coordinator-driven restart behavior excluded from the approved architecture (see the canonical scope in `orchestra_paper_cpu_demo/README.md`). |
 
 Canonical userspace implementation: `orchestra_paper_cpu_demo/orchestra_paper_cpu.c`.

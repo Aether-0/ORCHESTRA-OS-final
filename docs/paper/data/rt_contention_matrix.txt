@@ -1,0 +1,6 @@
+timestamp=2026-08-28T22:57:06+05:30
+state_after_load=enabled
+policy=fifo rt_pid=3306313 normal_pid=3306317 opt_rc=0 publish_rc=0 ownership=1 normal_rc=0 rt_rc=0
+policy=rr rt_pid=3306380 normal_pid=3306389 opt_rc=0 publish_rc=0 ownership=1 normal_rc=0 rt_rc=0
+policy=deadline rt_pid=3306433 normal_pid=3306442 opt_rc=0 publish_rc=0 ownership=1 normal_rc=0 rt_rc=1
+unload_rc=0 state_after_unload=disabled

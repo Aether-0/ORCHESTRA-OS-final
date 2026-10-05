@@ -1,0 +1,21 @@
+block,order_1,order_2,order_3,randomization_algorithm,seed
+1,CFS_DEFAULT,CGROUP_CONTROL,ORCHESTRA,seeded constrained balanced permutation shuffle,20260916
+2,ORCHESTRA,CGROUP_CONTROL,CFS_DEFAULT,seeded constrained balanced permutation shuffle,20260916
+3,CFS_DEFAULT,ORCHESTRA,CGROUP_CONTROL,seeded constrained balanced permutation shuffle,20260916
+4,CFS_DEFAULT,CGROUP_CONTROL,ORCHESTRA,seeded constrained balanced permutation shuffle,20260916
+5,CGROUP_CONTROL,ORCHESTRA,CFS_DEFAULT,seeded constrained balanced permutation shuffle,20260916
+6,CGROUP_CONTROL,CFS_DEFAULT,ORCHESTRA,seeded constrained balanced permutation shuffle,20260916
+7,ORCHESTRA,CFS_DEFAULT,CGROUP_CONTROL,seeded constrained balanced permutation shuffle,20260916
+8,ORCHESTRA,CFS_DEFAULT,CGROUP_CONTROL,seeded constrained balanced permutation shuffle,20260916
+9,ORCHESTRA,CFS_DEFAULT,CGROUP_CONTROL,seeded constrained balanced permutation shuffle,20260916
+10,ORCHESTRA,CGROUP_CONTROL,CFS_DEFAULT,seeded constrained balanced permutation shuffle,20260916
+11,CGROUP_CONTROL,CFS_DEFAULT,ORCHESTRA,seeded constrained balanced permutation shuffle,20260916
+12,CGROUP_CONTROL,ORCHESTRA,CFS_DEFAULT,seeded constrained balanced permutation shuffle,20260916
+13,CGROUP_CONTROL,ORCHESTRA,CFS_DEFAULT,seeded constrained balanced permutation shuffle,20260916
+14,ORCHESTRA,CGROUP_CONTROL,CFS_DEFAULT,seeded constrained balanced permutation shuffle,20260916
+15,CGROUP_CONTROL,CFS_DEFAULT,ORCHESTRA,seeded constrained balanced permutation shuffle,20260916
+16,CGROUP_CONTROL,ORCHESTRA,CFS_DEFAULT,seeded constrained balanced permutation shuffle,20260916
+17,CFS_DEFAULT,ORCHESTRA,CGROUP_CONTROL,seeded constrained balanced permutation shuffle,20260916
+18,CFS_DEFAULT,ORCHESTRA,CGROUP_CONTROL,seeded constrained balanced permutation shuffle,20260916
+19,ORCHESTRA,CFS_DEFAULT,CGROUP_CONTROL,seeded constrained balanced permutation shuffle,20260916
+20,CFS_DEFAULT,CGROUP_CONTROL,ORCHESTRA,seeded constrained balanced permutation shuffle,20260916

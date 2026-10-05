@@ -24,11 +24,6 @@ kernel/sched_ext/scripts/fixed_work
 /out/
 /coverage/
 /output/
-*.deb
-*.rpm
-*.apk
-*.spdx.json
-*.intoto.jsonl
 *.bzImage
 *.zip
 
@@ -73,3 +68,21 @@ ORCHESTRA-OS/
 
 # Generated from running-kernel BTF; do not commit host copy
 kernel/sched_ext/include/vmlinux.h
+
+# Local publication bundles and unpublished manuscript copies
+/ORCHESTRA-EVIDENCE-REPO/
+/to_print/
+/*.docx
+/*.pdf
+/CHECKSUMS.sha256
+/*.zip.sha256
+
+# Root-level diagnostic logs and clang analyzer reports
+/*.log
+/*.plist
+
+# New research captures and generated release bundles stay local by default.
+# Existing tracked evidence remains versioned; selected new evidence must be
+# reviewed for provenance and private host data before an explicit git add -f.
+/artifacts/*
+!/artifacts/README.md

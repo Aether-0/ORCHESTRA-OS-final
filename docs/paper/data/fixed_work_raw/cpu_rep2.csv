@@ -1,0 +1,9 @@
+scheduler,workload,workers,duration_s,elapsed_ms,ctx_delta,accepted,dispatched,running,effective,owned,notes
+cfs,cpu,1,1,207,2069,0,0,0,0,n/a,completed
+cfs,cpu,2,1,207,1907,0,0,0,0,n/a,completed
+cfs,cpu,4,1,208,3001,0,0,0,0,n/a,completed
+cfs,cpu,8,1,378,3202,0,0,0,0,n/a,completed
+orchestra,cpu,1,1,311,4419,1,1,1,0,yes,completed
+orchestra,cpu,2,1,363,7062,6,6,6,0,yes,completed
+orchestra,cpu,4,1,443,12611,29,29,29,0,yes,completed
+orchestra,cpu,8,1,547,21150,180,180,180,0,yes,completed

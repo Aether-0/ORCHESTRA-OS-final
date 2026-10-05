@@ -1,0 +1,1483 @@
+{
+  "claim_limitation": "This isolated userspace microbenchmark measures bounded authenticated signal publication/read API behavior only. It does not prove kernel scheduler behavior, end-to-end ORCHESTRA performance, or a causal scheduling improvement.",
+  "cohorts": {
+    "generation_stamped/readers=1": {
+      "independent_invocation_count": 2,
+      "metrics": {
+        "publisher_attempts_per_sec": {
+          "maximum": 233836.62770168993,
+          "mean": 233563.1329428957,
+          "minimum": 233289.63818410144,
+          "n": 2,
+          "stdev": 386.77999712477856
+        },
+        "publisher_contention_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_contention_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_generation_exhaustion_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_max_latency_ns": {
+          "maximum": 18243.0,
+          "mean": 17642.0,
+          "minimum": 17041.0,
+          "n": 2,
+          "stdev": 849.9423509862302
+        },
+        "publisher_mean_latency_ns": {
+          "maximum": 4187.936,
+          "mean": 4187.555,
+          "minimum": 4187.174,
+          "n": 2,
+          "stdev": 0.5388153672639485
+        },
+        "publisher_success_fraction": {
+          "maximum": 1.0,
+          "mean": 1.0,
+          "minimum": 1.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_successes_per_sec": {
+          "maximum": 233836.62770168993,
+          "mean": 233563.1329428957,
+          "minimum": 233289.63818410144,
+          "n": 2,
+          "stdev": 386.77999712477856
+        },
+        "reader_api_calls_per_aggregate_thread_sec": {
+          "maximum": 223099.789548755,
+          "mean": 221219.31481873424,
+          "minimum": 219338.84008871348,
+          "n": 2,
+          "stdev": 2659.3928668952535
+        },
+        "reader_api_max_latency_ns": {
+          "maximum": 17881.0,
+          "mean": 17444.5,
+          "minimum": 17008.0,
+          "n": 2,
+          "stdev": 617.304219975856
+        },
+        "reader_api_mean_latency_ns": {
+          "maximum": 4229.201698513801,
+          "mean": 4192.535472687863,
+          "minimum": 4155.869246861925,
+          "n": 2,
+          "stdev": 51.853873844076155
+        },
+        "reader_hmac_failure_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_directive_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_fields_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_frame_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_key_epoch_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_schema_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_sequence_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_source_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_tier_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_retry_exhaustion_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_retry_fraction": {
+          "maximum": 0.013800424628450107,
+          "mean": 0.012130337837237605,
+          "minimum": 0.010460251046025104,
+          "n": 2,
+          "stdev": 0.0023618593904728828
+        },
+        "reader_snapshot_copy_empty_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_snapshot_copy_max_latency_ns": {
+          "maximum": 14107.0,
+          "mean": 7326.0,
+          "minimum": 545.0,
+          "n": 2,
+          "stdev": 9589.782166451958
+        },
+        "reader_snapshot_copy_mean_latency_ns": {
+          "maximum": 255.60774058577405,
+          "mean": 255.1801972567936,
+          "minimum": 254.75265392781316,
+          "n": 2,
+          "stdev": 0.6046375743462918
+        },
+        "reader_snapshot_copy_success_fraction": {
+          "maximum": 1.0,
+          "mean": 1.0,
+          "minimum": 1.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_snapshot_copy_unstable_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_stale_frame_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_unstable_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_unstable_slot_observation_count": {
+          "maximum": 13.0,
+          "mean": 11.5,
+          "minimum": 10.0,
+          "n": 2,
+          "stdev": 2.1213203435596424
+        },
+        "reader_valid_fraction": {
+          "maximum": 0.9957537154989384,
+          "mean": 0.9900316694649504,
+          "minimum": 0.9843096234309623,
+          "n": 2,
+          "stdev": 0.00809219510578911
+        },
+        "reader_valid_reads_per_aggregate_thread_sec": {
+          "maximum": 219599.269838262,
+          "mean": 219003.36740491298,
+          "minimum": 218407.46497156395,
+          "n": 2,
+          "stdev": 842.7333030933181
+        },
+        "reader_verified_frame_max_latency_ns": {
+          "maximum": 17881.0,
+          "mean": 17444.5,
+          "minimum": 17008.0,
+          "n": 2,
+          "stdev": 617.304219975856
+        },
+        "reader_verified_frame_mean_latency_ns": {
+          "maximum": 4246.158848614073,
+          "mean": 4231.917894020107,
+          "minimum": 4217.676939426143,
+          "n": 2,
+          "stdev": 20.139751127924654
+        }
+      },
+      "publication_mode": "generation_stamped",
+      "reader_count": 1,
+      "statistical_unit": "one completed bounded microbenchmark invocation"
+    },
+    "generation_stamped/readers=2": {
+      "independent_invocation_count": 2,
+      "metrics": {
+        "publisher_attempts_per_sec": {
+          "maximum": 232139.04757527282,
+          "mean": 231719.29741476953,
+          "minimum": 231299.54725426622,
+          "n": 2,
+          "stdev": 593.6163697920546
+        },
+        "publisher_contention_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_contention_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_generation_exhaustion_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_max_latency_ns": {
+          "maximum": 17656.0,
+          "mean": 15194.5,
+          "minimum": 12733.0,
+          "n": 2,
+          "stdev": 3481.0866837813733
+        },
+        "publisher_mean_latency_ns": {
+          "maximum": 4234.018,
+          "mean": 4227.6875,
+          "minimum": 4221.357,
+          "n": 2,
+          "stdev": 8.95267895660292
+        },
+        "publisher_success_fraction": {
+          "maximum": 1.0,
+          "mean": 1.0,
+          "minimum": 1.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_successes_per_sec": {
+          "maximum": 232139.04757527282,
+          "mean": 231719.29741476953,
+          "minimum": 231299.54725426622,
+          "n": 2,
+          "stdev": 593.6163697920546
+        },
+        "reader_api_calls_per_aggregate_thread_sec": {
+          "maximum": 213613.4718123521,
+          "mean": 212625.16878480554,
+          "minimum": 211636.865757259,
+          "n": 2,
+          "stdev": 1397.6715452907317
+        },
+        "reader_api_max_latency_ns": {
+          "maximum": 21357.0,
+          "mean": 17102.0,
+          "minimum": 12847.0,
+          "n": 2,
+          "stdev": 6017.47870789752
+        },
+        "reader_api_mean_latency_ns": {
+          "maximum": 4357.6684841875685,
+          "mean": 4343.663053813806,
+          "minimum": 4329.657623440044,
+          "n": 2,
+          "stdev": 19.806669581446965
+        },
+        "reader_hmac_failure_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_directive_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_fields_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_frame_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_key_epoch_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_schema_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_sequence_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_source_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_tier_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_retry_exhaustion_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_retry_fraction": {
+          "maximum": 0.015192620727075421,
+          "mean": 0.013048873068008813,
+          "minimum": 0.010905125408942203,
+          "n": 2,
+          "stdev": 0.0030317170137575725
+        },
+        "reader_snapshot_copy_empty_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_snapshot_copy_max_latency_ns": {
+          "maximum": 662.0,
+          "mean": 617.0,
+          "minimum": 572.0,
+          "n": 2,
+          "stdev": 63.63961030678928
+        },
+        "reader_snapshot_copy_mean_latency_ns": {
+          "maximum": 278.35114503816794,
+          "mean": 269.99570274154735,
+          "minimum": 261.64026044492675,
+          "n": 2,
+          "stdev": 11.816379815506647
+        },
+        "reader_snapshot_copy_success_fraction": {
+          "maximum": 1.0,
+          "mean": 1.0,
+          "minimum": 1.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_snapshot_copy_unstable_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_stale_frame_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_unstable_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_unstable_slot_observation_count": {
+          "maximum": 28.0,
+          "mean": 24.0,
+          "minimum": 20.0,
+          "n": 2,
+          "stdev": 5.656854249492381
+        },
+        "reader_valid_fraction": {
+          "maximum": 0.9967284623773174,
+          "mean": 0.9891401400329343,
+          "minimum": 0.9815518176885513,
+          "n": 2,
+          "stdev": 0.010731508375085321
+        },
+        "reader_valid_reads_per_aggregate_thread_sec": {
+          "maximum": 210944.48778858746,
+          "mean": 210308.58966438187,
+          "minimum": 209672.6915401763,
+          "n": 2,
+          "stdev": 899.295751539134
+        },
+        "reader_verified_frame_max_latency_ns": {
+          "maximum": 21357.0,
+          "mean": 17102.0,
+          "minimum": 12847.0,
+          "n": 2,
+          "stdev": 6017.47870789752
+        },
+        "reader_verified_frame_mean_latency_ns": {
+          "maximum": 4405.321724709785,
+          "mean": 4388.102054915067,
+          "minimum": 4370.88238512035,
+          "n": 2,
+          "stdev": 24.352290563275744
+        }
+      },
+      "publication_mode": "generation_stamped",
+      "reader_count": 2,
+      "statistical_unit": "one completed bounded microbenchmark invocation"
+    },
+    "generation_stamped/readers=4": {
+      "independent_invocation_count": 2,
+      "metrics": {
+        "publisher_attempts_per_sec": {
+          "maximum": 125322.0934454164,
+          "mean": 125313.30737916856,
+          "minimum": 125304.52131292073,
+          "n": 2,
+          "stdev": 12.425374047595676
+        },
+        "publisher_contention_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_contention_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_generation_exhaustion_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_max_latency_ns": {
+          "maximum": 17591.0,
+          "mean": 14975.0,
+          "minimum": 12359.0,
+          "n": 2,
+          "stdev": 3699.5826791680165
+        },
+        "publisher_mean_latency_ns": {
+          "maximum": 7849.534,
+          "mean": 7845.2355,
+          "minimum": 7840.937,
+          "n": 2,
+          "stdev": 6.078996997860574
+        },
+        "publisher_success_fraction": {
+          "maximum": 1.0,
+          "mean": 1.0,
+          "minimum": 1.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_successes_per_sec": {
+          "maximum": 125322.0934454164,
+          "mean": 125313.30737916856,
+          "minimum": 125304.52131292073,
+          "n": 2,
+          "stdev": 12.425374047595676
+        },
+        "reader_api_calls_per_aggregate_thread_sec": {
+          "maximum": 496688.8764285516,
+          "mean": 469787.90913091286,
+          "minimum": 442886.94183327403,
+          "n": 2,
+          "stdev": 38043.712793275896
+        },
+        "reader_api_max_latency_ns": {
+          "maximum": 35651.0,
+          "mean": 26308.5,
+          "minimum": 16966.0,
+          "n": 2,
+          "stdev": 13212.290206470641
+        },
+        "reader_api_mean_latency_ns": {
+          "maximum": 1877.130238145714,
+          "mean": 1758.0863199297119,
+          "minimum": 1639.0424017137098,
+          "n": 2,
+          "stdev": 168.35352365910373
+        },
+        "reader_hmac_failure_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_directive_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_fields_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_frame_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_key_epoch_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_schema_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_sequence_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_source_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_tier_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_retry_exhaustion_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_retry_fraction": {
+          "maximum": 0.024379902480390077,
+          "mean": 0.0230896488208402,
+          "minimum": 0.021799395161290324,
+          "n": 2,
+          "stdev": 0.0018246942242369532
+        },
+        "reader_snapshot_copy_empty_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_snapshot_copy_max_latency_ns": {
+          "maximum": 11555.0,
+          "mean": 10643.0,
+          "minimum": 9731.0,
+          "n": 2,
+          "stdev": 1289.7627688842626
+        },
+        "reader_snapshot_copy_mean_latency_ns": {
+          "maximum": 283.9312416083669,
+          "mean": 276.97929267918346,
+          "minimum": 270.02734375,
+          "n": 2,
+          "stdev": 9.831540460576363
+        },
+        "reader_snapshot_copy_success_fraction": {
+          "maximum": 1.0,
+          "mean": 1.0,
+          "minimum": 1.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_snapshot_copy_unstable_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_stale_frame_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_unstable_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_unstable_slot_observation_count": {
+          "maximum": 346.0,
+          "mean": 345.5,
+          "minimum": 345.0,
+          "n": 2,
+          "stdev": 0.7071067811865476
+        },
+        "reader_valid_fraction": {
+          "maximum": 0.28026287894848423,
+          "mean": 0.264973929393597,
+          "minimum": 0.2496849798387097,
+          "n": 2,
+          "stdev": 0.021621839814959673
+        },
+        "reader_valid_reads_per_aggregate_thread_sec": {
+          "maximum": 124124.76936688324,
+          "mean": 124070.26073202875,
+          "minimum": 124015.75209717428,
+          "n": 2,
+          "stdev": 77.08685067764723
+        },
+        "reader_verified_frame_max_latency_ns": {
+          "maximum": 35651.0,
+          "mean": 26308.5,
+          "minimum": 16966.0,
+          "n": 2,
+          "stdev": 13212.290206470641
+        },
+        "reader_verified_frame_mean_latency_ns": {
+          "maximum": 5812.326021180031,
+          "mean": 5679.474643191579,
+          "minimum": 5546.6232652031285,
+          "n": 2,
+          "stdev": 187.880220531222
+        }
+      },
+      "publication_mode": "generation_stamped",
+      "reader_count": 4,
+      "statistical_unit": "one completed bounded microbenchmark invocation"
+    },
+    "legacy/readers=1": {
+      "independent_invocation_count": 2,
+      "metrics": {
+        "publisher_attempts_per_sec": {
+          "maximum": 235098.29459697098,
+          "mean": 234442.55991048983,
+          "minimum": 233786.8252240087,
+          "n": 2,
+          "stdev": 927.3488869400985
+        },
+        "publisher_contention_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_contention_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_generation_exhaustion_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_max_latency_ns": {
+          "maximum": 18743.0,
+          "mean": 15648.0,
+          "minimum": 12553.0,
+          "n": 2,
+          "stdev": 4376.990975544729
+        },
+        "publisher_mean_latency_ns": {
+          "maximum": 4190.713,
+          "mean": 4171.808999999999,
+          "minimum": 4152.905,
+          "n": 2,
+          "stdev": 26.734293183100984
+        },
+        "publisher_success_fraction": {
+          "maximum": 1.0,
+          "mean": 1.0,
+          "minimum": 1.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_successes_per_sec": {
+          "maximum": 235098.29459697098,
+          "mean": 234442.55991048983,
+          "minimum": 233786.8252240087,
+          "n": 2,
+          "stdev": 927.3488869400985
+        },
+        "reader_api_calls_per_aggregate_thread_sec": {
+          "maximum": 231563.02694679686,
+          "mean": 226011.0735383498,
+          "minimum": 220459.12012990273,
+          "n": 2,
+          "stdev": 7851.6478078893715
+        },
+        "reader_api_max_latency_ns": {
+          "maximum": 55311.0,
+          "mean": 33325.5,
+          "minimum": 11340.0,
+          "n": 2,
+          "stdev": 31092.19227555368
+        },
+        "reader_api_mean_latency_ns": {
+          "maximum": 4343.005296610169,
+          "mean": 4242.509240597174,
+          "minimum": 4142.013184584179,
+          "n": 2,
+          "stdev": 142.12288537858413
+        },
+        "reader_hmac_failure_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_directive_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_fields_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_frame_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_key_epoch_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_schema_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_sequence_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_source_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_tier_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_retry_exhaustion_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_retry_fraction": {
+          "maximum": 0.04978813559322034,
+          "mean": 0.03807865197510915,
+          "minimum": 0.02636916835699797,
+          "n": 2,
+          "stdev": 0.016559710541118416
+        },
+        "reader_snapshot_copy_empty_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_snapshot_copy_max_latency_ns": {
+          "maximum": 516.0,
+          "mean": 432.0,
+          "minimum": 348.0,
+          "n": 2,
+          "stdev": 118.79393923933998
+        },
+        "reader_snapshot_copy_mean_latency_ns": {
+          "maximum": 125.18723404255319,
+          "mean": 119.29393414601233,
+          "minimum": 113.40063424947147,
+          "n": 2,
+          "stdev": 8.334384640820042
+        },
+        "reader_snapshot_copy_success_fraction": {
+          "maximum": 0.9957627118644068,
+          "mean": 0.9775973802729742,
+          "minimum": 0.9594320486815415,
+          "n": 2,
+          "stdev": 0.025689658301608468
+        },
+        "reader_snapshot_copy_unstable_fraction": {
+          "maximum": 0.04056795131845842,
+          "mean": 0.02240261972702582,
+          "minimum": 0.00423728813559322,
+          "n": 2,
+          "stdev": 0.02568965830160842
+        },
+        "reader_stale_frame_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_unstable_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_unstable_slot_observation_count": {
+          "maximum": 47.0,
+          "mean": 36.5,
+          "minimum": 26.0,
+          "n": 2,
+          "stdev": 14.849242404917497
+        },
+        "reader_valid_fraction": {
+          "maximum": 0.9969574036511156,
+          "mean": 0.9963600577577612,
+          "minimum": 0.9957627118644068,
+          "n": 2,
+          "stdev": 0.0008447746638096895
+        },
+        "reader_valid_reads_per_aggregate_thread_sec": {
+          "maximum": 230858.47412647193,
+          "mean": 225191.72272113245,
+          "minimum": 219524.97131579297,
+          "n": 2,
+          "stdev": 8013.996692027895
+        },
+        "reader_verified_frame_max_latency_ns": {
+          "maximum": 55311.0,
+          "mean": 33325.5,
+          "minimum": 11340.0,
+          "n": 2,
+          "stdev": 31092.19227555368
+        },
+        "reader_verified_frame_mean_latency_ns": {
+          "maximum": 4360.853191489362,
+          "mean": 4257.507979264518,
+          "minimum": 4154.162767039675,
+          "n": 2,
+          "stdev": 146.15220073469965
+        }
+      },
+      "publication_mode": "legacy",
+      "reader_count": 1,
+      "statistical_unit": "one completed bounded microbenchmark invocation"
+    },
+    "legacy/readers=2": {
+      "independent_invocation_count": 2,
+      "metrics": {
+        "publisher_attempts_per_sec": {
+          "maximum": 234173.72036941373,
+          "mean": 233124.57151258673,
+          "minimum": 232075.42265575973,
+          "n": 2,
+          "stdev": 1483.7205422729714
+        },
+        "publisher_contention_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_contention_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_generation_exhaustion_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_max_latency_ns": {
+          "maximum": 26849.0,
+          "mean": 19540.5,
+          "minimum": 12232.0,
+          "n": 2,
+          "stdev": 10335.779820603766
+        },
+        "publisher_mean_latency_ns": {
+          "maximum": 4219.688,
+          "mean": 4199.4595,
+          "minimum": 4179.231,
+          "n": 2,
+          "stdev": 28.60741904646439
+        },
+        "publisher_success_fraction": {
+          "maximum": 1.0,
+          "mean": 1.0,
+          "minimum": 1.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_successes_per_sec": {
+          "maximum": 234173.72036941373,
+          "mean": 233124.57151258673,
+          "minimum": 232075.42265575973,
+          "n": 2,
+          "stdev": 1483.7205422729714
+        },
+        "reader_api_calls_per_aggregate_thread_sec": {
+          "maximum": 228568.9165681365,
+          "mean": 227472.56963013718,
+          "minimum": 226376.22269213785,
+          "n": 2,
+          "stdev": 1550.4687087848715
+        },
+        "reader_api_max_latency_ns": {
+          "maximum": 32745.0,
+          "mean": 23439.5,
+          "minimum": 14134.0,
+          "n": 2,
+          "stdev": 13159.964304662835
+        },
+        "reader_api_mean_latency_ns": {
+          "maximum": 4229.354987212276,
+          "mean": 4210.1242966751915,
+          "minimum": 4190.893606138107,
+          "n": 2,
+          "stdev": 27.196303371344456
+        },
+        "reader_hmac_failure_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_directive_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_fields_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_frame_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_key_epoch_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_schema_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_sequence_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_source_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_tier_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_retry_exhaustion_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_retry_fraction": {
+          "maximum": 0.04552429667519182,
+          "mean": 0.043478260869565216,
+          "minimum": 0.04143222506393862,
+          "n": 2,
+          "stdev": 0.002893531585418097
+        },
+        "reader_snapshot_copy_empty_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_snapshot_copy_max_latency_ns": {
+          "maximum": 625.0,
+          "mean": 510.0,
+          "minimum": 395.0,
+          "n": 2,
+          "stdev": 162.63455967290594
+        },
+        "reader_snapshot_copy_mean_latency_ns": {
+          "maximum": 104.0732336255802,
+          "mean": 103.05020655637983,
+          "minimum": 102.02717948717948,
+          "n": 2,
+          "stdev": 1.446778755937948
+        },
+        "reader_snapshot_copy_success_fraction": {
+          "maximum": 0.9974424552429667,
+          "mean": 0.9946291560102302,
+          "minimum": 0.9918158567774936,
+          "n": 2,
+          "stdev": 0.0039786059299498425
+        },
+        "reader_snapshot_copy_unstable_fraction": {
+          "maximum": 0.008184143222506393,
+          "mean": 0.005370843989769821,
+          "minimum": 0.0025575447570332483,
+          "n": 2,
+          "stdev": 0.003978605929949883
+        },
+        "reader_stale_frame_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_unstable_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_unstable_slot_observation_count": {
+          "maximum": 89.0,
+          "mean": 85.0,
+          "minimum": 81.0,
+          "n": 2,
+          "stdev": 5.656854249492381
+        },
+        "reader_valid_fraction": {
+          "maximum": 0.9969309462915601,
+          "mean": 0.9713554987212276,
+          "minimum": 0.9457800511508951,
+          "n": 2,
+          "stdev": 0.03616914481772621
+        },
+        "reader_valid_reads_per_aggregate_thread_sec": {
+          "maximum": 227867.42628710897,
+          "mean": 220984.77088211276,
+          "minimum": 214102.11547711655,
+          "n": 2,
+          "stdev": 9733.544618886133
+        },
+        "reader_verified_frame_max_latency_ns": {
+          "maximum": 32745.0,
+          "mean": 23439.5,
+          "minimum": 14134.0,
+          "n": 2,
+          "stdev": 13159.964304662835
+        },
+        "reader_verified_frame_mean_latency_ns": {
+          "maximum": 4462.652785289346,
+          "mean": 4332.980317734462,
+          "minimum": 4203.307850179579,
+          "n": 2,
+          "stdev": 183.38456228250138
+        }
+      },
+      "publication_mode": "legacy",
+      "reader_count": 2,
+      "statistical_unit": "one completed bounded microbenchmark invocation"
+    },
+    "legacy/readers=4": {
+      "independent_invocation_count": 2,
+      "metrics": {
+        "publisher_attempts_per_sec": {
+          "maximum": 127438.79624371599,
+          "mean": 125373.50379206278,
+          "minimum": 123308.21134040959,
+          "n": 2,
+          "stdev": 2920.7645953947354
+        },
+        "publisher_contention_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_contention_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_generation_exhaustion_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_max_latency_ns": {
+          "maximum": 25832.0,
+          "mean": 20878.5,
+          "minimum": 15925.0,
+          "n": 2,
+          "stdev": 7005.306881215126
+        },
+        "publisher_mean_latency_ns": {
+          "maximum": 7969.587,
+          "mean": 7855.323,
+          "minimum": 7741.059,
+          "n": 2,
+          "stdev": 161.59369849099951
+        },
+        "publisher_success_fraction": {
+          "maximum": 1.0,
+          "mean": 1.0,
+          "minimum": 1.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "publisher_successes_per_sec": {
+          "maximum": 127438.79624371599,
+          "mean": 125373.50379206278,
+          "minimum": 123308.21134040959,
+          "n": 2,
+          "stdev": 2920.7645953947354
+        },
+        "reader_api_calls_per_aggregate_thread_sec": {
+          "maximum": 1170824.5385137096,
+          "mean": 1121511.2597105526,
+          "minimum": 1072197.980907396,
+          "n": 2,
+          "stdev": 69739.50768851003
+        },
+        "reader_api_max_latency_ns": {
+          "maximum": 65073.0,
+          "mean": 40900.0,
+          "minimum": 16727.0,
+          "n": 2,
+          "stdev": 34185.784443244826
+        },
+        "reader_api_mean_latency_ns": {
+          "maximum": 774.2784737386507,
+          "mean": 740.7705889996171,
+          "minimum": 707.2627042605835,
+          "n": 2,
+          "stdev": 47.38730504437579
+        },
+        "reader_hmac_failure_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_directive_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_fields_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_frame_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_key_epoch_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_schema_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_sequence_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_source_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_invalid_tier_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_retry_exhaustion_count": {
+          "maximum": 33.0,
+          "mean": 24.0,
+          "minimum": 15.0,
+          "n": 2,
+          "stdev": 12.727922061357855
+        },
+        "reader_retry_fraction": {
+          "maximum": 0.14198319693303244,
+          "mean": 0.13959003542778503,
+          "minimum": 0.13719687392253763,
+          "n": 2,
+          "stdev": 0.00338444145767009
+        },
+        "reader_snapshot_copy_empty_fraction": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_snapshot_copy_max_latency_ns": {
+          "maximum": 9346.0,
+          "mean": 4937.0,
+          "minimum": 528.0,
+          "n": 2,
+          "stdev": 6235.267596502976
+        },
+        "reader_snapshot_copy_mean_latency_ns": {
+          "maximum": 86.72464207716574,
+          "mean": 84.71245072157998,
+          "minimum": 82.70025936599424,
+          "n": 2,
+          "stdev": 2.8456683051592693
+        },
+        "reader_snapshot_copy_success_fraction": {
+          "maximum": 0.947247442822664,
+          "mean": 0.945360310225601,
+          "minimum": 0.943473177628538,
+          "n": 2,
+          "stdev": 0.0026688085127628894
+        },
+        "reader_snapshot_copy_unstable_fraction": {
+          "maximum": 0.05652682237146198,
+          "mean": 0.05463968977439895,
+          "minimum": 0.052752557177335936,
+          "n": 2,
+          "stdev": 0.0026688085127628846
+        },
+        "reader_stale_frame_count": {
+          "maximum": 0.0,
+          "mean": 0.0,
+          "minimum": 0.0,
+          "n": 2,
+          "stdev": 0.0
+        },
+        "reader_unstable_fraction": {
+          "maximum": 0.0009481668773704172,
+          "mean": 0.0006780041543109734,
+          "minimum": 0.00040784143125152943,
+          "n": 2,
+          "stdev": 0.00038206778699831205
+        },
+        "reader_unstable_slot_observation_count": {
+          "maximum": 5222.0,
+          "mean": 4998.5,
+          "minimum": 4775.0,
+          "n": 2,
+          "stdev": 316.07673119038674
+        },
+        "reader_valid_fraction": {
+          "maximum": 0.1146707275025859,
+          "mean": 0.11176860010899708,
+          "minimum": 0.10886647271540825,
+          "n": 2,
+          "stdev": 0.004104227919747798
+        },
+        "reader_valid_reads_per_aggregate_thread_sec": {
+          "maximum": 127463.53767663322,
+          "mean": 125206.63008704403,
+          "minimum": 122949.72249745483,
+          "n": 2,
+          "stdev": 3191.74932221981
+        },
+        "reader_verified_frame_max_latency_ns": {
+          "maximum": 65073.0,
+          "mean": 40900.0,
+          "minimum": 16727.0,
+          "n": 2,
+          "stdev": 34185.784443244826
+        },
+        "reader_verified_frame_mean_latency_ns": {
+          "maximum": 5550.157103482837,
+          "mean": 5414.323057235924,
+          "minimum": 5278.489010989011,
+          "n": 2,
+          "stdev": 192.0983504343982
+        }
+      },
+      "publication_mode": "legacy",
+      "reader_count": 4,
+      "statistical_unit": "one completed bounded microbenchmark invocation"
+    }
+  },
+  "comparison_design": "descriptive-unpaired-microbenchmark",
+  "microbenchmark_schema_id": "orchestra.signal_publication.microbenchmark/v1"
+}

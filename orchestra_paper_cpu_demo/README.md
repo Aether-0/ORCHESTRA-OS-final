@@ -234,7 +234,7 @@ Reproducible PNG and SVG visualizations are in the
 [figure set](../docs/experiments/figures/paper_cpu_smoke_v1_2026-08-03/README.md).
 The evidence-gated path from the current prototype to a release decision is in
 the [release-readiness plan](../docs/operations/release-readiness-plan.md); the
-converted [Markdown brief](../output/doc/ORCHESTRA-OS_Release_Readiness_Plan.md)
+converted [Markdown brief](../docs/operations/release-readiness-plan.md)
 has a [build manifest](../docs/operations/release-readiness-brief-manifest.md).
 
 ## Metrics schema and historical samples

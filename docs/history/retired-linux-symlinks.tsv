@@ -1,0 +1,5 @@
+path	target
+artifacts/real-world/20260821-084900-kali-kernel-bench/kernel/linux-source-7.0/include/dt-bindings/clock/qcom,dispcc-sm8150.h	qcom,dispcc-sm8250.h
+artifacts/real-world/20260821-084900-kali-kernel-bench/kernel/linux-source-7.0/include/dt-bindings/clock/qcom,dispcc-sm8350.h	qcom,dispcc-sm8250.h
+artifacts/real-world/20260821-084900-kali-kernel-bench/kernel/linux-source-7.0/include/dt-bindings/clock/qcom,sm8650-dispcc.h	qcom,sm8550-dispcc.h
+artifacts/real-world/20260821-084900-kali-kernel-bench/kernel/linux-source-7.0/include/dt-bindings/input/linux-event-codes.h	../../uapi/linux/input-event-codes.h

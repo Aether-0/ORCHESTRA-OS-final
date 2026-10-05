@@ -1,0 +1,48 @@
+item,status,evidence,notes
+source_fix_F001,PASS,source test and runtime matrix,THROTTLE generation/accounting coherence
+source_fix_F005,PASS,source test and runtime matrix,compact-path action telemetry
+userspace_regression,PASS,tests/primary_regression_final.stdout,make clean make test
+make_check,PASS,tests/make_check.stdout,repository check gate
+exact_kernel_build,PASS,build/target/build-manifest.txt,target kernel/BTF build
+verifier_attach,PASS,sched_ext/runtime/passing-matrix/results.csv,attach succeeded
+ownership,PASS,sched_ext/runtime/passing-matrix/results.csv,workload entered sched_ext path
+performance_cpu,PASS,"performance/benchmark-r{2,3,4}/results.csv",three repetitions at 1/2/4/8 workers; exploratory slower-than-CFS observation
+performance_mixed,PASS,"performance/benchmark-m{1,2,3}/results.csv",three repetitions at 1/2/4 workers; exploratory only
+scx_simple_comparison,BLOCKED_MISSING_TOOL,performance/benchmark-r2/bench.log,/usr/bin/scx_simple absent
+RUN,PASS,sched_ext/runtime/passing-matrix/results.csv,dispatch/running/effective deltas
+YIELD,PASS,sched_ext/runtime/passing-matrix/results.csv,dispatch and peer progress observed
+MIGRATE_valid,PASS,sched_ext/runtime/passing-matrix/results.csv,accepted/dispatched/CPU movement
+MIGRATE_invalid_fallback,PASS,sched_ext/runtime/passing-matrix/results.csv,BAD_CPU fallback and no migrate acceptance
+SLEEP,PASS,sched_ext/runtime/passing-matrix/results.csv,deferred release and retirement
+THROTTLE,PASS,sched_ext/runtime/passing-matrix/results.csv,state/runtime/defer coherence
+stress_smoke_cfs,PASS,stress/cfs-5/results.csv,CPU/I/O/mixed/health
+stress_smoke_orchestra,PASS,stress/orchestra-5/results.csv,CPU/I/O/mixed/health with ownership
+stress_medium_cfs,PASS,stress/cfs-30/results.csv,30 seconds per phase on CPUs 0-1
+stress_medium_orchestra,PASS,stress/orchestra-30/results.csv,30 seconds per phase with ownership
+stress_memory,BLOCKED_MISSING_TOOL,stress/*/results.csv,stress executable absent
+long_duration_orchestra,PASS,longrun/orchestra-600/results.csv,600 seconds each CPU/I/O/mixed; 30-minute campaign
+RT_FIFO,PASS,rt/policy_matrix.txt,adaptive bridge refused FIFO task
+RT_RR,PASS,rt/policy_matrix.txt,adaptive bridge refused RR task
+RT_DEADLINE,PASS,rt/policy_matrix.txt,adaptive bridge refused DEADLINE task
+RT_normal_coexistence,PASS,rt/lifecycle.txt,normal task owned/completed while RT task existed
+RT_FIFO_contention,PASS,rt/contention-v2/contention_matrix.txt,FIFO task remained outside adaptive path while normal ORCHESTRA task was owned on CPU1
+RT_RR_contention,PASS,rt/contention-v2/contention_matrix.txt,RR task remained outside adaptive path while normal ORCHESTRA task was owned on CPU1
+RT_DEADLINE_contention,BLOCKED_BY_ENVIRONMENT,rt/contention-v2/deadline.rt.stderr,deadline contention launch returned EPERM; policy admission matrix remains valid
+RT_contention_path_guard_attempt,FAIL_PRESERVED,rt/contention-v1/load.stderr,user-owned BPF path rejected by loader safety gate; corrected root-owned-path retry retained
+userspace_HMAC_tamper,PASS,integrity/userspace-r1/tamper.log,hmac=176 rejected frames
+userspace_controller_tamper,PASS,integrity/userspace-r1/controller-tamper.log,hmac=35 rejected frames
+userspace_HMAC_microbenchmark,PASS,integrity/microbenchmark-v1/benchmark_result.json,12/12 bounded legacy/generation-stamped runs; 12000 publications and 27161 verified reads; zero HMAC/invalid/stale failures
+kernel_signal_replay,PASS,integrity/kernel_matrix.txt,duplicate sequence rc=10
+kernel_signal_stale,PASS,integrity/signal_status_stale.txt,signal_stale=694
+kernel_signal_invalid_field,PASS,integrity/kernel_matrix.txt,out-of-range field rejected
+kernel_HMAC_authentication,BLOCKED_NOT_IMPLEMENTED,integrity/kernel_matrix.txt,kernel map is local-trust IPC without HMAC verifier
+NUMA_single_node,PASS,numa/topology.txt,one node and source capability observed
+NUMA_same_node_migration,PASS,numa/migration_status.txt,mig_acc=171 mig_disp=171 actual_cpu=1
+NUMA_cross_node,BLOCKED_TOPOLOGY,numa/topology.txt,host exposes one NUMA node
+loopback_CFS,PASS,distributed/loopback_retry_matrix.txt,32 MiB transferred
+loopback_ORCHESTRA,PASS,distributed/loopback_retry_orchestra_matrix.txt,64 MiB transferred and unload clean
+loopback_ORCHESTRA_ownership,BLOCKED_INSUFFICIENT_OBSERVABILITY,distributed/loopback_blocked_matrix.txt,short-lived netcat tasks had no retained task-state snapshot
+distributed_scheduler,BLOCKED_NOT_IMPLEMENTED,distributed/loopback_blocked_matrix.txt,no backend/protocol
+clean_unload,PASS,longrun/lifecycle.txt,final state disabled
+kernel_health,PASS,longrun/orchestra-600/results.csv,no new health warnings
+first_runtime_harness_attempt,FAIL_PRESERVED,sched_ext/runtime/first-attempt,harness-only mkdir defect; corrected retry passed

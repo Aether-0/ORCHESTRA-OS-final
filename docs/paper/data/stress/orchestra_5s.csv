@@ -1,0 +1,6 @@
+test,duration_s,cpu_workers,memory_mb,io_files,errors,warnings,completed,ownership,notes
+cpu_stress,6,8,0,0,0,0,PASS,yes,exact-tid-ownership-confirmed
+mem_stress,0,0,8042,0,0,0,BLOCKED_OWNERSHIP_NOT_PROVEN,not_proven,child-worker-identities-unavailable
+io_stress,5,0,0,4,0,0,PASS,yes,exact-tid-ownership-confirmed
+mixed,5,4,0,4,0,0,PASS,yes,exact-tid-ownership-confirmed
+health_check,0,0,0,0,0,0,PASS,not_applicable,sorted-dmesg-delta

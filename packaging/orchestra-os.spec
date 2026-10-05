@@ -2,17 +2,13 @@ Name:           orchestra-os
 Version:        %{_orchestra_version}
 Release:        1
 Summary:        Capability-tiered Linux scheduling research prototype
-License:        MIT
-URL:            https://github.com/Aether-0/ORCHESTRA-OS-Public
+License:        MIT AND GPL-2.0-only
+URL:            https://github.com/Aether-0/ORCHESTRA-OS-final
 BuildArch:      %{_target_cpu}
-AutoReqProv:    no
+AutoReqProv:    yes
 Requires:       bash
 Requires:       coreutils
 Requires:       python3
-Requires:       libbpf
-Requires:       elfutils-libelf
-Requires:       zlib
-Requires:       libzstd
 
 %description
 ORCHESTRA-OS provides a safe observer/control plane and an explicitly

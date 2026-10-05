@@ -1,0 +1,14 @@
+running_kernel=7.1.5+kali-amd64
+source_version=7.1.5
+kernel_source=/var/tmp/orchestra-kernel-source-7.1.5-download/linux-source-7.1
+bpf_uapi=/var/tmp/orchestra-kernel-source-7.1.5-download/linux-source-7.1/tools/include/uapi/linux/bpf.h
+bpf_uapi_sha256=a12b3538b1d37617c511b16398b46a843422796729fb124e276a670aeed6157e
+bpf_doc=/var/tmp/orchestra-kernel-source-7.1.5-download/linux-source-7.1/scripts/bpf_doc.py
+bpf_doc_sha256=7e3aa3b9cac901b366330e19f5e9b7bd9bb9095e167b74b67c3014c7b1d300f3
+bpf_helper_defs=/var/tmp/orchestra-evidence-strengthening-20260915-105244-redshadow-build/libbpf/bpf_helper_defs.h
+bpf_helper_defs_sha256=05e718b9297813159527482b0174fcb5a3e705a4bea836cd46af206857fd3697
+libbpf_link=libbpf.so.1
+vmlinux_sha256=114e71f27d2dd23175d3752087872cc035e9923cf36c770c335251c428230e29
+bpf_object_sha256=8f3dbdc53c6789c62a522489b285fb51a6985496f8f4b86688786f0e778e647d
+bridge_sha256=4d62221709d461b757985bd1b8959175862b2229c011ebd8b4444e686d205e0d
+loader_sha256=af1aa651804a483a3952798e0e1f6f05f35545a2b8400fc2f733f32da22939d2

@@ -7,7 +7,7 @@ actions: RUN, SLEEP, MIGRATE, THROTTLE, and YIELD.
 Every change must include tests or a documented reason that a test is not
 applicable. Do not claim kernel ownership, performance improvement, real-time
 guarantees, cryptographic kernel authentication, or deployment readiness without
-the evidence required by the project testing policy.
+the evidence described in the [claim–evidence guide](docs/paper/EVIDENCE.md).
 
 Run the local gate before opening a pull request:
 

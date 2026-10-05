@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ORCHESTRA-OS Runtime Validation Report — 2026-08-14</title>
+  <style>
+    :root { color-scheme: light; --ink:#18212b; --muted:#5b6875; --line:#d9e0e7; --ok:#126b43; --warn:#8a5a00; --bg:#f6f8fa; }
+    body { margin:0; font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif; color:var(--ink); background:var(--bg); }
+    main { max-width:1100px; margin:0 auto; padding:36px 22px 64px; background:#fff; min-height:100vh; }
+    h1 { margin-top:0; font-size:2rem; } h2 { margin-top:2rem; border-bottom:1px solid var(--line); padding-bottom:.35rem; }
+    .verdict { border-left:5px solid var(--warn); background:#fff7e6; padding:16px 18px; margin:20px 0; }
+    .ok { color:var(--ok); font-weight:700; } .warn { color:var(--warn); font-weight:700; }
+    table { width:100%; border-collapse:collapse; margin:14px 0 20px; } th,td { border:1px solid var(--line); padding:9px 10px; text-align:left; vertical-align:top; } th { background:#eef2f5; }
+    code { background:#f0f3f5; padding:.1em .3em; border-radius:3px; } a { color:#075da8; }
+    ul { padding-left:1.3rem; } .small { color:var(--muted); font-size:.92rem; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>ORCHESTRA-OS Runtime Validation Report</h1>
+  <p class="small">Date: 2026-08-14 · Scope: source remediation and bounded VirtualBox sched_ext validation</p>
+
+  <div class="verdict">
+    <strong>Verdict: CONDITIONAL — suitable for a narrowly controlled first physical pilot, not deployment-ready.</strong>
+    <p>The remediated prototype passed the bounded VirtualBox runtime gate, including attach/detach, task ownership, action paths, deferred SLEEP/THROTTLE behavior, MIGRATE placement, fallback, and repeated lifecycle cycles. This is not evidence of physical-machine hotplug safety, long-duration stability, performance, or production readiness.</p>
+  </div>
+
+  <h2>1. Evidence and scope</h2>
+  <ul>
+    <li>VirtualBox guest: Linux v6.12.96 test kernel with BTF and sched_ext support.</li>
+    <li>Validation used the disposable VM and SSH control path; no host kernel replacement, reboot, root scheduler operation, or physical benchmark was performed.</li>
+    <li>Guest compile-only checks passed for the canonical and compatibility BPF objects, and the loader successfully completed verifier/struct_ops registration in the VM.</li>
+    <li>Detailed evidence: <a href="artifacts/test-results/vbox-runtime-2026-08-14/SUMMARY.md">VirtualBox runtime SUMMARY.md</a>.</li>
+  </ul>
+
+  <h2>2. Remediation completed</h2>
+  <table>
+    <thead><tr><th>Area</th><th>Implemented correction</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr><td>DSQ dispatch</td><td>Removed invalid global-DSQ consume path that caused immediate runtime detach.</td><td>Verifier/attach and runtime cycles passed.</td></tr>
+      <tr><td>Deferred actions</td><td>Added bounded deferred timer handling and a libbpf loader that pins all maps, including the timer map, before struct_ops attach.</td><td>SLEEP/THROTTLE deferred and released correctly; watchdog starvation was eliminated.</td></tr>
+      <tr><td>MIGRATE</td><td>Regular re-enqueue now uses legal <code>SCX_DSQ_LOCAL_ON</code> placement after online/affinity validation.</td><td>10/10 executions reached target CPU 3 with zero off-target runs.</td></tr>
+      <tr><td>Telemetry</td><td>Added deferred-timer, requested/dispatched/effective, fallback, and failure counters with ABI-size checks.</td><td>Status/readback and source regression tests passed.</td></tr>
+      <tr><td>Source/test hygiene</td><td>Updated map-role, ABI, loader, DSQ, and source-level regression coverage.</td><td><code>make check</code>, source tests, ASan/UBSan and compiler matrix passed.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3. Runtime validation matrix</h2>
+  <table>
+    <thead><tr><th>Scenario</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>RUN, YIELD peer, SLEEP, THROTTLE</td><td class="ok">PASS</td></tr>
+      <tr><td>Concurrent per-task directives</td><td class="ok">PASS</td></tr>
+      <tr><td>MIGRATE target placement</td><td class="ok">PASS (10/10 target CPU, 0 off-target)</td></tr>
+      <tr><td>Invalid CPU rejection</td><td class="ok">PASS (bridge rejected with rc 7)</td></tr>
+      <tr><td>Expired/stale directive fallback</td><td class="ok">PASS; fallback counters observed</td></tr>
+      <tr><td>Exact non-leader thread identity</td><td class="ok">PASS (TGID:TID:start-time identity)</td></tr>
+      <tr><td>RT admission separation</td><td class="ok">PASS; SCHED_FIFO task had no ORCHESTRA identity</td></tr>
+      <tr><td>Bounded fallback workload</td><td class="ok">PASS (24/24 tasks completed)</td></tr>
+      <tr><td>Attach/detach lifecycle</td><td class="ok">PASS (three cycles plus pre-pinned bridge contract cycle)</td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. Safe local tests</h2>
+  <ul>
+    <li><code>make check</code>: passed.</li>
+    <li><code>python3 tests/unit/test_orchestra_scx_source.py</code>: passed.</li>
+    <li><code>./tests/unit/run.sh</code>: complete; GCC ASan/UBSan, Clang, publication stress, bridge parser, and benchmark validators passed (30/30 named tests per compiler).</li>
+    <li><code>git diff --check</code>: passed.</li>
+    <li>Guest strict C builds and non-privileged BPF compile-only checks: passed.</li>
+  </ul>
+
+  <h2>5. What remains runtime-only</h2>
+  <p>These properties were not claimed as proven by this report and require a later, explicitly controlled test:</p>
+  <ul>
+    <li>physical-machine CPU hotplug/offline transitions and affinity topology;</li>
+    <li>long-duration watchdog, detach, bridge-crash, and recovery behavior;</li>
+    <li>physical scheduler latency, fairness, overhead, and thermal/NUMA effects;</li>
+    <li>actual MIGRATE behavior under physical contention and hotplug races;</li>
+    <li>production-kernel/BTF/API compatibility beyond the validated guest kernel;</li>
+    <li>performance benchmarks, stress campaigns, and deployment-readiness gates.</li>
+  </ul>
+
+  <h2>6. Conditions for the first physical pilot</h2>
+  <ol>
+    <li>Use a disposable dedicated host with out-of-band console access and a tested detach/rollback command.</li>
+    <li>Verify the exact kernel config, sched_ext API, BTF, CPU topology, and map/loader compatibility before attaching.</li>
+    <li>Start with no production or real-time workloads; use bounded disposable CPU tasks only.</li>
+    <li>Capture baseline scheduling and system-health telemetry before attach, and set explicit abort thresholds.</li>
+    <li>Stop immediately on watchdog warnings, missing progress, unexpected fallback growth, illegal placement, or host health degradation.</li>
+  </ol>
+
+  <h2>7. Final recommendation</h2>
+  <p class="warn">Do not describe ORCHESTRA-OS as generally “ready for real-world testing.” Describe it as <strong>conditionally ready for the first controlled physical-machine pilot after preflight and rollback checks</strong>. The VirtualBox gate materially reduces source/runtime risk, but it does not replace physical-machine validation.</p>
+
+  <p class="small">This report records code-level and bounded-VM evidence only. It does not claim verifier acceptance, sched_ext safety, performance, or recovery on an arbitrary production kernel.</p>
+</main>
+</body>
+</html>

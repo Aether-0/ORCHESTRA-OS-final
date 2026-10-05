@@ -7,8 +7,17 @@ if [ "$#" -ne 3 ]; then
 fi
 PACKAGE=$1
 FORMAT=$2
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+EXPECTED_VERSION=$(tr -d "\n" < "$ROOT/VERSION")
 DISTRO=$3
 [ -f "$PACKAGE" ] || { echo "package not found: $PACKAGE" >&2; exit 1; }
+
+check_native_cli() {
+    local binary=$1 expected=$2 output status=0
+    output=$("$binary" --help 2>&1) || status=$?
+    [ "$status" -eq "$expected" ]
+    printf '%s\n' "$output" | grep -qi usage
+}
 
 before_state=unavailable
 if [ -r /sys/kernel/sched_ext/state ]; then
@@ -22,7 +31,10 @@ case "$FORMAT" in
     deb)
         dpkg -i "$PACKAGE" >/dev/null
         command=/usr/bin/orchestra
-        "$command" version | grep -q 'ORCHESTRA-OS 1.0.0'
+        "$command" version | grep -Fx "ORCHESTRA-OS $EXPECTED_VERSION"
+        "$command" paper-cpu --help >/dev/null
+        check_native_cli /var/lib/orchestra-os/build/orchestra_bridge 1
+        check_native_cli /var/lib/orchestra-os/build/orchestra_loader 2
         test -f /usr/lib/orchestra-os/.package-managed
         if "$command" install >/tmp/orchestra-package-install.out 2>/tmp/orchestra-package-install.err; then
             echo "package-managed install unexpectedly succeeded" >&2
@@ -35,9 +47,12 @@ case "$FORMAT" in
         dpkg --purge orchestra-os >/dev/null
         ;;
     rpm)
-        rpm -Uvh --replacepkgs --nodeps "$PACKAGE" >/dev/null
+        rpm -Uvh --replacepkgs "$PACKAGE" >/dev/null
         command=/usr/bin/orchestra
-        "$command" version | grep -q 'ORCHESTRA-OS 1.0.0'
+        "$command" version | grep -Fx "ORCHESTRA-OS $EXPECTED_VERSION"
+        "$command" paper-cpu --help >/dev/null
+        check_native_cli /var/lib/orchestra-os/build/orchestra_bridge 1
+        check_native_cli /var/lib/orchestra-os/build/orchestra_loader 2
         test -f /usr/lib/orchestra-os/.package-managed
         if "$command" uninstall >/tmp/orchestra-package-uninstall.out 2>/tmp/orchestra-package-uninstall.err; then
             echo "package-managed uninstall unexpectedly succeeded" >&2
@@ -46,13 +61,16 @@ case "$FORMAT" in
         grep -q package-managed /tmp/orchestra-package-uninstall.err
         rpm -e orchestra-os >/dev/null
         test -f "$operator_file"
-        rpm -Uvh --replacepkgs --nodeps "$PACKAGE" >/dev/null
+        rpm -Uvh --replacepkgs "$PACKAGE" >/dev/null
         rpm -e orchestra-os >/dev/null
         ;;
     apk)
         apk add --allow-untrusted "$PACKAGE" >/dev/null
         command=/usr/bin/orchestra
-        "$command" version | grep -q 'ORCHESTRA-OS 1.0.0'
+        "$command" version | grep -Fx "ORCHESTRA-OS $EXPECTED_VERSION"
+        "$command" paper-cpu --help >/dev/null
+        check_native_cli /var/lib/orchestra-os/build/orchestra_bridge 1
+        check_native_cli /var/lib/orchestra-os/build/orchestra_loader 2
         test -f /usr/lib/orchestra-os/.package-managed
         if "$command" install >/tmp/orchestra-package-install.out 2>/tmp/orchestra-package-install.err; then
             echo "package-managed install unexpectedly succeeded" >&2
@@ -63,6 +81,24 @@ case "$FORMAT" in
         test -f "$operator_file"
         apk add --allow-untrusted "$PACKAGE" >/dev/null
         apk del orchestra-os >/dev/null
+        ;;
+    pacman)
+        pacman -U --noconfirm "$PACKAGE" >/dev/null
+        command=/usr/bin/orchestra
+        "$command" version | grep -Fx "ORCHESTRA-OS $EXPECTED_VERSION"
+        "$command" paper-cpu --help >/dev/null
+        "$command" paper-cpu --help >/dev/null
+        check_native_cli /var/lib/orchestra-os/build/orchestra_bridge 1
+        check_native_cli /var/lib/orchestra-os/build/orchestra_loader 2
+        test -f /usr/lib/orchestra-os/.package-managed
+        if "$command" install >/tmp/orchestra-package-install.out 2>/tmp/orchestra-package-install.err; then
+            echo "package-managed install unexpectedly succeeded" >&2; exit 1
+        fi
+        grep -q package-managed /tmp/orchestra-package-install.err
+        pacman -R --noconfirm orchestra-os >/dev/null
+        test -f "$operator_file"
+        pacman -U --noconfirm "$PACKAGE" >/dev/null
+        pacman -R --noconfirm orchestra-os >/dev/null
         ;;
     *)
         echo "unsupported format: $FORMAT" >&2

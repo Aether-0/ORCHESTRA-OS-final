@@ -1,10 +1,14 @@
 cff-version: 1.2.0
+message: "Please cite the software version used and record its experiment artifacts."
 title: ORCHESTRA-OS
-version: 1.0.1-rc1
+version: 1.1.0
 authors:
-  - family-names: Aether-0
-repository-code: https://github.com/Aether-0/ORCHESTRA-OS-Public
-license: MIT
+  - family-names: Zaw
+    given-names: San Wana
+repository-code: https://github.com/Aether-0/ORCHESTRA-OS-final
+license:
+  - MIT
+  - GPL-2.0-only
 type: software
 abstract: >-
   Capability-tiered Linux scheduling research prototype with a safe observer

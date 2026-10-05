@@ -1,231 +1,155 @@
 # ORCHESTRA-OS
 
-ORCHESTRA-OS is a research-grade, capability-tiered Linux scheduling
-prototype that coordinates observed runtime state, bounded prediction,
-policy, controller gates, and sched_ext actions. The current product line is
-`1.0.1-rc1`, an offline-validated hardening candidate based on the research-stable
-`1.0.0` observer/control plane and native package lifecycle. Privileged sched_ext verifier, attachment, ownership, and
-hardware-runtime behavior remain target-specific experimental gates.
+Research software for **signal-coordinated process scheduling on Linux sched_ext**.
+The architecture combines shared runtime signals, predictive state, adaptive
+per-task actions, and coordination feedback. The submitted paper reports a
+bounded kernel implementation and evaluation on one laptop; the earlier
+architecture study used simulation.
 
-The safe default is observer/userspace operation. Kernel scheduling is
-target-specific and is enabled only after the host capability check, a
-target-matched BPF build, exact map/schema validation, and administrator
-activation. When a capability, signal, policy, controller, or action check
-fails, the scheduler preserves a bounded last-known-good/observed state and
-falls back to `RUN` or conventional Linux scheduling.
+[Paper and evidence](docs/paper/README.md) · [Reproduction](docs/paper/REPRODUCIBILITY.md) ·
+[Latest release](https://github.com/Aether-0/ORCHESTRA-OS-final/releases/latest) ·
+[Architecture](docs/architecture/ORCHESTRA_OS_ARCHITECTURE.md) · [Limitations](LIMITATIONS.md)
 
-## Architecture
+## Paper and results
+
+**Signal-Coordinated Process Scheduling on Linux sched_ext: Design,
+Implementation, and Bounded Evaluation of ORCHESTRA-OS** is submitted to
+IEEE Access. Submission is not acceptance or publication. See the
+[paper guide](docs/paper/README.md) for authors, available materials, and
+citation boundaries.
+
+The archived evidence supports a workload-specific foreground/background
+trade-off, not general scheduler superiority:
+
+| Archived observation | Result | Interpretation |
+| --- | --- | --- |
+| Foreground image workload, 20 counterbalanced pairs | Mean paired completion-time reduction 74.24% (95% paired t interval 72.72–75.76%) | Background CPU service fell 97.69%; a resource-control comparison remains unrun. |
+| Pure CPU fixed work, 3 repetitions per mode | Completion-time ratios 1.58–2.05 relative to default Linux | Pure CPU throughput worsened. |
+| Mixed CPU/I/O fixed work, 3 repetitions per mode | Completion-time ratios 0.86–0.94 | Small-sample directional observation. |
+
+The [evidence map](docs/paper/EVIDENCE.md) links raw tables, negative results,
+ownership gates, thermal confounding, action limitations, and the unexecuted
+three-condition protocol. CSV label `cfs` denotes the historical default-Linux
+baseline; on the recorded modern kernels this is the EEVDF scheduling path.
+
+The [earlier Figshare dataset](https://doi.org/10.6084/m9.figshare.32925431.v1)
+contains simulation materials. It is separate from the submitted hardware
+paper and is not a verified DOI for the September hardware supplement.
+
+## Architecture and scope
 
 ```mermaid
-flowchart TD
-    H[Hardware and kernel runtime] --> A[State acquisition]
-    A --> S[Versioned Signal Bus]
-    S --> W[Historical state window]
-    W --> P[Bounded prediction and confidence]
-    P --> B[Scheduler state builder]
-    B --> L[Policy lookup]
-    L --> C[Controller and safety gate]
-    C --> V[Capability and action validation]
-    V --> X[RUN / YIELD / MIGRATE / THROTTLE / SLEEP]
-    X --> E[sched_ext execution or safe fallback]
-    E --> O[Scheduler observations]
-    O --> Q[S1 / S2 / S3 / S4 and geometric-mean Q]
-    Q --> F[Deficit classification and bounded actuators]
+flowchart LR
+    A[Runtime state] --> B[Shared signal and prediction]
+    B --> C[Policy and safety gates]
+    C --> D[RUN / SLEEP / MIGRATE / THROTTLE / YIELD]
+    D --> E[sched_ext action or Linux fallback]
+    E --> F[Observations and coordination feedback]
     F --> C
 ```
 
-The canonical decision path is one pipeline:
+The five canonical actions are `RUN`, `SLEEP`, `MIGRATE`, `THROTTLE`, and
+`YIELD`. The coordination aggregate is `Q = (S1 × S2 × S3 × S4)^(1/4)`;
+all four components and the observation window are needed to interpret Q.
+Temporal stability S4 is retained to detect synchronized switching.
 
-```text
-read signal → read prediction → build state → policy lookup
-→ controller gate → validate action → execute action → record result
+| Layer | Evidence boundary |
+| --- | --- |
+| Userspace control and signal prototype | Portable build, unit, integration, and security regressions. Linux still performs scheduling. |
+| Opt-in sched_ext prototype and bridge | Historical target-specific lifecycle, ownership, and action evidence; current privileged runtime gates remain separate. |
+| Deployment, universal speedup, hard RT, distributed scheduling | Not established by this release. |
+
+See [research-to-code mapping](docs/research/RESEARCH_TO_CODE.md) and
+[current product status](FINAL_PRODUCT_STATUS.md). Kernel maps use identity,
+schema, and freshness gates; this is not a claim of kernel-side cryptographic
+signal authentication. Userspace HMAC experiments are identified separately.
+
+## Get the source
+
+```bash
+git clone https://github.com/Aether-0/ORCHESTRA-OS-final.git
+cd ORCHESTRA-OS-final
 ```
 
-The five actions are exactly `RUN`, `SLEEP`, `MIGRATE`, `THROTTLE`, and
-`YIELD`. Action records retain requested, controller-adjusted,
-capability-adjusted, actual, and fallback outcomes separately.
+For a fixed version, check out `v1.1.0`. The [latest release](https://github.com/Aether-0/ORCHESTRA-OS-final/releases/latest)
+provides source ZIP/TAR.GZ and native packages for passing Linux targets,
+`SHA256SUMS`, package SBOMs, build provenance, and platform results.
+Verify downloads with `sha256sum -c SHA256SUMS` before extraction.
+Version 1.1.0 adds the cleaned paper documentation and a 35-target native
+package pipeline. Scheduler implementation and tests retain the reviewed
+upstream revision `4c1fb8a`. Historical paper measurements belong
+to their recorded artifacts, not automatically to this release.
 
-The corrected coordination index is:
+## Validate without loading a scheduler
 
-```text
-Q = (S1 × S2 × S3 × S4)^(1/4)
-```
-
-All four component scores and the aggregation window are required for a
-valid Q report. Temporal stability (`S4`) is retained so synchronized mass
-switching cannot appear healthy merely because actions agree at one instant.
-
-## Product boundaries and capability tiers
-
-| Tier | Behavior | Current evidence |
-| --- | --- | --- |
-| Observer | Portable userspace simulation, prediction/metrics contracts, diagnostics, and reports; no scheduling changes | Build, unit, integration, and source checks pass |
-| Safe canary | Target-matched sched_ext object, exact map negotiation, explicit opt-in, bounded fallback, and loader-scoped cleanup | Kernel prototype source/build validated; live gate requires privilege and a compatible host |
-| Certified kernel | sched_ext ownership, all action outcomes, RT bypass, watchdog/recovery, soak, and rollback evidence | Not claimed by this research-stable release |
-| Conventional fallback | CFS/EEVDF remains active whenever ORCHESTRA cannot safely own or decide | Implemented as the fail-closed boundary |
-
-Current ABI contracts are additive and explicit: bridge ABI v2, kernel state
-ABI v8, and native coordination/controller ABI v10, bundled by the product
-ABI v1 header. The sched_ext BPF object is built against the target kernel's
-BTF/UAPI and is not a universal binary. The stable source entry point is
-`kernel/sched_ext/bpf/orchestra_sched.bpf.c`; the historical stage7 filename
-is retained as the compatibility implementation body and output name.
-
-## Quick start: observer and source validation
-
-The release workflow publishes native all-in-one packages for Ubuntu
-24.04/26.04, Debian 13, Fedora 44, and Alpine 3.24 on amd64/x86_64 and
-arm64/aarch64. Package installation is observer-only and never compiles or
-attaches sched_ext. See the [research-stable release guide](docs/releases/v1.0.0-research-stable.md)
-for checksums, attestations, and target-kernel activation boundaries.
-
-From the repository root:
+Requirements: Linux, a C compiler, make, and Python 3. Clang enables the
+additional compiler checks. Run from a writable source tree:
 
 ```bash
 ./scripts/orchestra version
-./scripts/orchestra check-system
-make clean
 make
 make check
 make test
-./scripts/orchestra validate
+python3 scripts/check-doc-links.py
+./scripts/check-system.sh --json
 ```
 
-The check is non-mutating by default. Use `./scripts/check-system.sh --json`
-for machine-readable output. `--strict` is required before kernel activation
-and fails unless the host passes the kernel capability gate.
+`make test` includes the static, unit, integration, and security gates. These
+commands do not attach sched_ext. The [reproduction guide](docs/paper/REPRODUCIBILITY.md)
+separates current-source validation, archived-data analysis, and exact
+historical hardware replication. A passing build does not prove ownership
+or effective action execution in the kernel.
 
-Build userspace and the bridge into an external directory:
+Optional userspace/bridge build, into an external build directory:
 
 ```bash
 ./scripts/build.sh --userspace --bridge
 ```
 
-Build the target-matched scheduler only after the compatibility check passes
-and an exact kernel source export is available:
+The optional loader needs libbpf development headers. For target-matched
+kernel build, installation, activation, telemetry, and scoped unload, use the
+[installation](docs/installation/INSTALL.md) and [usage](docs/usage/USAGE.md)
+guides. Native packages and hosted attestations are not included in this
+source release. Kernel activation requires explicit administrator action.
 
-```bash
-ORCHESTRA_KERNEL_SRC=/lib/modules/"$(uname -r)"/build \
-  ./scripts/build.sh --kernel
+## Repository layout
+
+```text
+ORCHESTRA-OS/
+├── docs/                    Paper guide, evidence tables, architecture and operator guides
+│   ├── paper/               Data dictionary, provenance, checksummed tables and protocol
+│   ├── validation/          Dated software validation and hardening reports
+│   └── history/             Earlier reports and checklists
+├── orchestra_paper_cpu_demo/ Canonical userspace prototype
+├── kernel/sched_ext/        BPF scheduler, ABI headers, bridge and loader source
+├── userspace/               Control-plane overview
+├── tests/                   Unit, integration and security regressions
+├── benchmarks/              Existing hardware and publication benchmarks
+├── experiments/             Versioned manifests and metric schemas
+├── tools/                   Benchmark, plotting and evidence utilities
+├── scripts/                 Build, capability, lifecycle and release tools
+├── config/                  Example policies and service configuration
+├── examples/                Documented usage examples
+├── packaging/               Separate native-package tooling
+├── research/                Non-canonical exploratory prototypes
+└── artifacts/               Historical measurements, logs and failure records
 ```
 
-The builder records BTF, UAPI, helper-definition, compiler, source, and
-artifact hashes in `ORCHESTRA_BUILD_DIR/build-manifest.txt`. It refuses a
-kernel-version mismatch and never writes generated files into the source
-tree.
+Start with the [documentation index](docs/README.md). Historical campaigns
+are indexed in [artifacts/README.md](https://github.com/Aether-0/ORCHESTRA-OS-final/blob/v1.1.0/artifacts/README.md); their outcomes and
+protocols apply to their recorded revisions. The copied Linux header tree
+and generated host binaries are excluded from the current publication.
+Their inventory and prior Git revision remain recorded for provenance.
 
-## Install, run, inspect, disable
+## Citation and licensing
 
-The installer preserves existing configuration and never enables a scheduler
-implicitly:
+Use [CITATION.cff](CITATION.cff) to cite the software version used in your
+work, and record the commit, kernel, build hashes, and experiment protocol.
+The [paper guide](docs/paper/README.md) distinguishes the submitted manuscript
+from the existing simulation dataset. No final article DOI is asserted.
 
-```bash
-sudo ./scripts/install.sh
-sudo /usr/local/bin/orchestra status
-```
-
-The command above installs the observer/control-plane package. Kernel files
-are installed only when explicitly requested with a target-matched build:
-
-```bash
-ORCHESTRA_BUILD_DIR=/var/tmp/orchestra-os-build-$(id -u)
-sudo ./scripts/install.sh --with-kernel --build-dir "$ORCHESTRA_BUILD_DIR"
-```
-
-After an administrator-approved runtime gate, the scx-style foreground
-workflow is:
-
-```bash
-sudo /usr/local/bin/orchestra run --interval 5
-# Ctrl-C verifies the foreground cleanup path and returns to conventional scheduling
-```
-
-For a persistent service, install the optional unit and enable it explicitly:
-
-```bash
-sudo systemctl enable --now orchestra.service
-sudo /usr/local/bin/orchestra status
-sudo /usr/local/bin/orchestra telemetry
-sudo /usr/local/bin/orchestra disable
-sudo /usr/local/bin/orchestra uninstall --keep-config
-```
-
-`run` owns the foreground attach and detaches only an instance it attached.
-`enable` is the detached/manual equivalent. Both perform a strict capability
-check, require root-owned non-symlink kernel artifacts whose hashes match the
-build manifest, use schema-checked loader attach, and verify scheduler
-ownership. `disable` refuses to detach a foreign sched_ext owner, waits for
-the kernel to report `disabled`, and the loader removes only its own
-`/sys/fs/bpf/orchestra` pins.
-
-If the host or build cannot pass these gates, stay in observer mode. Do not
-copy a BPF object from another kernel and do not use a generic `kill` or broad
-bpffs cleanup as a scheduler recovery mechanism.
-
-## Policies and telemetry
-
-Configuration examples are in [`config/examples`](config/examples), with
-field/range documentation in [`config/README.md`](config/README.md). A
-policy can be checked without touching maps:
-
-```bash
-./scripts/policy_load.py \
-  --bridge /var/tmp/orchestra-os-build-"$(id -u)"/orchestra_bridge \
-  --dry-run config/examples/adaptive.json
-```
-
-When kernel mode is active, publish and inspect it through the control plane:
-
-```bash
-sudo orchestra policy load /etc/orchestra-os/safe.json
-sudo orchestra policy show
-sudo orchestra controller status
-sudo orchestra telemetry
-```
-
-## Documentation
-
-- [Architecture](docs/architecture/ORCHESTRA_OS_ARCHITECTURE.md)
-- [Installation](docs/installation/INSTALL.md)
-- [Usage](docs/usage/USAGE.md)
-- [Troubleshooting](docs/troubleshooting/TROUBLESHOOTING.md)
-- [Developer guide](docs/development/DEVELOPMENT.md)
-- [Research-to-code mapping](docs/research/RESEARCH_TO_CODE.md)
-- [Final validation report](docs/validation/FINAL_VALIDATION_REPORT.md)
-- [Final product status](FINAL_PRODUCT_STATUS.md)
-- [Maintained diagrams](docs/diagrams/README.md)
-- [Security model and operator checklist](docs/security/SECURITY.md)
-- [Security audit](SECURITY_AUDIT.md)
-- [Security findings ledger](SECURITY_FINDINGS.md)
-- [Threat model](THREAT_MODEL.md)
-- [Security testing](SECURITY_TESTING.md)
-- [Limits and constraint rationale](LIMITATIONS.md)
-- [Security validation report](SECURITY_VALIDATION_REPORT.md)
-- [Foreground runtime example](examples/runtime/README.md)
-
-## Research and claim discipline
-
-The paper is the algorithmic authority for the pre-kernel simulation. Its
-reported seed-42 and sensitivity values are not real-machine measurements.
-The repository keeps historical experiments and VM evidence as archival
-material; current claims are bounded by the evidence class recorded in
-`FINAL_PRODUCT_STATUS.md` and the validation report. No universal speedup
-over CFS/EEVDF is claimed.
-
-## License
-
-The product licensing notice is in [`LICENSE`](LICENSE). Kernel-facing files
-carry their own GPL-2.0 SPDX notices, and inherited research/third-party
-material retains its component license.
-
-## Hardening candidate
-
-See [candidate changes and validation](docs/validation/HARDENING_1_0_1.md).
-`bash scripts/realworld_artifact_bundle.sh /absolute/build-directory` checks
-one explicit root-owned runtime bundle without loading it. Kernel identity,
-file hashes and path permissions must all match. No fallback replaces an
-explicit invalid bundle.
-
-`scripts/verify-release.sh` validates historical tar/CycloneDX bundles from
-trusted publishers; it runs the packaged version/help commands. Native
-DEB/RPM/APK releases instead use their published SHA256SUMS and SPDX records.
+Original userspace, tooling, and documentation are MIT-licensed; kernel-facing
+files carry GPL-2.0 SPDX notices. Inherited components retain their licenses.
+See [LICENSE](LICENSE), [NOTICE](NOTICE), and file-level SPDX notices.
+For contributions and support, see [CONTRIBUTING.md](CONTRIBUTING.md),
+[SUPPORT.md](SUPPORT.md), and the [security guide](docs/security/SECURITY.md).

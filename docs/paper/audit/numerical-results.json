@@ -1,0 +1,11 @@
+{
+  "P20_pairs": 20,
+  "mean_paired_reduction_pct": 74.24047875615813,
+  "paired_t_95_ci": [
+    72.72171219813164,
+    75.75924531418461
+  ],
+  "background_service_reduction_pct": 97.6851329304206,
+  "FW_summary_rows_verified": 7,
+  "all_copied_data_byte_preserved": true
+}

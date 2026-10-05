@@ -1,0 +1,11 @@
+mode,rep,elapsed_ms,bg_headstart_ms,fg_rc,verify_ok,owned,throttle_acc,throttle_def,deferred_rel,bg_alive,bg_ticks,bpf_runtime_ns,context_delta,temp_before_mC,temp_after_mC,package_throttle_delta,state_after,stderr_nonempty
+cfs,1,10182,844,0,1,n/a,0,0,0,8,6171,0,331319,97000,97000,2012,disabled,0
+cfs,2,13580,847,0,1,n/a,0,0,0,8,7951,0,328430,97000,78000,377,disabled,0
+cfs,3,14427,855,0,1,n/a,0,0,0,8,8463,0,358696,96000,79000,123,disabled,0
+cfs,4,14170,848,0,1,n/a,0,0,0,8,8215,0,348377,97000,80000,168,disabled,0
+cfs,5,13505,853,0,1,n/a,0,0,0,8,7929,0,350406,97000,80000,417,disabled,0
+orchestra,1,4859,748,0,1,yes,131,48,40,8,159,1638825204,248366,55000,64000,160,disabled,0
+orchestra,2,5074,751,0,1,yes,129,48,40,8,165,1689541276,251857,65000,73000,261,disabled,0
+orchestra,3,5112,746,0,1,yes,131,48,40,8,164,1678989359,251874,64000,83000,292,disabled,0
+orchestra,4,4900,749,0,1,yes,131,48,40,8,165,1696341033,249686,66000,75000,249,disabled,0
+orchestra,5,5748,739,0,1,yes,153,56,48,8,177,1826119925,251365,67000,69000,261,disabled,0

@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>ORCHESTRA-OS Deep Kernel and Algorithm Code Review - 2026-08-14</title>
+  <style>
+    :root {
+      --ink: #182228;
+      --muted: #58676e;
+      --paper: #fffdf8;
+      --canvas: #ede9df;
+      --line: #d4cec0;
+      --navy: #123947;
+      --teal: #0b6e75;
+      --green: #26734d;
+      --amber: #a76800;
+      --orange: #bd4c20;
+      --red: #a3222c;
+      --red-soft: #f8e7e8;
+      --amber-soft: #fff2d8;
+      --green-soft: #e7f4eb;
+      --blue-soft: #e7f2f4;
+      --shadow: 0 12px 34px rgba(24, 34, 40, .08);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(900px 480px at 5% -8%, #cfe7e8 0, transparent 62%),
+        linear-gradient(180deg, #e8e3d9, var(--canvas) 34rem);
+      font: 15px/1.58 "Segoe UI", "Source Sans 3", Arial, sans-serif;
+    }
+    a { color: var(--teal); text-underline-offset: 2px; }
+    code, pre, .mono { font-family: "IBM Plex Mono", Consolas, monospace; }
+    code { font-size: .9em; }
+    .page { max-width: 1320px; margin: 0 auto; padding: 30px 18px 72px; }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 38px;
+      color: #f7fbfb;
+      background: linear-gradient(125deg, #102d39, #0e5961 72%, #14716c);
+      border: 1px solid #0d3037;
+      box-shadow: var(--shadow);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 370px;
+      height: 370px;
+      right: -140px;
+      top: -190px;
+      border: 56px solid rgba(255,255,255,.07);
+      border-radius: 50%;
+    }
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font: 700 12px/1.2 Consolas, monospace;
+      opacity: .88;
+    }
+    h1, h2 { font-family: Georgia, "Times New Roman", serif; }
+    h1 {
+      max-width: 920px;
+      margin: 10px 0 13px;
+      font-size: clamp(32px, 5vw, 54px);
+      line-height: 1.04;
+      font-weight: 600;
+    }
+    .lede { max-width: 940px; margin: 0; color: #d8e8e9; font-size: 18px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+    .chip {
+      padding: 5px 9px;
+      border: 1px solid rgba(255,255,255,.3);
+      background: rgba(255,255,255,.08);
+      font: 700 12px/1.2 Consolas, monospace;
+    }
+    .meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 24px 0 0; }
+    .meta div { padding: 12px; border: 1px solid rgba(255,255,255,.17); background: rgba(0,0,0,.18); }
+    .meta dt { color: #a9c8ca; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; }
+    .meta dd { margin: 4px 0 0; font: 600 13px/1.4 Consolas, monospace; }
+    .verdict {
+      display: grid;
+      grid-template-columns: 90px 1fr;
+      margin: 18px 0 0;
+      border: 1px solid #deb068;
+      background: var(--amber-soft);
+      box-shadow: var(--shadow);
+    }
+    .verdict .mark { display: grid; place-items: center; color: white; background: var(--amber); font: 800 26px Consolas, monospace; }
+    .verdict .copy { padding: 18px 22px; }
+    .verdict strong { color: #684300; font-size: 20px; }
+    .verdict p { margin: 5px 0 0; }
+    .layout { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 20px; margin-top: 20px; align-items: start; }
+    nav {
+      position: sticky;
+      top: 14px;
+      max-height: calc(100vh - 28px);
+      overflow: auto;
+      padding: 18px;
+      border: 1px solid var(--line);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    nav h2 { margin: 0 0 10px; color: var(--navy); font: 700 13px/1.2 Consolas, monospace; text-transform: uppercase; }
+    nav ol { margin: 0; padding-left: 22px; }
+    nav li { margin: 5px 0; color: var(--muted); font-size: 12px; }
+    nav a { color: var(--navy); text-decoration: none; }
+    main { min-width: 0; }
+    section {
+      margin: 0 0 18px;
+      padding: 25px;
+      border: 1px solid var(--line);
+      background: var(--paper);
+      box-shadow: 0 5px 18px rgba(24,34,40,.04);
+    }
+    section > h2 {
+      margin: 0 0 16px;
+      padding-bottom: 8px;
+      color: var(--navy);
+      border-bottom: 1px solid var(--line);
+      font-size: 25px;
+      line-height: 1.2;
+    }
+    h3 { margin: 20px 0 8px; color: #244a55; font-size: 17px; }
+    p { margin: 8px 0; }
+    ul, ol { margin: 8px 0 8px 22px; padding: 0; }
+    li { margin: 4px 0; }
+    pre {
+      overflow: auto;
+      margin: 12px 0;
+      padding: 14px 16px;
+      border: 1px solid #bfd0d1;
+      background: #f0f6f6;
+      color: #173844;
+      font-size: 12px;
+      line-height: 1.48;
+    }
+    .grid2, .grid3, .grid4 { display: grid; gap: 12px; }
+    .grid2 { grid-template-columns: repeat(2, 1fr); }
+    .grid3 { grid-template-columns: repeat(3, 1fr); }
+    .grid4 { grid-template-columns: repeat(4, 1fr); }
+    .kpi { padding: 14px; border: 1px solid var(--line); background: #fffaf1; }
+    .kpi .label { color: var(--muted); text-transform: uppercase; letter-spacing: .07em; font-size: 11px; font-weight: 700; }
+    .kpi .value { margin-top: 3px; color: var(--navy); font: 800 24px/1.15 Consolas, monospace; }
+    .kpi .note { margin-top: 4px; color: var(--muted); font-size: 12px; }
+    .callout { margin: 13px 0; padding: 12px 15px; border-left: 5px solid var(--teal); background: var(--blue-soft); }
+    .callout.danger { border-color: var(--red); background: var(--red-soft); }
+    .callout.warn { border-color: var(--amber); background: var(--amber-soft); }
+    .callout.ok { border-color: var(--green); background: var(--green-soft); }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+    th, td { padding: 8px 9px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--navy); background: #eaf1f1; text-transform: uppercase; letter-spacing: .035em; font-size: 11px; }
+    tr:nth-child(even) td { background: #fbf8f2; }
+    .tag { display: inline-block; padding: 3px 7px; color: white; font: 800 11px/1.3 Consolas, monospace; white-space: nowrap; }
+    .k0, .a0 { background: var(--red); }
+    .k1, .a1 { background: var(--orange); }
+    .a2 { background: var(--amber); }
+    .exact { background: var(--green); }
+    .approx { background: var(--teal); }
+    .incomplete { background: var(--amber); }
+    .wrong { background: var(--red); }
+    .finding {
+      margin: 14px 0;
+      padding: 0;
+      border: 1px solid var(--line);
+      background: #fffaf3;
+    }
+    .finding h3 {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0;
+      padding: 11px 13px;
+      color: var(--navy);
+      background: #ece8df;
+      border-bottom: 1px solid var(--line);
+      font: 800 14px/1.3 Consolas, monospace;
+    }
+    .finding dl {
+      display: grid;
+      grid-template-columns: 170px minmax(0, 1fr);
+      margin: 0;
+    }
+    .finding dt, .finding dd { margin: 0; padding: 7px 11px; border-bottom: 1px solid #e5dfd4; }
+    .finding dt { color: var(--muted); font-weight: 700; background: #faf6ee; }
+    .finding dd { overflow-wrap: anywhere; }
+    .finding dt:last-of-type, .finding dd:last-of-type { border-bottom: 0; }
+    .small { color: var(--muted); font-size: 12px; }
+    .decision {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 12px 0;
+    }
+    .decision div { padding: 14px; border: 1px solid var(--line); background: #faf7f0; }
+    .decision strong { display: block; margin-bottom: 4px; color: var(--navy); }
+    footer { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      nav { position: static; max-height: none; }
+      .meta, .grid4 { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 660px) {
+      .page { padding: 10px 7px 40px; }
+      .hero, section { padding: 18px; }
+      .meta, .grid2, .grid3, .grid4, .decision { grid-template-columns: 1fr; }
+      .verdict { grid-template-columns: 52px 1fr; }
+      .finding dl { grid-template-columns: 1fr; }
+      .finding dt { border-bottom: 0; padding-bottom: 2px; }
+      .finding dd { padding-top: 2px; }
+    }
+    @media print {
+      body { background: white; font-size: 10pt; }
+      .page { max-width: none; padding: 0; }
+      .hero, section, nav, .verdict { box-shadow: none; }
+      nav { position: static; max-height: none; }
+      .layout { display: block; }
+      section { page-break-inside: auto; }
+      tr, .finding, .kpi, .callout { break-inside: avoid; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <div class="eyebrow">ORCHESTRA-OS - Pre-real-machine scientific systems audit</div>
+    <h1>Deep Kernel + Algorithm Code Review</h1>
+    <p class="lede">Source-first review of the Linux sched_ext/eBPF scheduler, its userspace bridge, the canonical ORCHESTRA algorithms, and the semantic translation between them.</p>
+    <div class="chips">
+      <span class="chip">No code modified during audit</span>
+      <span class="chip">No BPF load or attach</span>
+      <span class="chip">No root operations</span>
+      <span class="chip">Linux 6.12 target semantics</span>
+      <span class="chip">Safe local tests passed</span>
+    </div>
+    <dl class="meta">
+      <div><dt>Reviewed commit</dt><dd>d4e765c</dd></div>
+      <div><dt>Review date</dt><dd>2026-08-14</dd></div>
+      <div><dt>Kernel verdict</dt><dd>CONDITIONAL - FIX K0 FIRST</dd></div>
+      <div><dt>Algorithm verdict</dt><dd>CONSISTENT WITH GAPS</dd></div>
+    </dl>
+  </header>
+
+  <div class="verdict" role="note" aria-label="Executive verdict">
+    <div class="mark">!</div>
+    <div class="copy">
+      <strong>Not ready for the first physical-machine test in the current state.</strong>
+      <p>Six K0 blockers must be corrected and revalidated in the verifier and VirtualBox before a tightly controlled, isolated real-machine functional test is justified.</p>
+    </div>
+  </div>
+
+  <div class="layout">
+    <nav aria-label="Report contents">
+      <h2>Report sections</h2>
+      <ol>
+        <li><a href="#s1">Kernel verdict</a></li>
+        <li><a href="#s2">Algorithm verdict</a></li>
+        <li><a href="#s3">Kernel architecture trace</a></li>
+        <li><a href="#s4">sched_ext callback review</a></li>
+        <li><a href="#s5">Ownership review</a></li>
+        <li><a href="#s6">Maps and concurrency</a></li>
+        <li><a href="#s7">DSQ and CPU placement</a></li>
+        <li><a href="#s8">Five-action semantics</a></li>
+        <li><a href="#s9">Fairness and starvation</a></li>
+        <li><a href="#s10">Predictor review</a></li>
+        <li><a href="#s11">RL/adaptive policy</a></li>
+        <li><a href="#s12">S1/S2/S3/S4/Q</a></li>
+        <li><a href="#s13">Anti-synchronization</a></li>
+        <li><a href="#s14">Feedback controller</a></li>
+        <li><a href="#s15">Kernel/algorithm mapping</a></li>
+        <li><a href="#s16">Disconnected components</a></li>
+        <li><a href="#s17">Complexity and feasibility</a></li>
+        <li><a href="#s18">K0 findings</a></li>
+        <li><a href="#s19">K1 findings</a></li>
+        <li><a href="#s20">A0/A1 findings</a></li>
+        <li><a href="#s21">Required fixes</a></li>
+        <li><a href="#s22">Tests after fixes</a></li>
+        <li><a href="#s23">Final recommendation</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="s1">
+        <h2>1. Kernel verdict</h2>
+        <div class="grid4">
+          <div class="kpi"><div class="label">Verdict</div><div class="value">CONDITIONAL</div><div class="note">Fix K0 first</div></div>
+          <div class="kpi"><div class="label">K0 blockers</div><div class="value">6</div><div class="note">Physical-machine blockers</div></div>
+          <div class="kpi"><div class="label">K1 issues</div><div class="value">8</div><div class="note">Kernel correctness</div></div>
+          <div class="kpi"><div class="label">Host mutation</div><div class="value">NONE</div><div class="note">Source-only first pass</div></div>
+        </div>
+        <p>The scheduler skeleton is viable, and Linux sched_ext supplies a last-resort fallback when the BPF scheduler exits. The current source nevertheless permits stale task identity, incoherent directive reads, cross-CPU cache races, invalid migration requests, unsafe RT/deadline opt-in, and partial-switch starvation.</p>
+        <div class="callout danger"><strong>Decision:</strong> do not load this revision on a physical machine. First correct the K0 findings and repeat compile-only, verifier, and VM runtime validation against the exact target kernel.</div>
+      </section>
+
+      <section id="s2">
+        <h2>2. Algorithm verdict</h2>
+        <div class="callout ok"><strong>CONSISTENT WITH IMPLEMENTATION GAPS.</strong> The isolated canonical userspace mathematics is internally coherent. No standalone A0 defect was found.</div>
+        <p>Strong areas include aligned state/directive boundaries, a fixed-gain predictor that does not reintroduce the rejected adaptive-covariance Kalman design, correct epsilon annealing, directive-dominant rewards, bounded difference rewards, the four-factor geometric mean, and a genuinely slower outer controller.</p>
+        <p>The main defect is integration: prediction, RL, jitter, S1-S4, Q, and feedback control do not feed the live sched_ext bridge. The kernel is currently a manually driven, single-active-directive executor.</p>
+      </section>
+
+      <section id="s3">
+        <h2>3. Kernel architecture trace</h2>
+        <h3>Task execution path</h3>
+        <pre>selected TID
+  -> sched_setattr(SCHED_EXT)
+  -> Linux partial-switch ownership
+  -> orchestra_sched_select_cpu()
+       -> consult shared cache
+       -> choose previous or requested CPU
+       -> orchestra_place()
+       -> direct dispatch to LOCAL or LOCAL_ON DSQ
+  -> enqueue() skipped after direct dispatch
+  -> sched_ext core consumes local DSQ
+  -> orchestra_sched_running() increments global counter
+  -> task executes for requested slice
+  -> orchestra_sched_stopping() performs no accounting
+  -> block, wake, or slice expiry
+  -> select_cpu()/enqueue() cycle repeats</pre>
+        <h3>Bridge-to-kernel path</h3>
+        <pre>orchestra_bridge publish
+  -> write inactive bridge_directive_map slot
+  -> read back generation and PID only
+  -> replace bridge_control_map active slot/generation
+  -> BPF copies fields into shared dir_cache_map
+  -> PID/TGID/expiry/action checks
+  -> action-specific slice and DSQ insertion request</pre>
+        <div class="callout warn">The dispatch callback does not choose a task. The current scheduler depends on direct dispatch from select_cpu() or enqueue(). A request counter is not proof that the task reached CPU execution.</div>
+      </section>
+
+      <section id="s4">
+        <h2>4. sched_ext callback review</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Callback</th><th>Inputs/maps</th><th>Scheduling effect</th><th>Correctness concerns</th></tr></thead>
+          <tbody>
+            <tr><td><code>init</code></td><td>Control and telemetry maps</td><td>Resets generation to zero</td><td>Ignores update failure; enables epoch reuse.</td></tr>
+            <tr><td><code>exit</code></td><td>Exit info; telemetry</td><td>Linux performs fallback</td><td>Normal unregister is counted as an error; no controlled bridge retirement.</td></tr>
+            <tr><td><code>enable</code></td><td>Task; telemetry</td><td>No task admission state</td><td>No immutable identity or eligibility record.</td></tr>
+            <tr><td><code>disable</code></td><td>PID/TGID; task map</td><td>Deletes numeric task key</td><td>Reusable identity; published directive remains.</td></tr>
+            <tr><td><code>select_cpu</code></td><td>Task, previous CPU, wake flags, cache</td><td>Always direct-dispatches</td><td>Uses cache before refresh; no affinity/online validation; no idle helper.</td></tr>
+            <tr><td><code>enqueue</code></td><td>Task and enqueue flags</td><td>Direct-dispatches</td><td>Usually skipped; telemetry calls all placements enqueue.</td></tr>
+            <tr><td><code>dispatch</code></td><td>CPU and previous task</td><td>Telemetry only</td><td>Does not prove selection or execution.</td></tr>
+            <tr><td><code>running</code></td><td>Current task</td><td>Global counter only</td><td>No PID, CPU, action, generation, or migration confirmation.</td></tr>
+            <tr><td><code>stopping</code></td><td>Task and runnable flag</td><td>None</td><td>No runtime, budget, fairness, or migration accounting.</td></tr>
+            <tr><td><code>update_idle</code></td><td>CPU and idle state</td><td>None</td><td>Replaces built-in idle tracking but records nothing.</td></tr>
+          </tbody>
+        </table></div>
+        <p class="small">Source: <a href="../../kernel/sched_ext/orchestra_scx_stage7.bpf.c">kernel/sched_ext/orchestra_scx_stage7.bpf.c</a>.</p>
+      </section>
+
+      <section id="s5">
+        <h2>5. Ownership review</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Question</th><th>Answer</th><th>Reason</th></tr></thead>
+          <tbody>
+            <tr><td>Can a directive apply to the wrong task?</td><td><strong>Yes</strong></td><td>PID reuse, publication races, and cache races.</td></tr>
+            <tr><td>Can PID reuse cause stale ownership?</td><td><strong>Yes</strong></td><td>Cookie zero disables task-instance verification.</td></tr>
+            <tr><td>Can threads escape or enter accidentally?</td><td><strong>Yes</strong></td><td>sched_setattr is per-thread; inheritance and later policy changes are not governed.</td></tr>
+            <tr><td>Can a non-SCHED_EXT task enter?</td><td><strong>No</strong></td><td>Partial switching limits ownership to SCHED_EXT tasks.</td></tr>
+            <tr><td>Can another SCHED_EXT task enter?</td><td><strong>Yes</strong></td><td>There is no ORCHESTRA admission allowlist.</td></tr>
+            <tr><td>Can an opted task leave unexpectedly?</td><td><strong>Yes</strong></td><td>Policy change, exit/reuse, detach, expiry, or scheduler error.</td></tr>
+            <tr><td>Does running() prove target ownership?</td><td><strong>No</strong></td><td>It records only one global cumulative count.</td></tr>
+          </tbody>
+        </table></div>
+        <p>The bridge's <code>/proc/&lt;pid&gt;/stat</code> parser advances past field 22 and reads field 23, but the resulting start value is not enforced anyway: cookie zero means the BPF side skips cookie verification.</p>
+      </section>
+
+      <section id="s6">
+        <h2>6. BPF maps and concurrency review</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Map</th><th>Type/key/value</th><th>Writer/reader</th><th>Risk</th></tr></thead>
+          <tbody>
+            <tr><td><code>bridge_control_map</code></td><td>ARRAY key 0; packed control</td><td>Bridge/init; BPF</td><td>Multi-field replacement is not a logical transaction.</td></tr>
+            <tr><td><code>bridge_directive_map</code></td><td>ARRAY keys 0-1; one directive per slot</td><td>Bridge; BPF</td><td>Slot reuse, concurrent writers, no reader retry.</td></tr>
+            <tr><td><code>bridge_task_map</code></td><td>HASH; (TGID,PID); max 128</td><td>BPF; BPF/bridge</td><td>Reusable identity, silent capacity failure, partly dead fields.</td></tr>
+            <tr><td><code>bridge_telemetry_map</code></td><td>ARRAY key 0; counters</td><td>BPF; bridge</td><td>Atomic counters, but requests mislabeled as outcomes.</td></tr>
+            <tr><td><code>dir_cache_map</code></td><td>ARRAY key 0; one cache</td><td>All CPUs; all CPUs</td><td>Unsynchronized cross-CPU field mutation.</td></tr>
+          </tbody>
+        </table></div>
+        <h3>Publication race</h3>
+        <pre>writer: inactive slot write -> partial readback -> control replacement
+reader: control pointer -> live slot pointer -> shared cache field copies</pre>
+        <ul>
+          <li>A reader can observe a logically mixed packed value.</li>
+          <li>The reader never copies and then revalidates control generation and slot.</li>
+          <li>Two publishers can choose the same inactive slot and generation.</li>
+          <li><code>clear</code> resets generation, creating ABA reuse.</li>
+          <li>Cache hits compare generation only, allowing stale reuse.</li>
+          <li>The canonical userspace generation bus has reader gates; this BPF bridge does not.</li>
+        </ul>
+      </section>
+
+      <section id="s7">
+        <h2>7. DSQ and CPU-placement review</h2>
+        <p>Only <code>SCX_DSQ_LOCAL</code> and <code>SCX_DSQ_LOCAL_ON | cpu</code> are used. There is no global ORCHESTRA DSQ, deferred-eligibility DSQ, budget-replenishment queue, priority structure, or explicit work stealing.</p>
+        <p>The sched_ext core prevents the normal direct-dispatch path from also invoking enqueue, so no ordinary double dispatch was found. Every current action inserts the task, so no intentional task-loss branch was found.</p>
+        <div class="callout danger"><strong>MIGRATE is not placement-safe in project code.</strong> It checks only CPU_ANY and <code>nr_cpu_ids</code>, not affinity, online/active state, hotplug, or migration-disabled state. Linux performs a final safety check, but rejection can cause fallback or a sched_ext operations error rather than a successful migration.</div>
+        <p>The code targets the Linux 6.12 legacy <code>scx_bpf_dispatch()</code> interface. sched_ext is intentionally unstable; compilation against another kernel is not semantic proof. See the <a href="https://docs.kernel.org/scheduler/sched-ext.html">current sched_ext documentation</a> and <a href="https://github.com/torvalds/linux/blob/v6.12/kernel/sched/ext.c">Linux v6.12 sched_ext implementation</a>.</p>
+      </section>
+
+      <section id="s8">
+        <h2>8. Five-action semantic review</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Action</th><th>Intended meaning</th><th>Current mechanism</th><th>Classification</th></tr></thead>
+          <tbody>
+            <tr><td>RUN</td><td>Ordinary bounded execution</td><td>Local DSQ; nominal 5 ms; clamp 0.5-100 ms</td><td><span class="tag approx">REASONABLE APPROXIMATION</span></td></tr>
+            <tr><td>YIELD</td><td>Relinquish current opportunity</td><td>Local DSQ; 1 ms slice</td><td><span class="tag incomplete">INCOMPLETE</span></td></tr>
+            <tr><td>SLEEP</td><td>Temporarily ineligible</td><td>0.5 ms slices before deadline, then normal slice</td><td><span class="tag wrong">SEMANTICALLY WRONG</span></td></tr>
+            <tr><td>MIGRATE</td><td>Execute on a valid different CPU</td><td>Unconfirmed LOCAL_ON request</td><td><span class="tag incomplete">INCOMPLETE</span></td></tr>
+            <tr><td>THROTTLE</td><td>Reduce CPU bandwidth/duty cycle</td><td>Local DSQ; 0.5 ms slice; unused deadline</td><td><span class="tag wrong">SEMANTICALLY WRONG</span></td></tr>
+          </tbody>
+        </table></div>
+        <pre>Nominal slices:
+RUN       5,000,000 ns
+YIELD     1,000,000 ns
+SLEEP       500,000 ns before deadline
+THROTTLE    500,000 ns
+MIGRATE   5,000,000 ns</pre>
+        <p>Short slices do not create ineligibility or bandwidth control. True SLEEP needs bounded deferred eligibility; THROTTLE needs runtime budget and replenishment accounting; YIELD needs prompt slice relinquishment and queue-order semantics; MIGRATE needs request-to-running correlation.</p>
+      </section>
+
+      <section id="s9">
+        <h2>9. Fairness/starvation analysis</h2>
+        <p>ORCHESTRA has no vruntime, service lag, task weight, deadline, or accumulated-runtime fairness accounting. Per-CPU FIFO order plus slice length is the full model.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Population</th><th>Expected behavior</th><th>Failure mode</th></tr></thead>
+          <tbody>
+            <tr><td>1 RUN task</td><td>Repeated 5 ms dispatch; near-full CPU</td><td>Unnecessary callback/requeue churn.</td></tr>
+            <tr><td>2 identical RUN tasks</td><td>Approximate 5 ms FIFO round robin</td><td>No Linux weight semantics.</td></tr>
+            <tr><td>N CPU-bound tasks</td><td>Approximate local share of 1/Ncpu</td><td>Persistent local imbalance; idle CPUs may coexist.</td></tr>
+            <tr><td>RUN + YIELD</td><td>Approximate 5:1 slice service</td><td>YIELD alone still consumes 100% CPU.</td></tr>
+            <tr><td>RUN + THROTTLE</td><td>Incidental 10:1 slice ratio</td><td>THROTTLE alone still consumes 100% CPU.</td></tr>
+            <tr><td>RUN + MIGRATE</td><td>Migrant requested on target local queue</td><td>Target overload, invalid affinity, or fallback unobserved.</td></tr>
+          </tbody>
+        </table></div>
+        <p>In partial mode, conventional fair-class tasks have higher precedence than ext tasks. Without admission and CPU isolation, a continuously runnable fair task can starve ORCHESTRA until watchdog recovery detaches the scheduler.</p>
+      </section>
+
+      <section id="s10">
+        <h2>10. Predictor review</h2>
+        <pre>forecast_t   = estimate_(t-1)
+innovation_t = observation_t - estimate_(t-1)
+estimate_t   = clip(estimate_(t-1) + K * innovation_t)</pre>
+        <ul>
+          <li>Gain is grid-calibrated from 0.01 through 0.99 before worker evaluation.</li>
+          <li>Calibration computes true one-step-ahead error before each observation update.</li>
+          <li>No runtime covariance adaptation exists; the rejected adaptive Kalman design was not reintroduced.</li>
+          <li>State and output are clipped to [0,1].</li>
+          <li>Low confidence or non-finite prediction falls back to observed CPU.</li>
+        </ul>
+        <p>Confidence is <code>exp(-5 * previous_absolute_error)</code>. The 0.5 fallback threshold corresponds to error above about 0.1386. This is safe as a bounded heuristic but is not calibrated forecast uncertainty.</p>
+        <p>Calibration is temporally separated but not a versioned, independently held-out workflow tied to workload and hardware metadata. The runtime estimate is used immediately and behaves more like a filtered nowcast than an explicit horizon-bearing forecast.</p>
+      </section>
+
+      <section id="s11">
+        <h2>11. RL/adaptive-policy review</h2>
+        <h3>Directive regions</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Condition, in priority order</th><th>Directive</th></tr></thead>
+          <tbody>
+            <tr><td>thermal &gt; 0.90 or CPU &gt; 0.94</td><td>THROTTLE</td></tr>
+            <tr><td>otherwise CPU &gt; 0.82 or memory &gt; 0.90</td><td>MIGRATE</td></tr>
+            <tr><td>otherwise CPU &gt; 0.68</td><td>YIELD</td></tr>
+            <tr><td>otherwise CPU &lt; 0.20</td><td>SLEEP</td></tr>
+            <tr><td>otherwise</td><td>RUN</td></tr>
+          </tbody>
+        </table></div>
+        <p>The 5 CPU buckets, 2 memory buckets, and 3 thermal buckets create 30 states. Every boundary aligns with the directive function; no state crosses a canonical action boundary.</p>
+        <pre>Q(s,a) <- Q(s,a) + 0.20 *
+          [reward + 0.90 * max Q(s',a') - Q(s,a)]</pre>
+        <p>Epsilon is <code>max(0.02, 0.30 * 0.998^sequence)</code> and reaches the floor near sequence 1,353. Decay is global per publication sequence, not per successful agent update.</p>
+        <p>Local reward is +0.6 for the directive action and -0.6 otherwise. Exhaustive bounds preserve directive dominance after switching and difference-reward terms. The optimized difference reward uses a YIELD counterfactual, clips to [-0.6,0.6], blends at 0.30, and runs in O(N*A), not O(N^2).</p>
+      </section>
+
+      <section id="s12">
+        <h2>12. S1/S2/S3/S4/Q review</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Metric</th><th>Actual implementation</th><th>Assessment</th></tr></thead>
+          <tbody>
+            <tr><td>S1</td><td>Freshness * forecast accuracy * confidence * sequence reach</td><td>Bounded and monotonic; rejection is indirect and forecast error is partly double-counted.</td></tr>
+            <tr><td>S2</td><td>Exact selected-action compliance among eligible coherent snapshots</td><td>Correct for the declared selected-action rule; RT workers excluded.</td></tr>
+            <tr><td>S3</td><td>1 - normalized global action entropy</td><td>Rewards global uniformity; conditioned S3 exists but is diagnostic only.</td></tr>
+            <tr><td>S4</td><td>1 - changed eligible tasks / eligible tasks</td><td>Detects mass switching but not justification, burst concentration, or repeated reversal.</td></tr>
+            <tr><td>Q</td><td>(S1*S2*S3*S4)^(1/4)</td><td>Correct geometric mean with finite bounds and zero preservation.</td></tr>
+          </tbody>
+        </table></div>
+        <h3>Manual S4 cases</h3>
+        <pre>all stable                         S4 = 1.0
+all switch                         S4 = 0.0
+10 percent switch                  S4 = 0.9
+50 percent switch                  S4 = 0.5
+all switch correctly at threshold  S4 = 0.0</pre>
+        <p><code>S3_conditioned</code> and <code>S4_burst</code> are useful experimental diagnostics but do not currently feed canonical Q, difference reward, or control.</p>
+      </section>
+
+      <section id="s13">
+        <h2>13. Anti-synchronization review</h2>
+        <pre>sigma = MAD(first differences) * 1.4826 / sqrt(2)
+jitter_floor = min(0.20, 1.5 * sigma)</pre>
+        <p>The sqrt(2) correction is correct for independent observation noise in first differences, and MAD is robust against isolated spikes. Workload dynamics can nevertheless inflate the estimate.</p>
+        <ul>
+          <li>Each agent has a privately seeded Gaussian stream.</li>
+          <li>Perceived CPU is clipped to [0,1].</li>
+          <li>Jitter can split agents around CPU thresholds.</li>
+          <li>Memory and thermal thresholds are not privately perturbed.</li>
+          <li>The controller can raise jitter to 0.20 without a joint S2/S4 compliance guard.</li>
+        </ul>
+      </section>
+
+      <section id="s14">
+        <h2>14. Feedback-controller review</h2>
+        <pre>controller cadence = every 20 valid ticks
+beta_k = 0.02 / sqrt(1 + k)
+inner alpha = 0.20
+first beta / alpha approximately 0.0707 and tends to zero</pre>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Deficit</th><th>Intended actuator</th><th>Code actuator</th><th>Assessment</th></tr></thead>
+          <tbody>
+            <tr><td>S4 instability</td><td>Jitter / switching penalty</td><td>Both increase</td><td>Causally plausible.</td></tr>
+            <tr><td>S3 divergence</td><td>Consensus / switching penalty</td><td>Both increase</td><td>Plausible, but based on global entropy.</td></tr>
+            <tr><td>S1 prediction failure</td><td>Prediction-specific response</td><td>Confidence fallback</td><td>Safe, but no active S1 controller.</td></tr>
+            <tr><td>Healthy</td><td>Relax actuators</td><td>All decay</td><td>Correct direction.</td></tr>
+          </tbody>
+        </table></div>
+        <p>Actuator bounds, rate decay, rollback, recovery, and oscillation windows exist. However, S4_burst does not drive actuation, saturation_direction is not meaningfully assigned, and policy generation can advance without a substantive Q-table change. The controller is userspace-only.</p>
+      </section>
+
+      <section id="s15">
+        <h2>15. Kernel to algorithm mapping</h2>
+        <div class="callout danger"><strong>Action ABI mismatch:</strong> canonical userspace uses RUN=0, SLEEP=1, MIGRATE=2, THROTTLE=3, YIELD=4. The bridge uses RUN=0, YIELD=1, MIGRATE=2, THROTTLE=3, SLEEP=4.</div>
+        <h3>Scenario A - low CPU load</h3>
+        <p>With old estimate 0.12, observed CPU 0.10, and gain 0.90, the new estimate is 0.102. With adequate confidence, CPU below 0.20 selects SLEEP. The userspace demo performs nanosleep. No automatic bridge publication exists; manual kernel SLEEP instead dispatches repeated 0.5 ms slices.</p>
+        <h3>Scenario B - overload threshold crossing</h3>
+        <p>CPU prediction 0.85 with lower memory and thermal signals selects MIGRATE. Numeric value 2 matches both ABIs. The bridge publishes a target, BPF requests LOCAL_ON, and Linux may reject or redirect an invalid target. The BPF increments its effective counter before running() observes the CPU.</p>
+        <h3>Scenario C - synchronized herd risk</h3>
+        <p>A CPU transition from 0.680 to 0.681 changes RUN to YIELD. Private jitter should split agents around the threshold. If all switch, historical S4 becomes zero. At the first controller update, beta is about 0.014142; jitter rises by about 0.00283 and switching penalty by about 0.00212. None of this controller state reaches BPF today.</p>
+      </section>
+
+      <section id="s16">
+        <h2>16. Disconnected algorithm components</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Component</th><th>Current status</th></tr></thead>
+          <tbody>
+            <tr><td>Acquisition, predictor, confidence</td><td>USERSPACE ONLY</td></tr>
+            <tr><td>Authenticated canonical signal frames</td><td>USERSPACE ONLY; separate from BPF bridge</td></tr>
+            <tr><td>State, Q-learning, exploration</td><td>USERSPACE ONLY</td></tr>
+            <tr><td>Local/difference rewards and jitter</td><td>USERSPACE ONLY</td></tr>
+            <tr><td>S1/S2/S3/S4/Q</td><td>USERSPACE ONLY</td></tr>
+            <tr><td>Controller and consensus</td><td>USERSPACE ONLY</td></tr>
+            <tr><td>Manual bridge publication</td><td>LIVE IN CURRENT SCHEDULER PATH</td></tr>
+            <tr><td>BPF directive lookup/action request</td><td>LIVE IN CURRENT SCHEDULER PATH</td></tr>
+            <tr><td>throttle_until</td><td>DEAD / DISCONNECTED</td></tr>
+            <tr><td>migrate_effective</td><td>REQUEST-SIDE ONLY; MISLABELED</td></tr>
+            <tr><td>S3_conditioned and S4_burst</td><td>DIAGNOSTIC / EXPERIMENTAL</td></tr>
+          </tbody>
+        </table></div>
+        <div class="callout warn"><strong>Claim boundary:</strong> the current sched_ext prototype does not execute the canonical adaptive ORCHESTRA algorithm. It executes manually published action requests.</div>
+      </section>
+
+      <section id="s17">
+        <h2>17. Complexity and hot-path feasibility</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Component</th><th>Time</th><th>Memory</th><th>Placement</th></tr></thead>
+          <tbody>
+            <tr><td>Agent decision / Q update</td><td>O(A)</td><td>30*5*8 = 1,200 bytes per table</td><td>Userspace</td></tr>
+            <tr><td>Difference rewards</td><td>O(N*A)</td><td>O(N+A)</td><td>Userspace</td></tr>
+            <tr><td>S1-S4/Q</td><td>O(N + S*A + A^2)</td><td>O(S*A + A^2 + history)</td><td>Userspace/monitor</td></tr>
+            <tr><td>Consensus</td><td>O(N*S*A)</td><td>O(S*A)</td><td>Userspace</td></tr>
+            <tr><td>Controller</td><td>Bounded constant windows</td><td>Constant</td><td>Userspace</td></tr>
+            <tr><td>Runtime predictor</td><td>O(1)</td><td>Constant</td><td>Userspace</td></tr>
+            <tr><td>BPF placement</td><td>O(1) map operations</td><td>Per-task/maps</td><td>BPF hot path</td></tr>
+          </tbody>
+        </table></div>
+        <p>HMAC, floating point, logarithms, exponentials, population scans, difference rewards, consensus, and controller analytics should remain outside BPF. The hot path should validate immutable identity, generation, freshness, action ABI, and CPU legality; enforce bounded dispatch/budget behavior; and emit correlated outcome events.</p>
+        <p>Kernel-facing prediction and control values should use a versioned fixed-point representation with saturating 64-bit intermediate arithmetic. Geometric Q should remain userspace-side unless a bounded integer diagnostic is separately justified.</p>
+      </section>
+
+      <section id="s18">
+        <h2>18. K0 findings</h2>
+
+        <article class="finding"><h3><span class="tag k0">K0</span> K0-01 - Reusable task identity</h3><dl>
+          <dt>Area</dt><dd>Task ownership</dd>
+          <dt>File / function</dt><dd><code>orchestra_bridge.c:get_task_info(), cmd_publish()</code>; <code>orchestra_scx_stage7.bpf.c:bridge_directive_valid()</code></dd>
+          <dt>Problem</dt><dd>Directives are bound only to reusable PID/TGID values.</dd>
+          <dt>Why it is wrong</dt><dd>Cookie zero disables task-instance validation, and the proc parser reads field 23 rather than starttime field 22.</dd>
+          <dt>Possible runtime effect</dt><dd>A stale directive controls a different task after PID/TID reuse.</dd>
+          <dt>Evidence</dt><dd>BPF treats zero cookie as no check; directives remain valid until expiry.</dd>
+          <dt>Required fix</dt><dd>Require a correctly parsed immutable task cookie, reject zero for targeted directives, and bind all per-task state to it.</dd>
+        </dl></article>
+
+        <article class="finding"><h3><span class="tag k0">K0</span> K0-02 - Unsynchronized global directive cache</h3><dl>
+          <dt>Area</dt><dd>Cross-CPU concurrency</dd>
+          <dt>File / function</dt><dd><code>orchestra_scx_stage7.bpf.c:bridge_refresh_cache(), bridge_cached_directive()</code></dd>
+          <dt>Problem</dt><dd>One global cache value is field-by-field read and mutated by callbacks on every CPU.</dd>
+          <dt>Why it is wrong</dt><dd>No lock, per-CPU ownership, sequence protocol, or coherent copy exists.</dd>
+          <dt>Possible runtime effect</dt><dd>Mixed identity, action, target CPU, expiry, or generation fields.</dd>
+          <dt>Evidence</dt><dd><code>dir_cache_map</code> is a one-element shared ARRAY.</dd>
+          <dt>Required fix</dt><dd>Use a validated immutable per-callback snapshot or per-CPU cache sourced through a retryable sequence protocol.</dd>
+        </dl></article>
+
+        <article class="finding"><h3><span class="tag k0">K0</span> K0-03 - Incoherent publication and generation ABA</h3><dl>
+          <dt>Area</dt><dd>Directive publication</dd>
+          <dt>File / function</dt><dd><code>orchestra_bridge.c:cmd_publish(), cmd_clear()</code>; <code>orchestra_scx_stage7.bpf.c:bridge_refresh_cache()</code></dd>
+          <dt>Problem</dt><dd>The two-slot protocol is not a coherent snapshot and resets generations.</dd>
+          <dt>Why it is wrong</dt><dd>Map copies are not multi-field transactions; readers do not revalidate; slots and generations are reused; publishers are unserialized.</dd>
+          <dt>Possible runtime effect</dt><dd>New generation with old data, old generation with overwritten data, or stale cached action reuse.</dd>
+          <dt>Evidence</dt><dd>Readback checks only generation and PID; cache hits compare only generation.</dd>
+          <dt>Required fix</dt><dd>Serialize publishers, use never-reset 64-bit epochs, copy and revalidate control/slot, retry on change, and validate all fields.</dd>
+        </dl></article>
+
+        <article class="finding"><h3><span class="tag k0">K0</span> K0-04 - Unsafe migration request</h3><dl>
+          <dt>Area</dt><dd>CPU placement</dd>
+          <dt>File / function</dt><dd><code>orchestra_scx_stage7.bpf.c:orchestra_place(), orchestra_sched_select_cpu()</code></dd>
+          <dt>Problem</dt><dd>MIGRATE does not validate affinity, online/active state, hotplug, or migration-disabled state.</dd>
+          <dt>Why it is wrong</dt><dd>Linux prevents illegal execution but can reject the request through fallback or a scheduler operations error.</dd>
+          <dt>Possible runtime effect</dt><dd>Scheduler detach, unexpected fallback placement, or false migration success.</dd>
+          <dt>Evidence</dt><dd>Only CPU_ANY and <code>nr_cpu_ids</code> are checked; success is counted before running().</dd>
+          <dt>Required fix</dt><dd>Validate against allowed and online masks, handle races safely, and confirm the request generation and actual CPU in running().</dd>
+        </dl></article>
+
+        <article class="finding"><h3><span class="tag k0">K0</span> K0-05 - RT/deadline policy destruction</h3><dl>
+          <dt>Area</dt><dd>Hybrid Safety Layer</dd>
+          <dt>File / function</dt><dd><code>orchestra_bridge.c:cmd_optin()</code></dd>
+          <dt>Problem</dt><dd>The bridge can replace a real-time or deadline scheduling policy with SCHED_EXT.</dd>
+          <dt>Why it is wrong</dt><dd>No admission check or deterministic-class exemption is enforced.</dd>
+          <dt>Possible runtime effect</dt><dd>Loss of deterministic service for a safety-critical or system task.</dd>
+          <dt>Evidence</dt><dd>The requested TID is passed directly to <code>sched_setattr(SCHED_EXT)</code>.</dd>
+          <dt>Required fix</dt><dd>Reject RT/deadline tasks by default and require an explicit, identity-bound eligible-task registration with rollback.</dd>
+        </dl></article>
+
+        <article class="finding"><h3><span class="tag k0">K0</span> K0-06 - Partial-switch starvation</h3><dl>
+          <dt>Area</dt><dd>Fairness and admission</dd>
+          <dt>File / function</dt><dd><code>orchestra_scx_stage7.bpf.c</code> struct_ops flags and local dispatch policy</dd>
+          <dt>Problem</dt><dd>Ext tasks can share CPUs with continuously runnable higher-precedence fair tasks.</dd>
+          <dt>Why it is wrong</dt><dd>No CPU isolation, service guarantee, or starvation monitor exists.</dd>
+          <dt>Possible runtime effect</dt><dd>ORCHESTRA task starvation followed by watchdog scheduler exit.</dd>
+          <dt>Evidence</dt><dd><code>SCX_OPS_SWITCH_PARTIAL</code> is enabled and normal placement remains local.</dd>
+          <dt>Required fix</dt><dd>Enforce a controlled CPU/task admission plan and add bounded dispatch-delay monitoring and recovery before physical testing.</dd>
+        </dl></article>
+      </section>
+
+      <section id="s19">
+        <h2>19. K1 findings</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>ID</th><th>Area / file / function</th><th>Problem and runtime effect</th><th>Required fix</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag k1">K1-01</span></td><td>Action semantics; <code>orchestra_place()</code></td><td>SLEEP/THROTTLE are short slices and YIELD is 1 ms. Lone tasks still consume full CPU and churn contexts.</td><td>Implement deferred eligibility, budget/period accounting, and prompt yield behavior.</td></tr>
+            <tr><td><span class="tag k1">K1-02</span></td><td>Idle tracking; <code>orchestra_sched_update_idle()</code></td><td>An empty callback replaces built-in idle tracking, worsening placement and imbalance.</td><td>Remove it or preserve built-in tracking and use target-version idle helpers.</td></tr>
+            <tr><td><span class="tag k1">K1-03</span></td><td>Direct dispatch; <code>select_cpu(), orchestra_place()</code></td><td>CPU selection uses stale cache before action refresh, splitting one decision across generations.</td><td>Read one coherent directive first, then select and dispatch once.</td></tr>
+            <tr><td><span class="tag k1">K1-04</span></td><td>Telemetry; <code>place(), running(), stopping()</code></td><td>Request counters are labeled effective; tests can report outcomes that never occurred.</td><td>Correlate request IDs with observed CPU/runtime and explicit failure reasons.</td></tr>
+            <tr><td><span class="tag k1">K1-05</span></td><td>Directive map; bridge header and <code>cmd_publish()</code></td><td>Only one active directive exists; sequential multi-task publication controls only the last target.</td><td>Use bounded per-task directives keyed by immutable task identity.</td></tr>
+            <tr><td><span class="tag k1">K1-06</span></td><td>Protocol validation; <code>bridge_refresh_cache()</code></td><td>Unsupported or partial schema/control metadata can influence scheduling.</td><td>Reject unsupported version, size, flags, status, identity, and ranges before use.</td></tr>
+            <tr><td><span class="tag k1">K1-07</span></td><td>sched_ext API; BPF struct_ops and DSQ calls</td><td>Linux 6.12 semantics are assumed despite unstable APIs; ports may compile with changed behavior.</td><td>Pin exact kernel commit/config/BTF and review semantics for every port.</td></tr>
+            <tr><td><span class="tag k1">K1-08</span></td><td>Failure handling; bridge and timeout</td><td>Any active sched_ext scheduler satisfies the bridge check; bridge death is noticed only through expiry.</td><td>Verify scheduler identity and add monotonic heartbeat/lease and explicit fallback/re-entry.</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section id="s20">
+        <h2>20. A0/A1 findings</h2>
+        <div class="callout ok"><strong>A0:</strong> no standalone fundamental defect was found in the isolated canonical userspace mathematics.</div>
+
+        <article class="finding"><h3><span class="tag a1">A1</span> A1-01 - Action ABI mismatch</h3><dl>
+          <dt>Area</dt><dd>Kernel/algorithm action translation</dd>
+          <dt>File / function</dt><dd><code>orchestra_paper_cpu.c:action_t</code>; <code>orchestra_bridge_v1.h:bridge_action</code></dd>
+          <dt>Problem</dt><dd>SLEEP and YIELD have opposite numeric values.</dd>
+          <dt>Why it is wrong</dt><dd>Raw numeric transfer does not preserve policy meaning.</dd>
+          <dt>Possible runtime effect</dt><dd>Learned SLEEP becomes YIELD and learned YIELD becomes pseudo-SLEEP.</dd>
+          <dt>Evidence</dt><dd>Canonical SLEEP=1/YIELD=4; bridge YIELD=1/SLEEP=4.</dd>
+          <dt>Required fix</dt><dd>Define one shared versioned wire action ABI with explicit validated translation.</dd>
+        </dl></article>
+
+        <article class="finding"><h3><span class="tag a1">A1</span> A1-02 - Canonical algorithm disconnected from BPF</h3><dl>
+          <dt>Area</dt><dd>End-to-end integration</dd>
+          <dt>File / function</dt><dd><code>orchestra_paper_cpu.c:adaptive_worker_loop()</code>; <code>orchestra_bridge.c:cmd_publish()</code></dd>
+          <dt>Problem</dt><dd>Canonical outputs do not feed the live scheduler.</dd>
+          <dt>Why it is wrong</dt><dd>Kernel behavior cannot be attributed to prediction, RL, reward, jitter, Q, or control.</dd>
+          <dt>Possible runtime effect</dt><dd>A physical run appears to validate ORCHESTRA while testing manual slice requests only.</dd>
+          <dt>Evidence</dt><dd>No producer translates canonical per-agent decisions into bridge directives.</dd>
+          <dt>Required fix</dt><dd>Build a versioned per-task control-plane publisher with identity, lease, translation, outcome feedback, and sequence correlation.</dd>
+        </dl></article>
+
+        <article class="finding"><h3><span class="tag a1">A1</span> A1-03 - Incorrect kernel realization of actions</h3><dl>
+          <dt>Area</dt><dd>Action implementation</dd>
+          <dt>File / function</dt><dd><code>orchestra_scx_stage7.bpf.c:orchestra_place()</code></dd>
+          <dt>Problem</dt><dd>Three of five action transitions do not implement their intended semantics.</dd>
+          <dt>Why it is wrong</dt><dd>Correct policy selection cannot compensate for an incorrect actuator.</dd>
+          <dt>Possible runtime effect</dt><dd>Selected-action reward and S2 say correct while CPU behavior contradicts the directive.</dd>
+          <dt>Evidence</dt><dd>SLEEP, THROTTLE, and YIELD all immediately dispatch runnable work.</dd>
+          <dt>Required fix</dt><dd>Implement versioned maturity-level contracts and separately score selected and effective compliance.</dd>
+        </dl></article>
+
+        <h3>Material A2 approximations</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>ID</th><th>Approximation</th><th>Effect</th><th>Required follow-up</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag a2">A2-01</span></td><td>Canonical S3 uses global entropy, not conditioned coherence.</td><td>Uniformity can be rewarded when heterogeneous actions are legitimate.</td><td>Version and validate conditioned S3 with backward comparison.</td></tr>
+            <tr><td><span class="tag a2">A2-02</span></td><td>S4_burst does not feed Q/control.</td><td>Justified or oscillating transitions are not distinguished.</td><td>Validate a burst-aware metric before canonical adoption.</td></tr>
+            <tr><td><span class="tag a2">A2-03</span></td><td>Calibration is not a versioned held-out workflow; confidence is heuristic.</td><td>Regime changes or unrepresentative calibration can reduce forecast validity.</td><td>Separate traces, version parameters, calibrate confidence, define triggers.</td></tr>
+            <tr><td><span class="tag a2">A2-04</span></td><td>Jitter lacks a joint S2/S4 guard and only perturbs CPU.</td><td>Compliance can fall while memory/thermal herds remain.</td><td>Add compliance-aware bounds and threshold-specific experiments.</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section id="s21">
+        <h2>21. Required fixes before physical testing</h2>
+        <ol>
+          <li>Freeze the exact Linux kernel commit, config, and BTF; review the sched_ext API semantically.</li>
+          <li>Replace PID-only ownership with a correct immutable task-instance identity.</li>
+          <li>Add explicit eligibility admission and prohibit RT/deadline opt-in.</li>
+          <li>Replace publication/cache logic with a coherent monotonic retry-validated protocol.</li>
+          <li>Use per-task directives instead of one global active target.</li>
+          <li>Make CPU placement affinity-, online-, active-, and hotplug-safe.</li>
+          <li>Restore valid idle tracking and CPU selection.</li>
+          <li>Add request-correlated running and stopping telemetry.</li>
+          <li>Implement real SLEEP, THROTTLE, and YIELD contracts.</li>
+          <li>Add scheduler identity, heartbeat, lease expiry, fallback, and recovery.</li>
+          <li>Introduce one shared action wire ABI and connect the canonical algorithm.</li>
+          <li>Enforce controlled-test CPU isolation/admission and starvation monitoring.</li>
+          <li>Repeat verifier and VM validation after every kernel-semantic change.</li>
+          <li>Only then authorize one disposable, non-RT, bounded physical functional test.</li>
+        </ol>
+      </section>
+
+      <section id="s22">
+        <h2>22. Tests required after fixes</h2>
+        <div class="callout ok"><strong>Safe tests completed during this audit:</strong> <code>make test</code> passed, including 25 ASan/UBSan algorithm unit tests, GCC/Clang generation stress, process-shared integration, benchmark/CSV validators, and five userspace scenarios. These tests do not cover the BPF bridge races.</div>
+        <div class="grid2">
+          <div>
+            <h3>Identity and concurrency</h3>
+            <ol>
+              <li>Concurrent publisher/reader snapshot stress.</li>
+              <li>Generation restart, clear, wrap, and ABA tests.</li>
+              <li>Forced PID/TID reuse and cookie rejection.</li>
+              <li>Leader, sibling, fork, exec, inheritance, exit, and policy-change tests.</li>
+              <li>RT/RR/FIFO/deadline admission rejection.</li>
+            </ol>
+          </div>
+          <div>
+            <h3>Scheduling semantics</h3>
+            <ol start="6">
+              <li>Affinity, offline target, hotplug, and migration-disabled tests.</li>
+              <li>Request-to-running CPU correlation.</li>
+              <li>Double-dispatch and lost-task invariants.</li>
+              <li>True SLEEP deadline/wake latency.</li>
+              <li>THROTTLE budget/period and lone-task bandwidth.</li>
+              <li>YIELD relinquishment and queue order.</li>
+            </ol>
+          </div>
+          <div>
+            <h3>Liveness and failure</h3>
+            <ol start="12">
+              <li>One, two, and N-task fairness.</li>
+              <li>Local DSQ imbalance and fair-class starvation.</li>
+              <li>Bridge kill, stale lease, corrupt control, map clear, detach, and watchdog recovery.</li>
+            </ol>
+          </div>
+          <div>
+            <h3>Integration gates</h3>
+            <ol start="15">
+              <li>Exhaustive five-action ABI translation.</li>
+              <li>Canonical decision to observed kernel outcome trace.</li>
+              <li>Compile-only and verifier validation against the exact kernel.</li>
+              <li>Bounded VM attach/detach/runtime tests.</li>
+              <li>Only then, one isolated physical-machine functional test with automatic rollback.</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <section id="s23">
+        <h2>23. Final recommendation</h2>
+        <div class="decision">
+          <div><strong>Question</strong>Is this kernel prototype technically safe and algorithmically coherent enough for the first controlled real-machine test?</div>
+          <div><strong>Answer</strong>No - not in its current state.</div>
+        </div>
+        <p>The userspace algorithm is coherent enough to continue engineering, and sched_ext fallback limits some worst-case effects. The bridge cannot yet prove immutable task ownership or coherent publication; migration can provoke scheduler failure; action semantics remain materially incomplete; and the canonical adaptive loop is disconnected from BPF.</p>
+        <div class="callout warn"><strong>Conditional next gate:</strong> after all K0 fixes, exact-kernel verifier/VM revalidation, and the dependency-ordered tests above, a first tightly controlled real-machine <em>functional safety test</em> would be reasonable. It would not yet justify performance, coordination, security, or deployment-readiness claims.</div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    <p><strong>Scope:</strong> Linux sched_ext/eBPF implementation, directly relevant userspace bridge, canonical ORCHESTRA scheduling algorithms, and kernel/algorithm translation. Documentation quality, packaging, UI, game integrations, and benchmark presentation were excluded.</p>
+    <p><strong>Primary repository sources:</strong> <a href="../../kernel/sched_ext/">kernel/sched_ext/</a>, <a href="../../kernel/sched_ext/bridge/">kernel/sched_ext/bridge/</a>, <a href="../../orchestra_paper_cpu_demo/orchestra_paper_cpu.c">orchestra_paper_cpu_demo/orchestra_paper_cpu.c</a>, and scheduler/algorithm tests. The source code governed implementation behavior; approved research definitions governed intended semantics.</p>
+  </footer>
+</div>
+</body>
+</html>

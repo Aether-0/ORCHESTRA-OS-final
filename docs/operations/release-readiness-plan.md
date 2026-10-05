@@ -3,7 +3,7 @@
 - Status: Proposed evidence-gated operations plan
 - Date: 2026-08-03
 - Scope: Research artifacts, kernel prototypes, experiments, scale-out work, and any future deployment-readiness review
-- Governing source: repository `AGENTS.md`, including the WP1-WP10 dependency order and exit gates
+- Project basis: the research architecture, work-package definitions, and evidence gates described in this plan
 
 ## 1. Readiness decision today
 

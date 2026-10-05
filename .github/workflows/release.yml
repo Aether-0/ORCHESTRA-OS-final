@@ -1,406 +1,190 @@
-name: ORCHESTRA-OS research-stable release
-
-on:
-  workflow_dispatch:
-    inputs:
-      release_tag:
-        description: Existing signed tag to validate and publish
-        required: true
-        default: v1.0.0
-        type: string
+name: Native Linux packages and release
+'on':
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
-
+    - v[0-9]*
+  workflow_dispatch: {}
 permissions:
   contents: read
-
-env:
-  RELEASE_VERSION: 1.0.0
-  SOURCE_DATE_EPOCH: 1788028800
-
 jobs:
+  metadata:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      publish: ${{ steps.meta.outputs.publish }}
+      epoch: ${{ steps.meta.outputs.epoch }}
+      matrix: ${{ steps.meta.outputs.matrix }}
+    steps:
+    - &id001
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+    - id: meta
+      run: "set -euo pipefail\nversion=$(tr -d '\\n' < VERSION)\npublish=false\nif [[ \"$GITHUB_REF\" == refs/tags/v*\
+        \ ]]; then\n  test \"$GITHUB_REF_NAME\" = \"v$version\"\n  publish=true\nfi\necho \"version=$version\" >>\
+        \ \"$GITHUB_OUTPUT\"\necho \"publish=$publish\" >> \"$GITHUB_OUTPUT\"\necho \"epoch=$(git show -s --format=%ct\
+        \ HEAD)\" >> \"$GITHUB_OUTPUT\"\necho \"matrix=$(python3 -c 'import json; print(json.dumps(json.load(open(\"\
+        packaging/release-targets.json\")),separators=(\",\",\":\"))))')\" >> \"$GITHUB_OUTPUT\"\n"
   source-gate:
-    name: source regression (${{ matrix.arch }})
+    needs: metadata
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - arch: amd64
-            runner: ubuntu-24.04
-          - arch: arm64
-            runner: ubuntu-24.04-arm
+        runner:
+        - ubuntu-24.04
+        - ubuntu-24.04-arm
     steps:
-      - name: Check out source
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          ref: ${{ inputs.release_tag || github.ref }}
-      - name: Install build tools
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq --no-install-recommends \
-            build-essential clang python3
-      - name: Build and test
-        run: |
-          set -euo pipefail
-          make clean
-          make
-          make check
-          make test
-          git diff --check
-          test "$(tr -d '\n' < VERSION)" = "$RELEASE_VERSION"
-      - name: Validate documentation and scripts
-        run: |
-          set -euo pipefail
-          bash -n scripts/*.sh packaging/*.sh packaging/openrc/orchestra
-          python3 scripts/check-doc-links.py
-          scripts/security-scan.sh
+    - *id001
+    - name: Install regression tools
+      run: 'sudo apt-get update -qq
 
+        sudo apt-get install -y -qq build-essential clang python3'
+    - name: Full source regression and publication gate
+      run: 'set -euo pipefail
+
+        make clean
+
+        make
+
+        make check
+
+        make test
+
+        bash -n scripts/*.sh packaging/*.sh packaging/openrc/orchestra
+
+        python3 scripts/check-doc-links.py
+
+        scripts/security-scan.sh
+
+        git diff --check'
   package:
-    name: ${{ matrix.name }} package
-    needs: source-gate
+    needs:
+    - metadata
+    - source-gate
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - name: ubuntu24.04-amd64
-            distro: ubuntu24.04
-            image: ubuntu@sha256:33ceb71981b602c1a7443a53469e4dba065f7503eab3078a2d7a57a2ab987517
-            container_arch: amd64
-            runner: ubuntu-24.04
-            format: deb
-            package_arch: amd64
-          - name: ubuntu24.04-arm64
-            distro: ubuntu24.04
-            image: ubuntu@sha256:33ceb71981b602c1a7443a53469e4dba065f7503eab3078a2d7a57a2ab987517
-            container_arch: arm64
-            runner: ubuntu-24.04-arm
-            format: deb
-            package_arch: arm64
-          - name: ubuntu26.04-amd64
-            distro: ubuntu26.04
-            image: ubuntu@sha256:2260313b31c8c011cd2eebe728008efac1b3982be73eb71348ea2648d2c0e09b
-            container_arch: amd64
-            runner: ubuntu-24.04
-            format: deb
-            package_arch: amd64
-          - name: ubuntu26.04-arm64
-            distro: ubuntu26.04
-            image: ubuntu@sha256:2260313b31c8c011cd2eebe728008efac1b3982be73eb71348ea2648d2c0e09b
-            container_arch: arm64
-            runner: ubuntu-24.04-arm
-            format: deb
-            package_arch: arm64
-          - name: debian13-amd64
-            distro: debian13
-            image: debian@sha256:f324c7ff54321e8d9c588493a20244965938ce0aa50bbd1022d38010e9ffc4b1
-            container_arch: amd64
-            runner: ubuntu-24.04
-            format: deb
-            package_arch: amd64
-          - name: debian13-arm64
-            distro: debian13
-            image: debian@sha256:f324c7ff54321e8d9c588493a20244965938ce0aa50bbd1022d38010e9ffc4b1
-            container_arch: arm64
-            runner: ubuntu-24.04-arm
-            format: deb
-            package_arch: arm64
-          - name: fedora44-x86_64
-            distro: fedora44
-            image: fedora@sha256:43b29f65a41eb9c35e1cd5323e3bdf3b655c2357a9f4f1ff2f9c2798e5045d80
-            container_arch: amd64
-            runner: ubuntu-24.04
-            format: rpm
-            package_arch: x86_64
-          - name: fedora44-aarch64
-            distro: fedora44
-            image: fedora@sha256:43b29f65a41eb9c35e1cd5323e3bdf3b655c2357a9f4f1ff2f9c2798e5045d80
-            container_arch: arm64
-            runner: ubuntu-24.04-arm
-            format: rpm
-            package_arch: aarch64
-          - name: alpine324-x86_64
-            distro: alpine3.24
-            image: alpine@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
-            container_arch: amd64
-            runner: ubuntu-24.04
-            format: apk
-            package_arch: x86_64
-          - name: alpine324-aarch64
-            distro: alpine3.24
-            image: alpine@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
-            container_arch: arm64
-            runner: ubuntu-24.04-arm
-            format: apk
-            package_arch: aarch64
+      max-parallel: 8
+      matrix: ${{ fromJSON(needs.metadata.outputs.matrix) }}
     steps:
-      - name: Check out source
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          ref: ${{ inputs.release_tag || github.ref }}
-      - name: Build package in pinned distro image
-        env:
-          IMAGE: ${{ matrix.image }}
-          CONTAINER_ARCH: ${{ matrix.container_arch }}
-          DISTRO: ${{ matrix.distro }}
-          FORMAT: ${{ matrix.format }}
-          PACKAGE_ARCH: ${{ matrix.package_arch }}
-          SOURCE_DATE_EPOCH: ${{ env.SOURCE_DATE_EPOCH }}
-          OUT_DIR: ${{ runner.temp }}/orchestra-${{ matrix.name }}
-        run: |
-          set -euo pipefail
-          mkdir -p "$OUT_DIR"
-          docker run --rm --platform "linux/$CONTAINER_ARCH" \
-            --env DISTRO --env FORMAT --env PACKAGE_ARCH \
-            --env SOURCE_DATE_EPOCH \
-            --volume "$GITHUB_WORKSPACE:/src:ro" \
-            --volume "$OUT_DIR:/out" \
-            "$IMAGE" /bin/sh -euc '
-              set -eu
-              case "$DISTRO" in
-                ubuntu24.04|ubuntu26.04|debian13)
-                  export DEBIAN_FRONTEND=noninteractive
-                  apt-get update -qq
-                  apt-get install -y -qq --no-install-recommends \
-                    bash build-essential ca-certificates clang dpkg-dev \
-                    git libbpf-dev libelf-dev libzstd-dev llvm make \
-                    pkg-config python3 tar
-                  ;;
-                fedora44)
-                  dnf -y install bash ca-certificates clang elfutils-libelf-devel \
-                    gcc gcc-c++ git libbpf-devel libzstd-devel make \
-                    pkgconf-pkg-config python3 rpm-build tar
-                  ;;
-                alpine3.24)
-                  apk add --no-cache bash build-base ca-certificates clang \
-                    coreutils elfutils-dev git libbpf-dev linux-headers llvm \
-                    make musl-dev pkgconf python3 tar zlib-dev zstd-dev
-                  ;;
-                *) echo "unsupported distro: $DISTRO" >&2; exit 2 ;;
-              esac
-              work=/tmp/orchestra-release-work
-              rm -rf "$work"
-              mkdir -p "$work"
-              cp -a /src/. "$work/"
-              cd "$work"
-              git config --global --add safe.directory "$work"
-              make clean
-              make
-              make check
-              # The complete ASan/UBSan regression runs in the x86_64 and
-              # arm64 source-gate jobs above. Some target package images (for
-              # example Alpine/musl) do not ship sanitizer runtimes, so this
-              # matrix records native package build/check/smoke evidence
-              # without weakening or relabeling the source regression gate.
-              build=/tmp/orchestra-build
-              rm -rf "$build"
-              mkdir -p "$build"
-              ORCHESTRA_BUILD_DIR="$build" bash scripts/build.sh --userspace --bridge
-              SOURCE_DATE_EPOCH="$SOURCE_DATE_EPOCH" \
-                bash packaging/build-package.sh \
-                  --format "$FORMAT" --distro "$DISTRO" \
-                  --output /out --build-dir "$build" --arch "$PACKAGE_ARCH"
-              package=$(find /out -maxdepth 1 -type f \
-                \( -name '*.deb' -o -name '*.rpm' -o -name '*.apk' \) -print -quit)
-              [ -n "$package" ]
-              bash packaging/package-smoke.sh "$package" "$FORMAT" "$DISTRO"
-            ' > "$OUT_DIR/build.log" 2>&1 || {
-              cat "$OUT_DIR/build.log"
-              exit 1
-            }
-          cat "$OUT_DIR/build.log"
-      - name: Upload package
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: orchestra-package-${{ matrix.name }}
-          path: |
-            ${{ runner.temp }}/orchestra-${{ matrix.name }}/*
-          if-no-files-found: error
-          retention-days: 14
+    - *id001
+    - name: Build and smoke-test native package
+      env:
+        IMAGE: ${{ matrix.image }}
+        CONTAINER_ARCH: ${{ matrix.container_arch }}
+        DISTRO: ${{ matrix.distro }}
+        FAMILY: ${{ matrix.family }}
+        FORMAT: ${{ matrix.format }}
+        PACKAGE_ARCH: ${{ matrix.package_arch }}
+        TARGET: ${{ matrix.name }}
+        SOURCE_DATE_EPOCH: ${{ needs.metadata.outputs.epoch }}
+        OUT_DIR: ${{ runner.temp }}/orchestra-${{ matrix.name }}
+      run: 'set -uo pipefail
 
+        mkdir -p "$OUT_DIR"
+
+        docker run --rm --platform "linux/$CONTAINER_ARCH" --env DISTRO --env FAMILY --env FORMAT --env PACKAGE_ARCH
+        --env SOURCE_DATE_EPOCH --env ORCHESTRA_PACKAGE_CONTAINER=1 --volume "$GITHUB_WORKSPACE:/src:ro" --volume
+        "$OUT_DIR:/out" "$IMAGE" /bin/sh /src/packaging/ci-build-target.sh > "$OUT_DIR/$TARGET.log" 2>&1
+
+        status=$?
+
+        export BUILD_STATUS="$status"
+
+        python3 - <<''PYRESULT''
+
+        import json,os,subprocess
+
+        from pathlib import Path
+
+        record={k.lower():os.environ[k] for k in (''TARGET'',''DISTRO'',''IMAGE'',''FORMAT'',''PACKAGE_ARCH'',''BUILD_STATUS'')}
+
+        record[''status'']=''PASS'' if record[''build_status'']==''0'' else ''FAIL''
+
+        record[''source_commit'']=subprocess.check_output([''git'',''rev-parse'',''HEAD''],text=True).strip()
+
+        Path(os.environ[''OUT_DIR''],os.environ[''TARGET'']+''-result.json'').write_text(json.dumps(record,indent=2)+''\n'')
+
+        PYRESULT
+
+        cat "$OUT_DIR/$TARGET.log"
+
+        exit "$status"
+
+        '
+    - name: Preserve package results and failures
+      if: always()
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: orchestra-package-${{ matrix.name }}
+        path: ${{ runner.temp }}/orchestra-${{ matrix.name }}/*
+        if-no-files-found: error
+        retention-days: 30
   aggregate:
-    name: aggregate packages and SBOMs
-    needs: package
+    needs:
+    - metadata
+    - source-gate
+    - package
+    if: always() && needs.source-gate.result == 'success'
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
     steps:
-      - name: Check out source
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          ref: ${{ inputs.release_tag || github.ref }}
-      - name: Download package artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          pattern: orchestra-package-*
-          path: dist
-          merge-multiple: true
-      - name: Generate checksums, SBOMs, and manifest
-        env:
-          SOURCE_DATE_EPOCH: ${{ env.SOURCE_DATE_EPOCH }}
-        run: |
-          set -euo pipefail
-          find dist -type f -name '*.log' -delete
-          ./scripts/source-tarball.sh dist/orchestra-os-${RELEASE_VERSION}-source.tar.gz
-          for package in dist/*.deb dist/*.rpm dist/*.apk; do
-            [ -f "$package" ] || continue
-            ./packaging/generate-sbom.sh "$package" "$package.spdx.json"
-          done
-          (
-            cd dist
-            find . -maxdepth 1 -type f \
-              \( -name '*.deb' -o -name '*.rpm' -o -name '*.apk' -o -name '*.spdx.json' -o -name '*.tar.gz' \) \
-              -print | LC_ALL=C sort | xargs -r sha256sum > SHA256SUMS
-          )
-          python3 - <<'PY'
-          import hashlib
-          import json
-          import os
-          from pathlib import Path
-          root = Path("dist")
-          entries = []
-          for path in sorted(root.iterdir()):
-              if path.name == "RELEASE_MANIFEST.json":
-                  continue
-              if path.is_file() and path.name != "SHA256SUMS":
-                  data = path.read_bytes()
-                  entries.append({
-                      "name": path.name,
-                      "bytes": len(data),
-                      "sha256": hashlib.sha256(data).hexdigest(),
-                  })
-          manifest = {
-              "product": "ORCHESTRA-OS",
-              "version": os.environ["RELEASE_VERSION"],
-              "release_class": "research-stable",
-              "architectures": ["x86_64", "arm64"],
-              "distributions": ["ubuntu24.04", "ubuntu26.04", "debian13", "fedora44", "alpine3.24"],
-              "kernel_artifacts": "target-specific-and-not-shipped",
-              "scheduler_install": "disabled-by-default",
-              "assets": entries,
-          }
-          Path("dist/RELEASE_MANIFEST.json").write_text(
-              json.dumps(manifest, indent=2, sort_keys=True) + "\n",
-              encoding="utf-8",
-          )
-          PY
-          python3 -m json.tool dist/RELEASE_MANIFEST.json >/dev/null
-          test -s dist/SHA256SUMS
-          cat dist/SHA256SUMS
-      - name: Upload release bundle
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: orchestra-release-bundles
-          path: dist
-          if-no-files-found: error
-          retention-days: 30
+    - *id001
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      with:
+        pattern: orchestra-package-*
+        path: dist
+        merge-multiple: true
+    - name: Assemble verified packages, source archives and results
+      env:
+        RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+        SOURCE_DATE_EPOCH: ${{ needs.metadata.outputs.epoch }}
+      run: 'set -euo pipefail
 
+        ./scripts/source-tarball.sh "dist/orchestra-os-$RELEASE_VERSION-source.tar.gz"
+
+
+        python3 packaging/aggregate-release.py dist
+
+        (cd dist && find . -maxdepth 1 -type f ! -name SHA256SUMS -print | LC_ALL=C sort | xargs sha256sum > SHA256SUMS)
+
+        (cd dist && sha256sum -c SHA256SUMS)
+
+        '
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: orchestra-release-bundles
+        path: dist
+        if-no-files-found: error
+        retention-days: 30
   publish:
-    name: publish signed research-stable release
-    needs: aggregate
-    if: (startsWith(github.ref, 'refs/tags/v') && github.ref_name == 'v1.0.0') || (github.event_name == 'workflow_dispatch' && inputs.release_tag == 'v1.0.0')
+    needs:
+    - metadata
+    - aggregate
+    if: always() && needs.aggregate.result == 'success' && needs.metadata.outputs.publish == 'true'
     runs-on: ubuntu-24.04
-    environment:
-      name: public-release
+    environment: public-release
     permissions:
       contents: write
       id-token: write
       attestations: write
     steps:
-      - name: Check out tagged source
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          ref: ${{ inputs.release_tag || github.ref }}
-      - name: Download release bundle
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: orchestra-release-bundles
-          path: dist
-      - name: Verify tag and release metadata
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
-        run: |
-          set -euo pipefail
-          test "$(tr -d '\n' < VERSION)" = "$RELEASE_VERSION"
-          test "$RELEASE_TAG" = "v${RELEASE_VERSION}" || {
-            echo "stable publication requires v${RELEASE_VERSION}" >&2
-            exit 1
-          }
-          test -s dist/SHA256SUMS
-          (cd dist && sha256sum -c SHA256SUMS)
-          python3 -m json.tool dist/RELEASE_MANIFEST.json >/dev/null
-      - name: Attest release assets
-        if: github.event.repository.visibility == 'public'
-        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
-        with:
-          subject-path: |
-            dist/*.deb
-            dist/*.rpm
-            dist/*.apk
-            dist/*.spdx.json
-            dist/*.tar.gz
-            dist/SHA256SUMS
-            dist/RELEASE_MANIFEST.json
-      - name: Verify artifact attestations
-        if: github.event.repository.visibility == 'public'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          for asset in dist/*.deb dist/*.rpm dist/*.apk dist/*.spdx.json dist/*.tar.gz dist/SHA256SUMS dist/RELEASE_MANIFEST.json; do
-            [ -f "$asset" ] || continue
-            gh attestation verify "$asset" --repo "$GITHUB_REPOSITORY"
-          done
-      - name: Publish immutable GitHub release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
-          REPOSITORY_VISIBILITY: ${{ github.event.repository.visibility }}
-        run: |
-          set -euo pipefail
-          cat > release-notes.md <<'EOF'
-          ORCHESTRA-OS v1.0.0 — research stable.
-
-          Stable scope: observer/userspace control plane, validation tooling,
-          native packages, checksums, SBOMs, and build provenance. The sched_ext
-          implementation remains an explicitly opt-in, target-matched kernel
-          prototype. It is not deployment-ready and does not claim hard
-          real-time guarantees, distributed scheduling, kernel-side HMAC
-          authentication, or universal performance improvement.
-
-          Verify SHA256SUMS before installation. SPDX SBOMs are included for
-          every native package.
-          EOF
-          if [ "$REPOSITORY_VISIBILITY" = public ]; then
-            cat >> release-notes.md <<'EOF'
-
-          GitHub build-provenance attestations cover every published asset.
-          Verify each attestation before installation.
-          EOF
-          else
-            cat >> release-notes.md <<'EOF'
-
-          GitHub does not provide hosted attestations for user-owned private
-          repositories. This release therefore publishes checksums and SPDX
-          SBOMs without claiming a GitHub-hosted attestation.
-          EOF
-          fi
-          assets=(dist/*.deb dist/*.rpm dist/*.apk dist/*.spdx.json \
-            dist/*.tar.gz dist/SHA256SUMS dist/RELEASE_MANIFEST.json)
-          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" "${assets[@]}" \
-              --repo "$GITHUB_REPOSITORY" --clobber
-            gh release edit "$RELEASE_TAG" \
-              --repo "$GITHUB_REPOSITORY" \
-              --title "ORCHESTRA-OS v1.0.0 research stable" \
-              --notes-file release-notes.md
-          else
-            gh release create "$RELEASE_TAG" "${assets[@]}" \
-              --repo "$GITHUB_REPOSITORY" \
-              --verify-tag \
-              --title "ORCHESTRA-OS v1.0.0 research stable" \
-              --notes-file release-notes.md
-          fi
+    - *id001
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      with:
+        name: orchestra-release-bundles
+        path: dist
+    - name: Verify every asset
+      run: cd dist && sha256sum -c SHA256SUMS
+    - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be
+      with:
+        subject-path: dist/*
+    - name: Publish latest release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: "set -euo pipefail\nversion=$(tr -d '\\n' < VERSION)\ntest \"$GITHUB_REF_NAME\" = \"v$version\"\ncp dist/PLATFORM_RESULTS.md\
+        \ release-notes.md\ncat >> release-notes.md <<'EOF'\n\nIncludes native userspace tools and bridge, source\
+        \ TAR/ZIP, SHA-256 checksums,\npackage-level SPDX SBOMs, logs, and GitHub build provenance. Installation\
+        \ does\nnot enable sched_ext. Kernel artifacts require a target-matched build and are\nnot shipped. Package\
+        \ smoke tests are not kernel runtime validation. Submitted\npaper evidence and historical negative results\
+        \ remain available in docs/paper.\nEOF\ngh release create \"$GITHUB_REF_NAME\" dist/* --repo \"$GITHUB_REPOSITORY\"\
+        \ --verify-tag --latest --title \"ORCHESTRA-OS $GITHUB_REF_NAME \u2014 Linux packages\" --notes-file release-notes.md\n"

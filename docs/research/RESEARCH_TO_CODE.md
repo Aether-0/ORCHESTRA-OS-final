@@ -1,6 +1,11 @@
 # Research-to-code mapping
 
-The paper remains the authority for the algorithmic definitions. This table
+The architecture study defines the algorithmic concepts. The submitted hardware
+paper and its archived data describe a later, bounded implementation evaluation.
+This table contains historical target-specific observations; it does not certify
+the latest source release. See [the paper evidence map](../paper/EVIDENCE.md).
+
+This table
 maps each concept to the current implementation and evidence boundary.
 
 | Research concept | Implementation component | Source boundary | Evidence class |

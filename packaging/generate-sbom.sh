@@ -23,7 +23,7 @@ cat > "$OUTPUT" <<EOF
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "ORCHESTRA-OS ${VERSION} ${ASSET}",
-  "documentNamespace": "https://github.com/Aether-0/ORCHESTRA-OS-Public/sbom/${DOC_UUID}",
+  "documentNamespace": "https://github.com/Aether-0/ORCHESTRA-OS-final/sbom/${DOC_UUID}",
   "creationInfo": {
     "created": "${CREATED}",
     "creators": ["Tool: ORCHESTRA-OS package SBOM generator"],
@@ -36,11 +36,9 @@ cat > "$OUTPUT" <<EOF
     "downloadLocation": "NOASSERTION",
     "filesAnalyzed": false,
     "licenseConcluded": "NOASSERTION",
-    "licenseDeclared": "MIT",
+    "licenseDeclared": "MIT AND GPL-2.0-only",
     "copyrightText": "NOASSERTION",
-    "packageVerificationCode": {
-      "packageVerificationCodeValue": "${SHA}"
-    },
+    "checksums": [{"algorithm": "SHA256", "checksumValue": "${SHA}"}],
     "externalRefs": [{
       "referenceCategory": "PACKAGE-MANAGER",
       "referenceType": "purl",
@@ -49,7 +47,7 @@ cat > "$OUTPUT" <<EOF
     "supplier": "Organization: Aether-0"
   }],
   "files": [],
-  "relationships": [],
+  "relationships": [{"spdxElementId": "SPDXRef-DOCUMENT", "relationshipType": "DESCRIBES", "relatedSpdxElement": "SPDXRef-Package-orchestra-os"}],
   "annotations": [{
     "annotationDate": "${CREATED}",
     "annotationType": "OTHER",

@@ -1,0 +1,11 @@
+component,status,evidence_class,what_is_proven,what_is_not_proven
+sched_ext scheduler,implemented prototype,KERNEL_PROTOTYPED,target-matched object verified attached and unloaded,general kernel portability or deployment readiness
+bridge and loader,implemented,KERNEL_PROTOTYPED,exact map/schema and ownership-scoped lifecycle,broad kernel-version matrix
+RUN/YIELD/MIGRATE/THROTTLE/SLEEP,implemented bounded backends,EXPERIMENTALLY_VALIDATED bounded,all five observed in action matrix with fallback accounting,all workload shapes and universal fairness
+signal bus,implemented local bridge contract,USERSPACE_VALIDATED plus KERNEL_PROTOTYPED,field/schema/generation/freshness checks,kernel cryptographic authentication
+prediction,bounded record consumption,USERSPACE_VALIDATED,confidence/expiry/fallback contracts,hardware convergence or online-learning benefit
+S1/S2/S3/S4/Q,implemented contract and limited live telemetry,KERNEL_PROTOTYPED / EXPERIMENTALLY_VALIDATED bounded,four-factor representation and limited owned-host windows,broad population statistical validation
+controller,bounded state and actuators,USERSPACE_VALIDATED / KERNEL_PROTOTYPED,rate limits/hysteresis/state contract and limited transitions,full actuator causality and rollback effectiveness
+RT safety boundary,implemented admission guard,EXPERIMENTALLY_VALIDATED bounded,FIFO/RR/DEADLINE adaptive refusal and bounded FIFO/RR coexistence,hard-real-time latency guarantee
+NUMA,single-node observation only,EXPERIMENTALLY_VALIDATED bounded,same-node migration on one-node host,cross-node placement or NUMA-aware policy learning
+distributed tier,absent,NOT_IMPLEMENTED,no backend/protocol,cluster scheduling

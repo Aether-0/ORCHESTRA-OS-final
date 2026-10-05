@@ -1,9 +1,9 @@
 # Security policy
 
-ORCHESTRA-OS 1.0.0 is a research-stable userspace/package release with an
+ORCHESTRA-OS is a research source release with an
 experimental sched_ext path. Read the full
 [security model](../docs/security/SECURITY.md) before enabling it on a host.
-The current release does not claim cryptographic signal authentication,
+The current release does not claim kernel-side cryptographic signal authentication,
 signed release provenance, or privileged runtime validation on every supported
 kernel.
 
