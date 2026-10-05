@@ -158,7 +158,7 @@ EOF
             printf 'backup = etc/orchestra-os/%s\n' "$(basename -- "$config_file")" >> "$STAGE/.PKGINFO"
         done
         tar --sort=name --mtime="@$SOURCE_DATE_EPOCH" --owner=0 --group=0 \
-            --numeric-owner --zstd -C "$STAGE" -cf "$OUTPUT/$artifact" .
+            --numeric-owner --transform='s,^\./,,' --zstd -C "$STAGE" -cf "$OUTPUT/$artifact" .
         ;;
     apk)
         apk_arch=$ARCH

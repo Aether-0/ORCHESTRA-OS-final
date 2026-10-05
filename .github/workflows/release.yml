@@ -87,8 +87,10 @@ jobs:
       run: |
         set -uo pipefail
         mkdir -p "$OUT_DIR"
+        set +e
         docker run --rm --platform "linux/$CONTAINER_ARCH" --env DISTRO --env FAMILY --env FORMAT --env PACKAGE_ARCH --env SOURCE_DATE_EPOCH --env ORCHESTRA_PACKAGE_CONTAINER=1 --volume "$GITHUB_WORKSPACE:/src:ro" --volume "$OUT_DIR:/out" "$IMAGE" /bin/sh /src/packaging/ci-build-target.sh > "$OUT_DIR/$TARGET.log" 2>&1
         status=$?
+        set -euo pipefail
         export BUILD_STATUS="$status"
         python3 - <<'PYRESULT'
         import json,os,subprocess
