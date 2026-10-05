@@ -6,6 +6,8 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import stat
+import time
 import tarfile
 import zipfile
 
@@ -35,7 +37,16 @@ archive = root / f'orchestra-os-{version}-source.tar.gz'
 with tarfile.open(archive) as source, zipfile.ZipFile(root / f'orchestra-os-{version}-source.zip', 'w', compression=zipfile.ZIP_DEFLATED) as output:
     for member in source.getmembers():
         if member.isfile():
-            output.writestr(member.name, source.extractfile(member).read())
+            entry = zipfile.ZipInfo(member.name, time.gmtime(max(member.mtime, 315532800))[:6])
+            entry.create_system = 3
+            entry.external_attr = (stat.S_IFREG | member.mode) << 16
+            entry.compress_type = zipfile.ZIP_DEFLATED
+            output.writestr(entry, source.extractfile(member).read())
+        elif member.issym():
+            entry = zipfile.ZipInfo(member.name, time.gmtime(max(member.mtime, 315532800))[:6])
+            entry.create_system = 3
+            entry.external_attr = (stat.S_IFLNK | member.mode) << 16
+            output.writestr(entry, member.linkname)
 lines = [f'# ORCHESTRA-OS v{version} Linux package results', '', f'Source commit: `{commit}`', '', f'{len(passed)}/{len(expected)} native targets passed compilation and package lifecycle smoke tests.', '', '| Target | Result |', '| --- | --- |']
 lines += [f"| {r['target']} | {r['status']} |" for r in results]
 lines += ['', 'Only PASS targets have downloadable native packages. FAIL/UNKNOWN targets are not supported by this release. Logs and result JSON files preserve the build evidence.', '', 'These results validate userspace packaging, not sched_ext loading or hardware performance.', '']
