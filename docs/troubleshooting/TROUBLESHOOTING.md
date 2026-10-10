@@ -72,7 +72,7 @@ insufficient privilege, or another active sched_ext owner.
 
 ```bash
 ./scripts/check-system.sh --strict
-sha256sum "$ORCHESTRA_BUILD_DIR/orchestra_scx_stage7.bpf.o"
+sha256sum "$ORCHESTRA_BUILD_DIR/orchestra_sched.bpf.o"
 sudo bpftool prog list
 sudo bpftool map list
 sudo bpftool link list
@@ -230,7 +230,7 @@ writable, or no longer matches the target build manifest.
 **Diagnose:**
 
 ```bash
-stat -c '%U %A %n' /usr/local/lib/orchestra-os/build/orchestra_loader /usr/local/lib/orchestra-os/build/orchestra_scx_stage7.bpf.o /usr/local/lib/orchestra-os/build/build-manifest.txt
+stat -c '%U %A %n' /usr/local/lib/orchestra-os/build/orchestra_loader /usr/local/lib/orchestra-os/build/orchestra_sched.bpf.o /usr/local/lib/orchestra-os/build/build-manifest.txt
 grep -E '^(loader|bpf_object)_sha256=' /usr/local/lib/orchestra-os/build/build-manifest.txt
 ```
 

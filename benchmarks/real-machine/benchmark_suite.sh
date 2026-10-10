@@ -55,13 +55,17 @@ if [[ -v ORCHESTRA_BUILD_DIR ]]; then
         /*) ;;
         *) echo "ORCHESTRA_BUILD_DIR must be an absolute path: $BUILD_DIR" >&2; exit 2 ;;
     esac
-    BPF="$BUILD_DIR/orchestra_scx_stage7.bpf.o"
+    BPF="$BUILD_DIR/orchestra_sched.bpf.o"
     BRIDGE="$BUILD_DIR/orchestra_bridge"
     LOADER="$BUILD_DIR/orchestra_loader"
 else
-    BPF="$REPO_ROOT/kernel/sched_ext/orchestra_scx_stage7.bpf.o"
+    BPF="$REPO_ROOT/kernel/sched_ext/orchestra_sched.bpf.o"
     BRIDGE="$REPO_ROOT/kernel/sched_ext/bridge/orchestra_bridge"
-    LOADER="$REPO_ROOT/kernel/sched_ext/bridge/orchestra_loader"
+    LOADER="$REPO_ROOT/kernel/sched_ext/loader/orchestra_loader"
+fi
+if [ ! -e "$BPF" ] && [ ! -L "$BPF" ] &&
+   [ -f "${BPF%/*}/orchestra_scx_stage7.bpf.o" ]; then
+    BPF="${BPF%/*}/orchestra_scx_stage7.bpf.o"
 fi
 WORKLOAD="$REPO_ROOT/kernel/sched_ext/scripts/fixed_work"
 SCX_SIMPLE=/usr/bin/scx_simple

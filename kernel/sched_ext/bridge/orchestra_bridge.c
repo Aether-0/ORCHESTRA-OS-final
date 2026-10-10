@@ -27,7 +27,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "orchestra_bridge_v1.h"
+#include "orchestra_bridge_abi_v2.h"
 
 #define BRIDGE_PIN_DIR       "/sys/fs/bpf/orchestra"
 #define BRIDGE_CTL_PATH      BRIDGE_PIN_DIR "/" BRIDGE_CTL_MAP_NAME

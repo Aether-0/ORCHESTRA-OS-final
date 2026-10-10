@@ -13,7 +13,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "orchestra_bridge_v1.h"
+#include "orchestra_bridge_abi_v2.h"
 
 #define PIN_DIR  "/sys/fs/bpf/orchestra"
 #define LINK_PATH PIN_DIR "/orchestra_sched"

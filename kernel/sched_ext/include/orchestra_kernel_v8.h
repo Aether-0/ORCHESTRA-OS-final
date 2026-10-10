@@ -2,7 +2,7 @@
 /*
  * ORCHESTRA-OS kernel-resident adaptive scheduling contract, ABI v8.
  *
- * This header is deliberately separate from orchestra_bridge_v1.h.  The
+ * This header is deliberately separate from orchestra_bridge_abi_v2.h.  The
  * bridge records remain stable for v6/v7 compatibility; v8 adds bounded
  * kernel-owned state and a generation-published policy bank.  Every record is
  * fixed-width, contains an explicit value size/schema, and is safe to carry

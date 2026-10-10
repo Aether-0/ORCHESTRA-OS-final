@@ -5,17 +5,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 ACCOUNTING = (ROOT / "kernel/sched_ext/include/orchestra_task_accounting.h").read_text()
-BPF = (ROOT / "kernel/sched_ext/orchestra_scx_stage7.bpf.c").read_text()
+BPF = (ROOT / "kernel/sched_ext/bpf/orchestra_sched.bpf.c").read_text()
 COMPAT_BPF = (ROOT / "kernel/sched_ext/orchestra_scx.bpf.c").read_text()
-STABLE_BPF = (ROOT / "kernel/sched_ext/bpf/orchestra_sched.bpf.c").read_text()
-ABI = (ROOT / "kernel/sched_ext/include/orchestra_bridge_v1.h").read_text()
+HISTORICAL_BPF = (ROOT / "kernel/sched_ext/orchestra_scx_stage7.bpf.c").read_text()
+ABI = (ROOT / "kernel/sched_ext/include/orchestra_bridge_abi_v2.h").read_text()
 PRODUCT_ABI = (ROOT / "kernel/sched_ext/include/orchestra_product_abi.h").read_text()
 KERNEL_V8 = (ROOT / "kernel/sched_ext/include/orchestra_kernel_v8.h").read_text()
 CONTROL_V10 = (ROOT / "kernel/sched_ext/include/orchestra_control_abi.h").read_text()
-COORD_V10 = (ROOT / "kernel/sched_ext/include/orchestra_coord.h").read_text()
+COORD_V10 = (ROOT / "kernel/sched_ext/include/orchestra_coordination.h").read_text()
 CONTROLLER_V10 = (ROOT / "kernel/sched_ext/include/orchestra_controller.h").read_text()
 BRIDGE = (ROOT / "kernel/sched_ext/bridge/orchestra_bridge.c").read_text()
-LOADER = (ROOT / "kernel/sched_ext/bridge/orchestra_loader.c").read_text()
+LOADER = (ROOT / "kernel/sched_ext/loader/orchestra_loader.c").read_text()
 POLICY = (ROOT / "scripts/policy_load.py").read_text()
 PATH_SAFETY = (ROOT / "scripts/path_safety.sh").read_text()
 LEGACY_LOADER = (ROOT / "kernel/sched_ext/orchestra_scx.c").read_text()
@@ -53,9 +53,9 @@ def function_body(source: str, marker: str, occurrence: int = 1) -> str:
 def main() -> None:
     require("SCX_OPS_SWITCH_PARTIAL" not in BPF,
             "partial-switch starvation mode must not return")
-    require('include "orchestra_scx_stage7.bpf.c"' in COMPAT_BPF,
+    require('include "bpf/orchestra_sched.bpf.c"' in COMPAT_BPF,
             "the historical BPF filename must build the canonical scheduler")
-    require('include "../orchestra_scx_stage7.bpf.c"' in STABLE_BPF,
+    require('include "bpf/orchestra_sched.bpf.c"' in HISTORICAL_BPF,
             "the stable product BPF entry point must select one canonical implementation")
     require("ORCHESTRA_PRODUCT_ABI_MAJOR 1u" in PRODUCT_ABI and
             "ORCHESTRA_PRODUCT_BRIDGE_ABI_VERSION" in PRODUCT_ABI and

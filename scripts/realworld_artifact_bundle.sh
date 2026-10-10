@@ -24,6 +24,14 @@ orchestra_realworld_safe_file() {
     (( (8#$permissions & 0022) == 0 ))
 }
 
+orchestra_realworld_bpf_filename() {
+    if [ -e "$1/orchestra_sched.bpf.o" ] || [ -L "$1/orchestra_sched.bpf.o" ]; then
+        printf '%s\n' orchestra_sched.bpf.o
+    else
+        printf '%s\n' orchestra_scx_stage7.bpf.o
+    fi
+}
+
 orchestra_realworld_bundle_matches() {
     local directory=$1 expected_kernel=$2 manifest key filename expected actual
 
@@ -35,7 +43,7 @@ orchestra_realworld_bundle_matches() {
 
     for key in bpf_object_sha256 bridge_sha256 loader_sha256; do
         case "$key" in
-            bpf_object_sha256) filename=orchestra_scx_stage7.bpf.o ;;
+            bpf_object_sha256) filename=$(orchestra_realworld_bpf_filename "$directory") ;;
             bridge_sha256) filename=orchestra_bridge ;;
             loader_sha256) filename=orchestra_loader ;;
         esac
@@ -77,7 +85,7 @@ orchestra_realworld_resolve_bundle() {
 
     for candidate in "${candidates[@]}"; do
         if orchestra_realworld_bundle_matches "$candidate" "$expected_kernel"; then
-            BPF="$candidate/orchestra_scx_stage7.bpf.o"
+            BPF="$candidate/$(orchestra_realworld_bpf_filename "$candidate")"
             BRIDGE="$candidate/orchestra_bridge"
             LOADER="$candidate/orchestra_loader"
             MANIFEST="$candidate/build-manifest.txt"

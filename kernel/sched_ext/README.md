@@ -5,9 +5,9 @@
 
 ## Scope
 
-The canonical source entry point is `bpf/orchestra_sched.bpf.c`, which selects
-the single compatibility implementation body
-`orchestra_scx_stage7.bpf.c`, with the privileged bridge under `bridge/`. It uses full-switch sched_ext operations,
+The canonical scheduler implementation is `bpf/orchestra_sched.bpf.c`, with
+the privileged bridge under `bridge/` and the loader under `loader/`. It uses
+full-switch sched_ext operations,
 which changes scheduling for every normal, batch, idle and ext task on the
 host. Exact identity admission authorizes adaptive directives, rather than
 isolating sched_ext ownership. Tasks without a directive enter the global RUN
@@ -36,14 +36,14 @@ telemetry is still required to prove adaptive execution. It provides:
 | File | Purpose |
 |------|---------|
 | `include/orchestra_abi.h` | Canonical actions and policy ABI |
-| `include/orchestra_bridge_v1.h` | Bridge map and telemetry contract |
+| `include/orchestra_bridge_abi_v2.h` | Bridge map and telemetry contract |
 | `include/orchestra_control_abi.h` | Additive v10 coordination/controller ABI |
-| `include/orchestra_coord.h` | Native bounded-window metrics and deficit matrix |
+| `include/orchestra_coordination.h` | Native bounded-window metrics and deficit matrix |
 | `include/orchestra_controller.h` | Multi-actuator feedback controller |
 | `bpf/orchestra_sched.bpf.c` | Stable product BPF source entry point |
-| `orchestra_scx_stage7.bpf.c` | Compatibility implementation body retained for evidence |
+| `orchestra_scx_stage7.bpf.c` | Deprecated wrapper forwarding to the canonical implementation |
 | `bridge/orchestra_bridge.c` | Privileged map bridge CLI |
-| `bridge/orchestra_loader.c` | Exact-map pin/load/unload helper |
+| `loader/orchestra_loader.c` | Exact-map pin/load/unload helper |
 | `scripts/check_kernel_config.sh` | Kernel config validation |
 
 ## Prerequisites
@@ -69,7 +69,7 @@ ORCHESTRA_BUILD_DIR=/var/tmp/orchestra-os-build-$(id -u) \
   ./scripts/build.sh --kernel
 ```
 
-The output directory contains `vmlinux.h`, `orchestra_scx_stage7.bpf.o`,
+The output directory contains `vmlinux.h`, `orchestra_sched.bpf.o`,
 `orchestra_bridge`, `orchestra_loader`, and `build-manifest.txt`. A
 `BLOCKED_*` result is a prerequisite failure, not a source-pass result.
 
@@ -99,13 +99,13 @@ clang -O2 -target bpf -g \
     -I /usr/include/bpf \
     -Wno-missing-declarations -Wno-visibility \
     -Wno-address-of-packed-member \
-    -c orchestra_scx_stage7.bpf.c -o orchestra_scx_stage7.bpf.o
+    -c bpf/orchestra_sched.bpf.c -o orchestra_sched.bpf.o
 
 # Build the bridge and exact-map loader:
 cc -O2 -Wall -Wextra -Werror -I include \
     bridge/orchestra_bridge.c -o bridge/orchestra_bridge
 cc -O2 -Wall -Wextra -Werror -I include \
-    bridge/orchestra_loader.c -o bridge/orchestra_loader -lbpf -lelf -lz
+    loader/orchestra_loader.c -o loader/orchestra_loader -lbpf -lelf -lz
 
 # The build must use headers and BTF matching the running kernel.
 ```
@@ -184,7 +184,7 @@ All full-switch tasks return to CFS/EEVDF on scheduler detach.
 
 ## ABI v8 kernel-resident adaptive core
 
-`orchestra_scx_stage7.bpf.c` now contains an additive v8 execution path. The
+`bpf/orchestra_sched.bpf.c` contains an additive v8 execution path. The
 legacy bridge ABI remains unchanged; v8 is defined in
 `include/orchestra_kernel_v8.h` and is exposed through six additional maps:
 
@@ -279,7 +279,7 @@ real-machine performance. Those remain separate runtime claims.
 
 The additive v10 path closes the kernel-side measurement/control loop without
 changing the v8 bridge records. `include/orchestra_control_abi.h` defines exact
-v10 schemas and bounded map capacities; `include/orchestra_coord.h` computes
+v10 schemas and bounded map capacities; `include/orchestra_coordination.h` computes
 native fixed-point coordination windows; and
 `include/orchestra_controller.h` implements the staged multi-actuator
 controller. The detailed contract is documented in
@@ -336,3 +336,18 @@ execution. THROTTLE renewal preserves service already charged in its period;
 changing its parameters never refunds service already consumed. Deferred work
 is revalidated against current publication and controller state and released
 as RUN when revoked or when its local CPU destination is unavailable.
+
+## Filename compatibility
+
+Supported scripts are `build_scheduler.sh`, `verify_ownership.sh`,
+`reproduce_runtime.sh`, and `validate_runtime.sh` under `scripts/`. The former
+Stage 7, P0, and Stage 8 command names forward to these scripts with unchanged
+arguments. Old BPF source and header paths are include wrappers, not separate
+implementations. The builder emits `orchestra_sched.bpf.o` and a transitional
+regular-file alias `orchestra_scx_stage7.bpf.o`. CLI, installer, and bundle
+discovery accept older hash-validated artifact bundles when the canonical
+object is absent. Map names, ABI layouts, action identifiers, and scheduler
+semantics are unchanged by this cleanup.
+
+See the [next-version roadmap](../../docs/development/NEXT_VERSION.md) for
+validation gates and remaining work.

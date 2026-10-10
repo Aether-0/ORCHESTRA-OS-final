@@ -93,10 +93,10 @@ orchestra_record_result()
 ```
 
 The sched_ext callbacks call this path and perform only event-specific queue
-and dispatch work. The stable source wrapper is
-`kernel/sched_ext/bpf/orchestra_sched.bpf.c`; the historical implementation
-body remains in `orchestra_scx_stage7.bpf.c` so existing evidence and build
-automation remain reproducible.
+and dispatch work. The canonical implementation is
+`kernel/sched_ext/bpf/orchestra_sched.bpf.c`. Historical source filenames
+forward to it through compatibility wrappers; archived evidence keeps the
+filenames and hashes originally recorded.
 
 ### Five-action model
 

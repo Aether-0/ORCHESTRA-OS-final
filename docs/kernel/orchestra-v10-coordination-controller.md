@@ -13,7 +13,7 @@ The v10 contract is additive to the v8 kernel ABI:
 - `kernel/sched_ext/include/orchestra_control_abi.h` defines the fixed-size
   records, versions, bounded domains, states, deficit classes, actuator IDs,
   flags, and map names.
-- `kernel/sched_ext/include/orchestra_coord.h` implements bounded windows,
+- `kernel/sched_ext/include/orchestra_coordination.h` implements bounded windows,
   native S1/S2/S3/S4/Q calculation, deficit classification, and the shared
   deficit-to-actuator matrix.
 - `kernel/sched_ext/include/orchestra_controller.h` implements the staged
@@ -21,7 +21,7 @@ The v10 contract is additive to the v8 kernel ABI:
 - `orchestra_scx_stage7.bpf.c` records signal/action/execution observations,
   publishes v10 runtime state, and applies the controller view to the existing
   decision pipeline.
-- `bridge/orchestra_bridge.c` and `bridge/orchestra_loader.c` validate and
+- `bridge/orchestra_bridge.c` and `loader/orchestra_loader.c` validate and
   expose the exact v10 map schemas alongside the v8 maps.
 
 The canonical action set remains exactly `RUN`, `SLEEP`, `MIGRATE`,

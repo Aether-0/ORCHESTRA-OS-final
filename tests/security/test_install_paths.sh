@@ -131,14 +131,14 @@ fi
 # boundary where an operator supplies an externally built artifact set.
 UNSAFE_BUILD="$WORK/unsafe-build"
 mkdir -p -- "$UNSAFE_BUILD"
-for artifact in orchestra_bridge orchestra_loader orchestra_scx_stage7.bpf.o; do
+for artifact in orchestra_bridge orchestra_loader orchestra_sched.bpf.o; do
     printf '%s\n' 'test artifact' >"$UNSAFE_BUILD/$artifact"
     chmod 0664 -- "$UNSAFE_BUILD/$artifact"
 done
 printf 'bridge_sha256=%s\nloader_sha256=%s\nbpf_object_sha256=%s\n' \
     "$(sha256sum "$UNSAFE_BUILD/orchestra_bridge" | awk '{print $1}')" \
     "$(sha256sum "$UNSAFE_BUILD/orchestra_loader" | awk '{print $1}')" \
-    "$(sha256sum "$UNSAFE_BUILD/orchestra_scx_stage7.bpf.o" | awk '{print $1}')" \
+    "$(sha256sum "$UNSAFE_BUILD/orchestra_sched.bpf.o" | awk '{print $1}')" \
     >"$UNSAFE_BUILD/build-manifest.txt"
 chmod 0644 -- "$UNSAFE_BUILD/build-manifest.txt"
 if bash "$ROOT/scripts/install.sh" \
@@ -149,5 +149,23 @@ if bash "$ROOT/scripts/install.sh" \
     exit 1
 fi
 [ ! -e "$WORK/unsafe-prefix" ]
+
+# Both filename generations must install the hash-validated object under the
+# canonical name. These fixtures never attach or execute a scheduler.
+chmod 0644 -- "$UNSAFE_BUILD/orchestra_bridge" "$UNSAFE_BUILD/orchestra_loader" \
+    "$UNSAFE_BUILD/orchestra_sched.bpf.o"
+for naming in canonical legacy; do
+    if [ "$naming" = legacy ]; then
+        mv -- "$UNSAFE_BUILD/orchestra_sched.bpf.o" "$UNSAFE_BUILD/orchestra_scx_stage7.bpf.o"
+    fi
+    bash "$ROOT/scripts/install.sh" \
+        --prefix "$WORK/kernel-$naming" --config-dir "$WORK/config-$naming" \
+        --build-dir "$UNSAFE_BUILD" --with-kernel --no-build >/dev/null
+    [ -f "$WORK/kernel-$naming/lib/orchestra-os/build/orchestra_sched.bpf.o" ]
+    cmp "$WORK/kernel-$naming/lib/orchestra-os/build/orchestra_sched.bpf.o" \
+        "$UNSAFE_BUILD/orchestra_bridge"
+    bash "$ROOT/scripts/uninstall.sh" \
+        --prefix "$WORK/kernel-$naming" --config-dir "$WORK/config-$naming" >/dev/null
+done
 
 echo "PASS installer/uninstaller path-security regressions"

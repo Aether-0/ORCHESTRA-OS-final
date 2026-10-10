@@ -32,7 +32,11 @@ VERSION=${ORCHESTRA_VERSION:-unknown}
 BUILD_DIR=${ORCHESTRA_BUILD_DIR:-$DEFAULT_BUILD_DIR}
 BRIDGE=${ORCHESTRA_BRIDGE:-$BUILD_DIR/orchestra_bridge}
 LOADER=${ORCHESTRA_LOADER:-$BUILD_DIR/orchestra_loader}
-BPF_OBJECT=${ORCHESTRA_BPF:-$BUILD_DIR/orchestra_scx_stage7.bpf.o}
+BPF_OBJECT=${ORCHESTRA_BPF:-$BUILD_DIR/orchestra_sched.bpf.o}
+if [ -z "${ORCHESTRA_BPF:-}" ] && [ ! -e "$BPF_OBJECT" ] && [ ! -L "$BPF_OBJECT" ] && \
+   [ -f "$BUILD_DIR/orchestra_scx_stage7.bpf.o" ]; then
+    BPF_OBJECT="$BUILD_DIR/orchestra_scx_stage7.bpf.o"
+fi
 BUILD_MANIFEST=${ORCHESTRA_BUILD_MANIFEST:-$BUILD_DIR/build-manifest.txt}
 PACKAGE_MARKER="$INSTALL_ROOT/.package-managed"
 if [ -f "$PACKAGE_MARKER" ]; then

@@ -7,12 +7,12 @@ trap 'rm -rf -- "$WORK"' EXIT
 # Trust-policy checks are tested separately; these fixtures exercise bundle identity offline.
 orchestra_safe_existing_dir() { [ -d "$1" ]; }
 orchestra_realworld_safe_file() { [ -f "$1" ] && [ ! -L "$1" ]; }
-for file in orchestra_scx_stage7.bpf.o orchestra_bridge orchestra_loader; do
+for file in orchestra_sched.bpf.o orchestra_bridge orchestra_loader; do
     printf '%s\n' "$file" > "$WORK/$file"
 done
 {
     echo 'running_kernel=test-kernel'
-    echo "bpf_object_sha256=$(sha256sum "$WORK/orchestra_scx_stage7.bpf.o" | cut -d' ' -f1)"
+    echo "bpf_object_sha256=$(sha256sum "$WORK/orchestra_sched.bpf.o" | cut -d' ' -f1)"
     echo "bridge_sha256=$(sha256sum "$WORK/orchestra_bridge" | cut -d' ' -f1)"
     echo "loader_sha256=$(sha256sum "$WORK/orchestra_loader" | cut -d' ' -f1)"
 } > "$WORK/build-manifest.txt"
@@ -27,7 +27,16 @@ if orchestra_realworld_bundle_matches "$WORK" test-kernel; then exit 1; fi
 cp "$WORK/original" "$WORK/build-manifest.txt"
 echo corrupted >> "$WORK/orchestra_bridge"
 if orchestra_realworld_bundle_matches "$WORK" test-kernel; then exit 1; fi
-echo 'PASS bundle identity: valid, wrong kernel, duplicate keys, corruption'
+# Archived bundles retain their original filename and hash. A corrupt new
+# object must not be bypassed by selecting a valid legacy object.
+mv "$WORK/orchestra_sched.bpf.o" "$WORK/orchestra_scx_stage7.bpf.o"
+printf '%s\n' orchestra_bridge > "$WORK/orchestra_bridge"
+orchestra_realworld_bundle_matches "$WORK" test-kernel
+printf '%s\n' corrupted > "$WORK/orchestra_sched.bpf.o"
+if orchestra_realworld_bundle_matches "$WORK" test-kernel; then exit 1; fi
+rm -- "$WORK/orchestra_sched.bpf.o"
+orchestra_realworld_bundle_matches "$WORK" test-kernel
+echo 'PASS canonical and legacy bundle identity; corrupt canonical object rejected'
 printf '%s\n' orchestra_bridge > "$WORK/orchestra_bridge"
 orchestra_realworld_bundle_matches "$WORK" test-kernel
 mv "$WORK/orchestra_loader" "$WORK/loader-real"

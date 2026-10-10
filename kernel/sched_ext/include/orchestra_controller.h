@@ -3,7 +3,7 @@
 #ifndef ORCHESTRA_CONTROLLER_H
 #define ORCHESTRA_CONTROLLER_H
 
-#include "orchestra_coord.h"
+#include "orchestra_coordination.h"
 
 #ifndef __always_inline
 #define __always_inline inline

@@ -23,7 +23,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "../kernel/sched_ext/include/orchestra_bridge_v1.h"
+#include "../kernel/sched_ext/include/orchestra_bridge_abi_v2.h"
 
 /*
  * ORCHESTRA-OS paper-aligned real-CPU userspace research prototype.

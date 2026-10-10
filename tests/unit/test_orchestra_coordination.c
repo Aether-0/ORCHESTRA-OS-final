@@ -1,5 +1,5 @@
-#include "../../kernel/sched_ext/include/orchestra_bridge_v1.h"
-#include "../../kernel/sched_ext/include/orchestra_coord.h"
+#include "../../kernel/sched_ext/include/orchestra_bridge_abi_v2.h"
+#include "../../kernel/sched_ext/include/orchestra_coordination.h"
 #include "../../kernel/sched_ext/include/orchestra_controller.h"
 #include "../../kernel/sched_ext/include/orchestra_task_accounting.h"
 

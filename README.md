@@ -181,3 +181,8 @@ files carry GPL-2.0 SPDX notices. Inherited components retain their licenses.
 See [LICENSE](LICENSE), [NOTICE](NOTICE), and file-level SPDX notices.
 For contributions and support, see [CONTRIBUTING.md](CONTRIBUTING.md),
 [SUPPORT.md](SUPPORT.md), and the [security guide](docs/security/SECURITY.md).
+
+## Next version
+
+See the [next-version roadmap](docs/development/NEXT_VERSION.md) for planned
+correctness, fairness, runtime validation, and release gates.

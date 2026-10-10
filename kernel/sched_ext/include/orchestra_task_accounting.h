@@ -2,7 +2,7 @@
 #ifndef ORCHESTRA_TASK_ACCOUNTING_H
 #define ORCHESTRA_TASK_ACCOUNTING_H
 
-#include "orchestra_bridge_v1.h"
+#include "orchestra_bridge_abi_v2.h"
 
 #ifndef __always_inline
 #define __always_inline inline

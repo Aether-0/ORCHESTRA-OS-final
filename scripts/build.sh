@@ -75,7 +75,7 @@ fi
 if [ "$want_kernel" -eq 1 ]; then
     ORCHESTRA_BUILD_DIR="$BUILD_DIR" \
     ORCHESTRA_BPF_SOURCE="${ORCHESTRA_BPF_SOURCE:-$REPO_ROOT/kernel/sched_ext/bpf/orchestra_sched.bpf.c}" \
-        bash "$REPO_ROOT/kernel/sched_ext/scripts/build_stage7_out_of_tree.sh"
+        bash "$REPO_ROOT/kernel/sched_ext/scripts/build_scheduler.sh"
 fi
 
 echo "build_dir=$BUILD_DIR"

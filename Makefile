@@ -30,7 +30,7 @@ bridge:
 		$(CC) -O2 -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
 			-Wformat=2 -Werror $(ORCHESTRA_HARDENING_CFLAGS) \
 			$(LIBBPF_CFLAGS) -I"$(ORCHESTRA_INCLUDE_DIR)" \
-			"$(ORCHESTRA_BRIDGE_DIR)/orchestra_loader.c" \
+			"kernel/sched_ext/loader/orchestra_loader.c" \
 			-o "$(ORCHESTRA_BUILD_DIR)/orchestra_loader" \
 			$(ORCHESTRA_HARDENING_LDFLAGS) $(LIBBPF_LIBS); \
 	else \
@@ -50,7 +50,7 @@ package:
 
 kernel-bpf:
 	ORCHESTRA_BUILD_DIR="$(ORCHESTRA_BUILD_DIR)" \
-		bash kernel/sched_ext/scripts/build_stage7_out_of_tree.sh
+		bash kernel/sched_ext/scripts/build_scheduler.sh
 
 check:
 	$(MAKE) -C orchestra_paper_cpu_demo check
@@ -86,7 +86,7 @@ check:
 	@if printf '#include <bpf/libbpf.h>\n' | $(CC) -E - >/dev/null 2>&1; then \
 		$(CC) -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
 			-Wformat=2 -Werror -Ikernel/sched_ext/include -fsyntax-only \
-			kernel/sched_ext/bridge/orchestra_loader.c; \
+			kernel/sched_ext/loader/orchestra_loader.c; \
 	fi
 	@$(CC) -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow \
 		-Wformat=2 -Werror -fsyntax-only kernel/sched_ext/orchestra_scx.c
@@ -118,10 +118,10 @@ check:
 		benchmarks/real-machine/sanity_check.sh \
 		benchmarks/real-machine/stress_suite.sh \
 		benchmarks/stage9/benchmark_compare.sh \
-		kernel/sched_ext/scripts/build_stage7_out_of_tree.sh \
-		kernel/sched_ext/scripts/p0_ownership_retest.sh \
-		kernel/sched_ext/scripts/reproduce_stage7_runtime.sh \
-		kernel/sched_ext/scripts/stage8_validate.sh
+		kernel/sched_ext/scripts/build_scheduler.sh \
+		kernel/sched_ext/scripts/verify_ownership.sh \
+		kernel/sched_ext/scripts/reproduce_runtime.sh \
+		kernel/sched_ext/scripts/validate_runtime.sh
 	@bash -n scripts/*.sh examples/*/*.sh
 	@bash -n packaging/*.sh packaging/openrc/orchestra
 	@PYTHONPYCACHEPREFIX=/tmp/orchestra-os-check-pyc \

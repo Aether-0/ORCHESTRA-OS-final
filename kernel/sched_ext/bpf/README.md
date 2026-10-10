@@ -1,11 +1,9 @@
-# Canonical sched_ext entry point
+# Canonical sched_ext implementation
 
-`orchestra_sched.bpf.c` is the stable product entry point for the single
-ORCHESTRA sched_ext implementation. It includes
-`../orchestra_scx_stage7.bpf.c`, which is retained as a compatibility filename
-for existing scripts and historical evidence.
+`orchestra_sched.bpf.c` contains the single ORCHESTRA sched_ext implementation.
+The historical `../orchestra_scx_stage7.bpf.c` and `../orchestra_scx.bpf.c`
+filenames are compatibility wrappers that include this file.
 
-There must be one scheduler implementation and one ABI contract. Do not add a
-second callback implementation under a versioned stage directory. Build the
-entry point with `scripts/build.sh --kernel` or the target-matched builder
-documented in [INSTALL.md](../../../docs/installation/INSTALL.md).
+Build with `scripts/build.sh --kernel` from the repository root, using the
+target-matched kernel source described in
+[INSTALL.md](../../../docs/installation/INSTALL.md).

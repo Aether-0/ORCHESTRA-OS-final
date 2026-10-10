@@ -1,6 +1,6 @@
 /* Exercise the actual BPF header branches with bounded map/clock mocks.
  * This is logic coverage, not verifier or hardware evidence. */
-#include "../../kernel/sched_ext/include/orchestra_bridge_v1.h"
+#include "../../kernel/sched_ext/include/orchestra_bridge_abi_v2.h"
 #include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -45,7 +45,7 @@ static void bpf_spin_unlock(struct orchestra_userspace_map_lock *lock)
     lock->opaque = 0;
 }
 
-#include "../../kernel/sched_ext/include/orchestra_coord.h"
+#include "../../kernel/sched_ext/include/orchestra_coordination.h"
 #include "../../kernel/sched_ext/include/orchestra_controller.h"
 
 static void reset(void)

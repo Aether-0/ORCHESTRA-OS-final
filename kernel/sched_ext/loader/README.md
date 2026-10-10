@@ -1,6 +1,6 @@
 # Loader boundary
 
-The supported loader is `../bridge/orchestra_loader.c`, built as
+The supported loader is `../loader/orchestra_loader.c`, built as
 `orchestra_loader`. It owns the lifecycle boundary:
 
 1. create the loader-owned `/sys/fs/bpf/orchestra` directory;

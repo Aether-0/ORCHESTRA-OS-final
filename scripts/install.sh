@@ -179,7 +179,11 @@ if [ "$no_build" -eq 0 ]; then
 fi
 
 if [ "$with_kernel" -eq 1 ]; then
-    for required_artifact in orchestra_bridge orchestra_loader orchestra_scx_stage7.bpf.o build-manifest.txt; do
+    KERNEL_BPF="$BUILD_DIR/orchestra_sched.bpf.o"
+    if [ ! -e "$KERNEL_BPF" ] && [ ! -L "$KERNEL_BPF" ] && [ -f "$BUILD_DIR/orchestra_scx_stage7.bpf.o" ]; then
+        KERNEL_BPF="$BUILD_DIR/orchestra_scx_stage7.bpf.o"
+    fi
+    for required_artifact in orchestra_bridge orchestra_loader "${KERNEL_BPF##*/}" build-manifest.txt; do
         if [ ! -f "$BUILD_DIR/$required_artifact" ]; then
             echo "kernel installation requested but artifact is missing: $BUILD_DIR/$required_artifact" >&2
             echo "build a target-matched kernel artifact or omit --with-kernel for observer-only installation" >&2
@@ -191,7 +195,7 @@ if [ "$with_kernel" -eq 1 ]; then
         "$BUILD_DIR/build-manifest.txt" ||
        ! manifest_hash_matches loader_sha256 "$BUILD_DIR/orchestra_loader" \
         "$BUILD_DIR/build-manifest.txt" ||
-       ! manifest_hash_matches bpf_object_sha256 "$BUILD_DIR/orchestra_scx_stage7.bpf.o" \
+       ! manifest_hash_matches bpf_object_sha256 "$KERNEL_BPF" \
         "$BUILD_DIR/build-manifest.txt"; then
         echo "kernel artifact hash does not match build-manifest.txt" >&2
         echo "refusing installation; rebuild the target-matched artifact set" >&2
@@ -242,9 +246,9 @@ fi
 if [ "$with_kernel" -eq 1 ] && [ -f "$BUILD_DIR/orchestra_loader" ]; then
     safe_install_file "$BUILD_DIR/orchestra_loader" "$LIB_ROOT/build/orchestra_loader" 0755
 fi
-if [ "$with_kernel" -eq 1 ] && [ -f "$BUILD_DIR/orchestra_scx_stage7.bpf.o" ]; then
-    safe_install_file "$BUILD_DIR/orchestra_scx_stage7.bpf.o" \
-        "$LIB_ROOT/build/orchestra_scx_stage7.bpf.o" 0644
+if [ "$with_kernel" -eq 1 ] && [ -f "$KERNEL_BPF" ]; then
+    safe_install_file "$KERNEL_BPF" \
+        "$LIB_ROOT/build/orchestra_sched.bpf.o" 0644
 fi
 if [ "$with_kernel" -eq 1 ] && [ -f "$BUILD_DIR/build-manifest.txt" ]; then
     safe_install_file "$BUILD_DIR/build-manifest.txt" \
