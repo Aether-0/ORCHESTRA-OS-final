@@ -9,7 +9,7 @@ benchmark pass.
 
 | Limit | Location | Classification | Rationale and failure behavior |
 | --- | --- | --- | --- |
-| `BRIDGE_MAX_TASKS = 4096` | `kernel/sched_ext/include/orchestra_bridge_v1.h` | BPF map/resource protection | Bounds per-task hash maps and memory. Admission/map insertion reports capacity failure and falls back to RUN/conventional scheduling. A future ABI may negotiate a larger map set; changing it requires matching loader schemas and target validation. |
+| `BRIDGE_MAX_TASKS = 4096` | `kernel/sched_ext/include/orchestra_bridge_v1.h` | BPF map/resource protection | Bounds per-task hash maps and memory. Admission/map insertion reports capacity failure and falls back to ORCHESTRA RUN while attached; conventional scheduling returns on detach. A future ABI may negotiate a larger map set; changing it requires matching loader schemas and target validation. |
 | `ORCHESTRA_KERNEL_MAX_POLICY_STATES = 256` | `orchestra_kernel_v8.h` | ABI/verifier/map architecture | Matches the fixed two-bank policy ARRAY and 8-bit state projection. The userspace loader now accepts the full 256 states; the former 64-entry loader restriction was removed. |
 | `ORCHESTRA_KERNEL_POLICY_BANK_COUNT = 2` | `orchestra_kernel_v8.h` | Atomic publication architecture | One active and one inactive bank permit bounded staging/flip/rollback. Increasing it changes ABI/map size and is not a safe local tuning knob. |
 | `ORCHESTRA_COORD_MAX_CPU_DOMAINS = 1024` | `orchestra_control_abi.h` | Bounded map/resource protection | Prevents topology-proportional unbounded BPF map allocation. CPUs above the representable range use the bounded aggregate slot. |
@@ -20,7 +20,7 @@ benchmark pass.
 | Slice floor `100us`, default `5ms`, maximum `100ms` | bridge ABI/BPF | Kernel progress and fairness bound | Prevents zero-length dispatch loops and extreme unbounded slices. Invalid values are rejected or clamped to safe RUN behavior. |
 | Throttle period maximum `1s` | bridge ABI/BPF | Resource/fairness protection | Prevents stale budgets from suppressing a task indefinitely. Invalid period/budget combinations fall back to RUN. |
 | Sleep defer maximum `5s` | bridge ABI/BPF | Stale-state/fairness protection | Prevents a malicious or stale sleep directive from creating a long local disappearance. Expired/replaced deferred directives are revalidated and released as RUN. |
-| Directive expiry and lease maximum `60s` | bridge ABI/BPF | Freshness/DoS protection | Limits how long a publisher or directive can control scheduling without renewal. Stale lease/directive causes conventional fallback. |
+| Directive expiry and lease maximum `60s` | bridge ABI/BPF | Freshness/DoS protection | Limits how long a publisher or directive can control scheduling without renewal. Stale lease/directive causes ORCHESTRA RUN fallback while attached; conventional scheduling returns on detach. |
 | Signal maximum age `5s` | bridge ABI/BPF | Freshness protection | Prevents old predictive state from influencing decisions. The signal path rejects future, expired, over-age, or schema-incoherent frames. |
 | Five actions | `orchestra_abi.h` | Research/API architecture | The canonical set is exactly RUN, SLEEP, MIGRATE, THROTTLE, YIELD. Unsupported semantics are capability-adjusted; no sixth action is hidden in compatibility code. |
 | Eleven controller actuators | `orchestra_control_abi.h` | Research/API architecture | Fixed actuator matrix is part of the v10 controller ABI and causal deficit mapping. |
@@ -89,3 +89,12 @@ capability:
 No other hard-coded limit identified in the audited active paths is currently
 classified as an unexplained arbitrary restriction. Any limit added later
 must be entered here with its safety rationale and regression coverage.
+
+## Host-wide activation
+
+The kernel prototype uses full-switch sched_ext. Exact directive identity
+validation limits adaptive actions, not scheduler ownership: normal, batch,
+idle and ext tasks all enter sched_ext while attached. The global RUN fallback
+queue does not implement conventional Linux nice/weight and cgroup CPU-control
+semantics. Kernel activation is for dedicated research hosts. Observer mode and
+post-detach operation use conventional Linux scheduling.

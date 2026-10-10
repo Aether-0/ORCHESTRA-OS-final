@@ -56,8 +56,21 @@ Temporal stability S4 is retained to detect synchronized switching.
 | Layer | Evidence boundary |
 | --- | --- |
 | Userspace control and signal prototype | Portable build, unit, integration, and security regressions. Linux still performs scheduling. |
-| Opt-in sched_ext prototype and bridge | Historical target-specific lifecycle, ownership, and action evidence; current privileged runtime gates remain separate. |
+| Host-wide sched_ext prototype and bridge | Historical target-specific lifecycle, ownership, and action evidence; current privileged runtime gates remain separate. |
 | Deployment, universal speedup, hard RT, distributed scheduling | Not established by this release. |
+
+**Kernel activation affects the whole host.** Full-switch mode routes normal,
+batch, idle and ext tasks through sched_ext. Identity admission authorizes
+adaptive directives; it does not isolate scheduler ownership. Tasks without a
+valid directive use ORCHESTRA's global RUN queue while attached. That queue
+does not reproduce Linux nice/weight or cgroup CPU-control semantics.
+Conventional scheduling returns on detach. Activate only on a dedicated
+research host; observer mode leaves scheduling unchanged.
+
+The current main branch corrects the canonical decision path, native metrics,
+deferred recovery, policy coherence, execution telemetry, THROTTLE renewal
+accounting, and bridge timeouts. These changes are newer than v1.1.1; see the
+[scheduler validation note](docs/validation/SCHEDULER_FIXES_2026-10-10.md).
 
 See [research-to-code mapping](docs/research/RESEARCH_TO_CODE.md) and
 [current product status](docs/status/FINAL_PRODUCT_STATUS.md). Kernel maps use identity,

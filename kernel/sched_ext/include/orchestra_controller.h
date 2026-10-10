@@ -80,7 +80,9 @@ static __always_inline void orchestra_controller_copy_bank(
     destination->last_window_generation = source->last_window_generation;
     destination->last_q_permille = source->last_q_permille;
 #ifdef __BPF__
+#if defined(__clang__)
 #pragma clang loop unroll(disable)
+#endif
 #endif
     for (int index = 0; index < ORCH_ACTUATOR_COUNT; index++)
         destination->actuators[index] = source->actuators[index];
@@ -165,7 +167,7 @@ static __always_inline int orchestra_controller_state_valid_v10(
     if (!controller)
         return 0;
 
-#ifdef __BPF__
+#if defined(__BPF__) && !defined(ORCHESTRA_KERNEL_LOGIC_TEST)
 #pragma unroll
 #endif
     for (int bank_index = 0; bank_index < 3; bank_index++) {
@@ -182,7 +184,7 @@ static __always_inline int orchestra_controller_state_valid_v10(
             bank->last_q_permille > ORCHESTRA_V10_FIXED_POINT_SCALE ||
             bank->generation == 0)
             banks_valid = 0;
-#ifdef __BPF__
+#if defined(__BPF__) && !defined(ORCHESTRA_KERNEL_LOGIC_TEST)
 #pragma unroll
 #endif
         for (int actuator_index = 0;
@@ -286,7 +288,9 @@ static __always_inline void orchestra_controller_note_actuator_changes(
     if (!tel)
         return;
     bpf_spin_lock(&tel->lock);
+#if defined(__clang__)
 #pragma clang loop unroll(disable)
+#endif
     for (int index = 0; index < ORCH_ACTUATOR_COUNT; index++) {
         const struct orchestra_actuator_v10 *current =
             &controller->active.actuators[index];
@@ -378,6 +382,24 @@ static ORCHESTRA_COORD_NOINLINE void orchestra_controller_init_v10(
         telemetry->last_state = ORCHESTRA_CTRL_NORMAL;
         bpf_spin_unlock(&telemetry->lock);
     }
+}
+
+/* Deferred release needs only the permission state, not the actuator view.
+ * Keep its stack bounded when it also snapshots a bridge directive. */
+static __always_inline uint32_t orchestra_controller_read_state_v10(void)
+{
+    uint32_t key = 0;
+    uint32_t state = ORCHESTRA_CTRL_DISABLED;
+    struct orchestra_controller_state_v10 *record =
+        bpf_map_lookup_elem(&orch_ctrl_v10, &key);
+
+    if (!record)
+        return state;
+    bpf_spin_lock(&record->lock);
+    if (orchestra_controller_valid(record))
+        state = record->active_state;
+    bpf_spin_unlock(&record->lock);
+    return state;
 }
 
 static __always_inline int orchestra_controller_read_view_v10(
@@ -691,89 +713,6 @@ static ORCHESTRA_COORD_NOINLINE void orchestra_controller_update_from_coord(
     uint64_t telemetry_generation = 0;
     uint32_t telemetry_state = ORCHESTRA_CTRL_DISABLED;
 
-    {
-        uint32_t compact_state;
-        uint32_t compact_persistence;
-        uint32_t compact_actuator = ORCH_ACTUATOR_COUNT;
-        uint32_t compact_direction = 0;
-        uint64_t compact_generation;
-        int compact_changed = 0;
-
-        if (!metrics)
-            return;
-        controller = bpf_map_lookup_elem(&orch_ctrl_v10, &key);
-        if (!controller)
-            return;
-        telemetry = orchestra_controller_telemetry();
-        bpf_spin_lock(&controller->lock);
-        if (metrics->window_generation <=
-                controller->active.last_window_generation ||
-            (controller->next_update_ns != 0 &&
-             now < controller->next_update_ns)) {
-            controller->no_op_count++;
-            bpf_spin_unlock(&controller->lock);
-            return;
-        }
-        if (!orchestra_controller_next_generation_v10(
-                controller->active_generation, &compact_generation)) {
-            controller->active_state = ORCHESTRA_CTRL_DISABLED;
-            controller->flags = ORCHESTRA_CONTROLLER_F_VALID;
-            controller->no_op_count++;
-            telemetry_generation = controller->active_generation;
-            bpf_spin_unlock(&controller->lock);
-            orchestra_controller_note_state(
-                telemetry, ORCHESTRA_CTRL_DISABLED, ORCH_DEFICIT_NONE,
-                ORCH_DEFICIT_NONE, ORCH_DEFICIT_NONE, telemetry_generation,
-                metrics->window_generation, metrics->q_permille,
-                ORCH_ACTUATOR_COUNT, 0, 0, 0, 0, 0, 1);
-            return;
-        }
-        compact_state = metrics->deficit_class == ORCH_DEFICIT_NONE ?
-            ORCHESTRA_CTRL_NORMAL : ORCHESTRA_CTRL_DEGRADED;
-        compact_persistence = controller->active_deficit_class ==
-                metrics->deficit_class &&
-            controller->active_primary_deficit == metrics->primary_deficit ?
-                controller->active_persistence + 1u : 1u;
-        if (compact_persistence > 255u)
-            compact_persistence = 255u;
-        controller->active_state = compact_state;
-        controller->active_primary_deficit = metrics->primary_deficit;
-        controller->active_secondary_deficit = metrics->secondary_deficit;
-        controller->active_deficit_class = metrics->deficit_class;
-        controller->active_severity = metrics->deficit_severity;
-        controller->active_persistence = compact_persistence;
-        controller->active_generation = compact_generation;
-        controller->active.generation = compact_generation;
-        controller->active.state = compact_state;
-        controller->active.primary_deficit = metrics->primary_deficit;
-        controller->active.secondary_deficit = metrics->secondary_deficit;
-        controller->active.severity = metrics->deficit_severity;
-        controller->active.persistence = compact_persistence;
-        controller->active.last_window_generation =
-            metrics->window_generation;
-        controller->active.last_q_permille = metrics->q_permille;
-        controller->controller_epoch++;
-        if (controller->controller_epoch == 0)
-            controller->controller_epoch = 1;
-        controller->last_update_ns = now;
-        controller->next_update_ns = orchestra_controller_deadline_v10(
-            now, controller->update_period_ns);
-        controller->last_q_permille = metrics->q_permille;
-        if (metrics->q_permille > controller->best_q_permille)
-            controller->best_q_permille = metrics->q_permille;
-        controller->flags = ORCHESTRA_CONTROLLER_F_VALID;
-        telemetry_state = controller->active_state;
-        telemetry_generation = controller->active_generation;
-        bpf_spin_unlock(&controller->lock);
-        orchestra_controller_note_state(
-            telemetry, telemetry_state, metrics->primary_deficit,
-            metrics->secondary_deficit, metrics->deficit_class,
-            telemetry_generation, metrics->window_generation,
-            metrics->q_permille, compact_actuator, compact_direction,
-            compact_changed, 0, 0, 0, compact_changed ? 0 : 1);
-        return;
-    }
-
     if (!metrics || metrics->scope != ORCHESTRA_COORD_SCOPE_GLOBAL)
         return;
     controller = bpf_map_lookup_elem(&orch_ctrl_v10, &key);
@@ -825,7 +764,7 @@ static ORCHESTRA_COORD_NOINLINE void orchestra_controller_update_from_coord(
                                              0, 1);
         return;
     }
-    if (metrics->window_generation == controller->active.last_window_generation) {
+    if (metrics->window_generation <= controller->active.last_window_generation) {
         bpf_spin_unlock(&controller->lock);
         return;
     }
@@ -868,8 +807,8 @@ static ORCHESTRA_COORD_NOINLINE void orchestra_controller_update_from_coord(
                                                  telemetry_generation,
                                                  metrics->window_generation,
                                                  metrics->q_permille,
-                                                 ORCH_ACTUATOR_COUNT, 0, 0, 1,
-                                                 0, 0, 0);
+                                                 ORCH_ACTUATOR_COUNT, 0, 0, 0,
+                                                 1, 0, 0);
             return;
         }
         controller->evaluation_until_ns = 0;

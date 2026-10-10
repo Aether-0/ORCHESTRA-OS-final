@@ -8,9 +8,12 @@
 The canonical source entry point is `bpf/orchestra_sched.bpf.c`, which selects
 the single compatibility implementation body
 `orchestra_scx_stage7.bpf.c`, with the privileged bridge under `bridge/`. It uses full-switch sched_ext operations,
-but task ownership is still explicit: a task must pass the bridge's exact
-identity admission path; loading the object alone is not proof that any
-workload is owned by ORCHESTRA. It provides:
+which changes scheduling for every normal, batch, idle and ext task on the
+host. Exact identity admission authorizes adaptive directives, rather than
+isolating sched_ext ownership. Tasks without a directive enter the global RUN
+queue. The prototype does not implement Linux nice/weight or cgroup CPU-control
+semantics. Kernel activation requires a dedicated research host; per-task
+telemetry is still required to prove adaptive execution. It provides:
 
 - Exact-schema control, identity, directive, task, telemetry, deferred-timer,
   and fixed-point signal-frame maps
@@ -129,7 +132,7 @@ sudo /usr/local/bin/orchestra enable
 cat /sys/kernel/sched_ext/state
 cat /sys/kernel/sched_ext/root/ops
 
-# Should show "enabled"; task ownership still requires explicit opt-in.
+# Should show "enabled"; normal tasks are now owned by full-switch sched_ext.
 sudo /usr/local/bin/orchestra status
 ```
 
@@ -143,7 +146,7 @@ cleanup.
 After scheduler unload, telemetry is printed to stdout:
 
 - `load_count` / `unload_count` — scheduler attach/detach events
-- `task_enable_count` / `task_disable_count` — opt-in/opt-out events
+- `task_enable_count` / `task_disable_count` — sched_ext enable/disable events
 - `enqueue_count` / `dispatch_count` — scheduling operations
 - `run_count` / `yield_count` — action frequencies
 - `fallback_count` / `invalid_action_count` — error diagnostics
@@ -177,7 +180,7 @@ real-time, but it is not a kernel RT bypass/coexistence implementation.
 sudo /usr/local/bin/orchestra disable
 ```
 
-All opted-in tasks return to CFS/EEVDF safely.
+All full-switch tasks return to CFS/EEVDF on scheduler detach.
 
 ## ABI v8 kernel-resident adaptive core
 
@@ -191,7 +194,7 @@ legacy bridge ABI remains unchanged; v8 is defined in
   bank staging and generation-checked active-bank publication
 - `orch_task_v8` plus `orch_diag_v8`: hot per-task action/deadline state and
   separate diagnostic counters
-- `orch_tel_v8`: policy lookup/cache, generation, controller override,
+- `orch_tel_v8`: policy lookup, generation, controller override,
   unsupported-action, fallback, lifecycle, action, and prediction telemetry
 
 For each enqueue/select path the kernel performs the single decision sequence:
@@ -221,7 +224,27 @@ controller gate remains RUN-only until recovery is explicitly selected.
 Hot task state and diagnostics distinguish requested, deferred, executed, and
 running observations. The v8 telemetry also records state, policy, and signal
 generation changes, prediction fallback, unsupported actions, and policy
-lookup/cache outcomes.
+lookup outcomes. Legacy cache counters remain in the ABI; the decision path
+performs a fresh coherent policy snapshot instead of reusing cached actions.
+
+THROTTLE accounting follows continuous THROTTLE action periods. Renewing its
+generation preserves charged runtime; changing into THROTTLE starts a fresh
+period. Queue insertion is dispatch evidence, not effective execution. The
+registered `.enqueue` calls `orchestra_decide` and `orchestra_execute_action`,
+including native controller and capability gates. Task state and telemetry
+remain correlated by publication generation.
+
+A valid per-task bridge directive supplies identity admission and a bounded
+lease. With policy generation zero, its action is used directly. Once a
+native policy bank is committed, a coherent policy entry selects the action;
+missing or invalid entries fall back to RUN. Epoch, policy generation, and
+mode must agree across the policy snapshot and the admission snapshot.
+Deferred policy actions retain that provenance and are revalidated against
+the current admission and policy metadata before release.
+The existing periodic timer finalizes coordination windows and updates the
+native feedback controller before draining deferred work, including while
+the global RUN queue remains busy. These stages use separate bounded stack
+frames; decision snapshots use internal per-CPU working maps.
 
 THROTTLE accounting is generation-scoped. A newly published generation, or a
 change into THROTTLE, starts a fresh period with zero charged runtime. Requeues
@@ -296,3 +319,20 @@ attachment, ownership, or performance evidence.
   has converged on hardware
 - Runtime acceptance requires a matching kernel source/BTF toolchain and
   remains separate from userspace/simulation validation
+
+## Native coordination metrics
+
+Kernel ABI v10 records use bounded event windows. S1 averages the four permille
+scores for signal freshness, prediction confidence, prediction accuracy and
+sequence continuity; invalid observations contribute zero. S2 is effective
+policy compliance. S3 is the mean dominant-action share within each populated runtime-state class.
+S4 penalizes transitions, synchronized bursts and oscillations. Q is the integer
+fourth root of the product of all four permille scores. These event-window
+metrics are distinct from the userspace paper's entropy-based population
+metrics and must not be pooled with them.
+
+Queue insertion increments dispatch counters. Only `.running` records an
+execution. THROTTLE renewal preserves service already charged in its period;
+changing its parameters never refunds service already consumed. Deferred work
+is revalidated against current publication and controller state and released
+as RUN when revoked or when its local CPU destination is unavailable.

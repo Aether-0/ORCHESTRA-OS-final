@@ -43,11 +43,12 @@ aggregates are updated together; `orch_coord_cpu` is a one-entry per-CPU
 scratch map used for short transition-burst detection without scanning the
 task population.
 
-At a window boundary the previous global record is finalized under its map
-lock before the next record is initialized. The finalized compact record is
-then handed to the controller. Generation parity, schema checks, and locked
-publication prevent a reader from treating a partially initialized record as
-a completed window.
+The existing periodic timer finalizes the previous global window and hands
+its compact summary to the controller before draining deferred tasks. This
+continues while the global RUN queue is busy. Counter summaries are captured
+under the map lock; S3, Q, and deficit classification run outside the lock.
+The generation is rechecked before publishing the completed record. Window
+initialization clears all counters, including when a parity bank is reused.
 
 ## Native coordination metrics
 
@@ -103,8 +104,9 @@ The aggregate is the fixed-point geometric mean:
 Q = floor((S1 * S2 * S3 * S4) ** 1/4)
 ```
 
-The implementation obtains the fourth root with two bounded integer square-root
-passes and clamps the result to permille. The finalized record includes every
+The implementation obtains the exact integer fourth root with ten bounded
+binary-search steps. Arithmetic selection keeps the BPF search branchless;
+inputs are clamped to permille. The finalized record includes every
 component, Q, sample window, observation counts, transition counters, and
 deficit metadata; Q is never exposed as a standalone unexplained value.
 

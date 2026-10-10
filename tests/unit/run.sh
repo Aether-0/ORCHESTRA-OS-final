@@ -78,6 +78,15 @@ ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 \
 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
     timeout 30s "$coordination_gcc_binary"
 
+kernel_logic_binary="$test_tmp_dir/test_orchestra_kernel_logic"
+gcc "${common_flags[@]}" \
+    -fsanitize=address,undefined -fno-omit-frame-pointer \
+    "$unit_dir/test_orchestra_kernel_logic.c" -o "$kernel_logic_binary"
+printf '%s\n' 'Running actual BPF-header logic with map/clock mocks'
+ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 \
+UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+    timeout 30s "$kernel_logic_binary"
+
 legacy_gcc_binary="$test_tmp_dir/test_orchestra_gcc_legacy"
 gcc "${common_flags[@]}" \
     -DORCHESTRA_SIGNAL_PUBLICATION_LEGACY=1 \

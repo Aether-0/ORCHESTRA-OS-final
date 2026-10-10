@@ -4,6 +4,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ACCOUNTING = (ROOT / "kernel/sched_ext/include/orchestra_task_accounting.h").read_text()
 BPF = (ROOT / "kernel/sched_ext/orchestra_scx_stage7.bpf.c").read_text()
 COMPAT_BPF = (ROOT / "kernel/sched_ext/orchestra_scx.bpf.c").read_text()
 STABLE_BPF = (ROOT / "kernel/sched_ext/bpf/orchestra_sched.bpf.c").read_text()
@@ -82,7 +83,7 @@ def main() -> None:
             "deferred_release_failure_count" in BPF,
             "deferred progress diagnostics must remain observable")
     require("deferred_directive_is_current" in BPF and
-            "load_directive(p, &current" in BPF and
+            "load_directive(p, current" in BPF and
             "BRIDGE_FALLBACK_UNSTABLE_PUBLICATION" in BPF and
             "SCX_DSQ_GLOBAL" in BPF,
             "deferred release must revalidate the current directive and fail safe to RUN")
@@ -137,67 +138,77 @@ def main() -> None:
     require("struct bridge_task_state {\n    ORCHESTRA_MAP_LOCK lock" in ABI and
             "bpf_spin_lock(&state->lock)" in BPF,
             "per-task timer/callback state must remain synchronized")
-    state_sync = function_body(
-        BPF, "static __always_inline void sync_task_state_for_action(")
-    require("state->generation != generation" in state_sync and
-            "state->action != action" in state_sync and
-            "state->generation = generation" in state_sync and
-            "state->action = action" in state_sync and
-            "state->period_start_ns = now" in state_sync and
-            "state->runtime_used_ns = 0" in state_sync and
-            "state->last_enqueue_ns = now" in state_sync,
-            "new action generations must start one coherent fresh accounting period")
     enqueue_callback = function_body(
         BPF, "void BPF_STRUCT_OPS(orchestra_sched_enqueue,")
-    require("orchestra_enqueue_bridge(p, enq_flags)" in enqueue_callback and
-            "orchestra_execute_action(" not in enqueue_callback,
-            "enqueue must use exactly one verifier-safe live action path")
-    live_enqueue = function_body(
-        BPF, "static __always_inline void orchestra_enqueue_bridge(")
-    require("sync_task_state_for_action(" in live_enqueue and
-            "record_dispatched_legacy(" in live_enqueue,
-            "the live enqueue path must synchronize and account its actions")
-    live_dispatch = function_body(
-        BPF, "static __always_inline void record_dispatched_legacy(")
-    require(live_dispatch.count("dispatched_action_count") == 1 and
-            live_dispatch.count("run_dispatched_count") == 1 and
-            live_dispatch.count("yield_dispatched_count") == 1 and
-            live_dispatch.count("migrate_dispatched_count") == 1 and
-            "effective_count" not in live_dispatch and
-            "orchestra_record_execution_v8" not in live_dispatch,
-            "live dispatch must report one matching action without claiming execution")
-    valid_migrate = live_enqueue[live_enqueue.rindex(
-        "if (action == ORCHESTRA_ACTION_MIGRATE) {"):]
+    require("orchestra_decide(p, decision)" in enqueue_callback and
+            "orchestra_execute_action(p, enq_flags" in enqueue_callback and
+            "orchestra_enqueue_bridge" not in BPF,
+            "registered enqueue must use the canonical decision and execution path")
+    decide = function_body(BPF, "static ORCHESTRA_NOINLINE int orchestra_decide(")
+    require("orchestra_controller_gate(decision)" in decide and
+            "orchestra_validate_action(p, decision)" in decide,
+            "the reachable decision path must gate and validate every directive")
+    require("have_policy && bridge->policy_generation != 0" in decide and
+            "decision->directive.policy_generation != bridge->policy_generation" in decide and
+            "decision->directive.generation = bridge->generation" in decide,
+            "active native policy must govern admitted tasks under a matching lease")
+    executor = function_body(BPF, "static __always_inline void orchestra_execute_action(")
+    require("orchestra_record_result(" in executor and
+            "sync_task_state_for_action(" in executor and
+            "orchestra_record_execution_v8" not in executor,
+            "decisions and dispatch must remain separate from effective execution")
+    migrate = executor[executor.index("case ORCHESTRA_ACTION_MIGRATE:"):]
+    valid_migrate = migrate[migrate.index("tel_inc(&tel->migrate_accepted_count)"):]
     require(valid_migrate.index("migrate_accepted_count") <
-            valid_migrate.index("SCX_DSQ_LOCAL_ON | directive.target_cpu") <
-            valid_migrate.index("record_dispatched_legacy("),
-            "validated MIGRATE must record accepted then inserted then dispatched")
-    rejected_migrate = live_enqueue[live_enqueue.index(
-        "if (action == ORCHESTRA_ACTION_MIGRATE &&"):live_enqueue.index(
-            "if (action == ORCHESTRA_ACTION_SLEEP")]
+            valid_migrate.index("SCX_DSQ_LOCAL_ON | dir->target_cpu") <
+            valid_migrate.index("record_dispatched("),
+            "validated MIGRATE must retain accepted/inserted/dispatched ordering")
+    rejected_migrate = migrate[:migrate.index("tel_inc(&tel->migrate_accepted_count)")]
     require("invalid_cpu_count" in rejected_migrate and
             "BRIDGE_FALLBACK_BAD_CPU" in rejected_migrate and
-            "migrate_accepted_count" not in rejected_migrate,
-            "illegal MIGRATE targets must fall back without accepted/dispatched claims")
-    state_failure = live_enqueue[live_enqueue.index(
-        "if (!state) {"):live_enqueue.index("sync_task_state_for_action(")]
+            "ORCHESTRA_ACTION_RUN" in rejected_migrate,
+            "illegal MIGRATE targets must report RUN fallback before acceptance")
+    state_failure = executor[executor.index("if (!state) {"):
+                             executor.index("sync_task_state_for_action(")]
     require("BRIDGE_FALLBACK_MAP_ERROR" in state_failure and
             "ORCHESTRA_ACTION_RUN" in state_failure and
-            "record_dispatched_legacy(" in state_failure,
-            "post-acceptance state allocation failure must report its RUN fallback")
-    deferred = function_body(
-        BPF, "static ORCHESTRA_NOINLINE int orchestra_enqueue_deferred_action(",
-        occurrence=2)
-    throttle_parameters = deferred.index(
-        "period = directive->throttle_period_ns")
-    throttle_sync = deferred.index(
-        "sync_task_state_for_action(state, directive->generation",
-        throttle_parameters)
-    throttle_accounting = deferred.index(
-        "elapsed = now - state->period_start_ns", throttle_sync)
-    require(throttle_parameters < throttle_sync < throttle_accounting and
-            deferred.count("ORCHESTRA_ACTION_RUN") >= 4,
-            "THROTTLE must synchronize valid generations before accounting and RUN fallbacks")
+            "record_dispatched(" in state_failure,
+            "state allocation failure must retain its RUN dispatch attribution")
+    dispatch = function_body(BPF, "static __always_inline void record_dispatched(")
+    require("dispatched_count++" in dispatch and
+            "effective_count" not in dispatch and
+            "orchestra_record_execution_v8" not in dispatch,
+            "queue insertion cannot claim execution")
+    timer_callback = function_body(BPF, "static int deferred_timerfn(")
+    require("orchestra_coord_finalize_global_live(now)" in timer_callback and
+            "orchestra_drain_deferred(now)" in timer_callback,
+            "periodic callback must update feedback and drain deferred tasks")
+    timer = function_body(BPF, "static ORCHESTRA_NOINLINE void orchestra_drain_deferred(")
+    require("deferred_directive_is_current(" in timer and
+            "orchestra_controller_read_state_v10(" in timer and
+            "SCX_DSQ_GLOBAL" in timer and
+            "orchestra_record_execution_v8" not in timer,
+            "active deferred timer must revalidate and provide RUN recovery without execution claims")
+    state_sync = function_body(BPF, "static __always_inline void sync_task_state_for_action(")
+    require("orchestra_sync_task_accounting(" in state_sync and
+            "state->action != ORCHESTRA_ACTION_THROTTLE" in ACCOUNTING and
+            "action != ORCHESTRA_ACTION_THROTTLE" in ACCOUNTING,
+            "renewing THROTTLE must not replenish its accounting budget")
+    policy_lookup = function_body(BPF, "static ORCHESTRA_NOINLINE int orchestra_policy_lookup(")
+    require("snapshot_control(verify_control)" in policy_lookup and
+            "control_snapshot_equal(policy_control, verify_control)" in policy_lookup,
+            "live policy lookup must retain cross-map publication coherence")
+    running_callback = function_body(
+        BPF, "void BPF_STRUCT_OPS(orchestra_sched_running,")
+    require("orchestra_record_execution_v8(" in running_callback and
+            BPF.count("orchestra_record_execution_v8(") == 2,
+            "only the running callback may record effective execution")
+    require("ORCHESTRA_TASK_V8_F_ENQUEUED" in running_callback and
+            "ORCHESTRA_MIGRATE_V8_SELECTED" in running_callback,
+            "running must clear pending progress and report observed migration")
+    require("orchestra_clear_task_action(state)" in executor and
+            "coord->last_fallback_reason = reason" in BPF,
+            "RUN fallback must clear stale action state and retain attribution")
     require("bpf_cpumask_test_cpu(cpu, p->cpus_ptr)" in BPF and
             "scx_bpf_get_online_cpumask" in BPF,
             "MIGRATE must check affinity and online masks")
@@ -449,7 +460,7 @@ def main() -> None:
             "restore_inactive_policy_bank" in BRIDGE and
             "--policy-abort" in BRIDGE,
             "failed publications must fail closed and staged policy writes must have an abort path")
-    deferred_section = BPF[BPF.index("deferred_timerfn"):BPF.index("s32 BPF_STRUCT_OPS_SLEEPABLE(orchestra_sched_init)")]
+    deferred_section = BPF[BPF.index("orchestra_drain_deferred"):BPF.index("s32 BPF_STRUCT_OPS_SLEEPABLE(orchestra_sched_init)")]
     require("SCX_DSQ_GLOBAL" in deferred_section,
             "expired deferred tasks must have a global RUN promotion fallback")
     require("orchestra_controller_next_generation_v10" in CONTROLLER_V10 and

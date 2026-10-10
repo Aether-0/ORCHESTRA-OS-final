@@ -1899,6 +1899,40 @@ static bool test_consensus_blending(void) {
     return true;
 }
 
+static bool test_bridge_ipc_deadline_and_stop(void) {
+    int channels[2];
+    CHECK(pipe2(channels, O_NONBLOCK | O_CLOEXEC) == 0);
+    uint8_t value = 0;
+    uint64_t started = monotonic_ns();
+    CHECK(!fd_read_full(channels[0], &value, sizeof(value)));
+    CHECK(errno == ETIMEDOUT);
+    CHECK(monotonic_ns() - started < UINT64_C(2000000000));
+    g_stop = 1;
+    CHECK(!fd_read_full(channels[0], &value, sizeof(value)));
+    CHECK(errno == EINTR);
+    g_stop = 0;
+    close(channels[0]); close(channels[1]);
+
+    pid_t child = fork();
+    CHECK(child >= 0);
+    if (child == 0) {
+        (void)raise(SIGSTOP);
+        _exit(0);
+    }
+    int status;
+    CHECK(waitpid(child, &status, WUNTRACED) == child);
+    CHECK(WIFSTOPPED(status));
+    kernel_bridge_session_t session = {
+        .request_fd = -1, .response_fd = -1, .pid = child, .active = true
+    };
+    started = monotonic_ns();
+    kernel_bridge_stop(&session);
+    CHECK(!session.active);
+    CHECK(monotonic_ns() - started < UINT64_C(1000000000));
+    CHECK(waitpid(child, &status, WNOHANG) == -1 && errno == ECHILD);
+    return true;
+}
+
 int main(void) {
     const named_test_t tests[] = {
         {"sha256_hmac_known_vectors", test_sha256_hmac_vectors},
@@ -1931,7 +1965,8 @@ int main(void) {
         {"strict_cli_numeric_parsing", test_strict_cli_numeric_parsing},
         {"policy_aggregation_excludes_rt", test_policy_aggregation_excludes_rt},
         {"policy_atomic_save_uses_private_temp", test_policy_atomic_save_uses_private_temp},
-        {"consensus_blending_and_timeout", test_consensus_blending}
+        {"consensus_blending_and_timeout", test_consensus_blending},
+        {"bridge_ipc_deadline_and_stop", test_bridge_ipc_deadline_and_stop}
     };
     const size_t test_count = sizeof(tests) / sizeof(tests[0]);
     for (size_t index = 0; index < test_count; ++index) {

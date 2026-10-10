@@ -19,7 +19,7 @@
 #define ORCHESTRA_U64_MAX (~(uint64_t)0)
 #endif
 
-#ifdef __BPF__
+#if defined(__BPF__) && !defined(ORCHESTRA_KERNEL_LOGIC_TEST)
 #define ORCHESTRA_COORD_UNROLL _Pragma("unroll")
 #else
 #define ORCHESTRA_COORD_UNROLL
@@ -71,6 +71,14 @@ static __always_inline uint32_t orchestra_coord_ratio(uint64_t numerator,
 
 /* Integer square root for the largest possible four-factor permille product
  * (1000^4).  Two applications give a verifier-safe fourth root. */
+/* Mean of scores already expressed in permille, including invalid samples
+ * as zero in the denominator. Count ratios below use a different unit. */
+static __always_inline uint32_t orchestra_coord_average_sum(uint64_t sum,
+                                                          uint64_t count)
+{
+    return count == 0 ? 0 : orchestra_coord_clamp(sum / count);
+}
+
 static __always_inline uint64_t orchestra_coord_isqrt(uint64_t value)
 {
     uint64_t low = 0;
@@ -91,35 +99,63 @@ static __always_inline uint64_t orchestra_coord_isqrt(uint64_t value)
 static ORCHESTRA_COORD_NOINLINE uint32_t orchestra_coord_geomean4(
     uint32_t s1, uint32_t s2, uint32_t s3, uint32_t s4)
 {
-#ifdef __BPF__
-    uint32_t result = s1 < s2 ? s1 : s2;
+    /* Each factor is in [0,1000]; the product and fourth powers fit u64.
+     * Ten bounded iterations give the exact integer fourth root. */
+    uint64_t product = (uint64_t)orchestra_coord_clamp(s1) *
+        orchestra_coord_clamp(s2) * orchestra_coord_clamp(s3) *
+        orchestra_coord_clamp(s4);
+    uint32_t low = 0;
+    uint32_t high = ORCHESTRA_V10_FIXED_POINT_SCALE + 1u;
+    ORCHESTRA_COORD_UNROLL
+    for (int iteration = 0; iteration < 10; iteration++) {
+        uint32_t middle = (low + high) / 2u;
+        uint64_t square = (uint64_t)middle * middle;
+        /* Both operands are at most 1000^4, so unsigned subtraction's
+         * top bit distinguishes underflow exactly. Arithmetic selection
+         * avoids 2^10 verifier paths without approximating the root. */
+        volatile uint64_t difference = product - square * square;
+        uint32_t fits = 1u - (uint32_t)(difference >> 63);
+        /* Volatile keeps LLVM from turning the arithmetic selections back
+         * into conditional branches in the BPF instruction stream. */
+        volatile uint32_t mask = 0u - fits;
+        low = (middle & mask) | (low & ~mask);
+        high = (high & mask) | (middle & ~mask);
+    }
+    return low;
+}
 
-    if (s3 < result)
-        result = s3;
-    if (s4 < result)
-        result = s4;
-    return result;
-#else
-    uint64_t product = (uint64_t)s1 * (uint64_t)s2;
-    uint64_t estimate;
-    uint64_t cube;
+static __always_inline uint32_t orchestra_coord_signal_score(
+    uint64_t freshness, uint64_t confidence, uint64_t accuracy,
+    uint64_t continuity, uint64_t count)
+{
+    return (orchestra_coord_average_sum(freshness, count) +
+            orchestra_coord_average_sum(confidence, count) +
+            orchestra_coord_average_sum(accuracy, count) +
+            orchestra_coord_average_sum(continuity, count)) / 4u;
+}
 
-    product *= (uint64_t)s3;
-    product *= (uint64_t)s4;
-    if (product == 0)
-        return 0;
-    estimate = ((uint64_t)s1 + (uint64_t)s2 + (uint64_t)s3 + (uint64_t)s4) /
-        4u;
-    if (estimate == 0)
-        return 0;
-    cube = estimate * estimate * estimate;
-    estimate = (3u * estimate + product / cube) / 4u;
-    cube = estimate * estimate * estimate;
-    estimate = (3u * estimate + product / cube) / 4u;
-    cube = estimate * estimate * estimate;
-    estimate = (3u * estimate + product / cube) / 4u;
-    return orchestra_coord_clamp(estimate);
-#endif
+static ORCHESTRA_COORD_NOINLINE uint32_t orchestra_coord_compute_s3(
+    const struct orchestra_coordination_state_v10 *state)
+{
+    uint64_t sum = 0;
+    uint32_t populated = 0;
+    ORCHESTRA_COORD_UNROLL
+    for (uint32_t index = 0; index < ORCHESTRA_COORD_STATE_CLASS_COUNT; index++) {
+        uint64_t total = 0;
+        uint64_t maximum = 0;
+        ORCHESTRA_COORD_UNROLL
+        for (int action = 0; action < ORCHESTRA_ACTION_COUNT; action++) {
+            uint64_t count = state->coherence_hist[index][action];
+            total += count;
+            if (count > maximum)
+                maximum = count;
+        }
+        if (total != 0) {
+            sum += orchestra_coord_ratio(maximum, total);
+            populated++;
+        }
+    }
+    return populated == 0 ? 0 : (uint32_t)(sum / populated);
 }
 
 static __always_inline uint32_t orchestra_coord_min4(uint32_t a, uint32_t b,
@@ -402,17 +438,15 @@ orchestra_coord_lookup(uint32_t scope, uint32_t domain, uint64_t generation)
     return bpf_map_lookup_elem(&orch_coord_v10, &key);
 }
 
-static ORCHESTRA_COORD_NOINLINE void orchestra_coord_initialize(
+static __always_inline void orchestra_coord_initialize(
     struct orchestra_coordination_state_v10 *state, uint64_t scope_domain,
     uint64_t generation, uint64_t start_ns, uint64_t duration_ns)
 {
     uint32_t scope = (uint32_t)(scope_domain >> 32);
     uint32_t domain = (uint32_t)scope_domain;
 
-#ifndef __BPF__
     __builtin_memset(&state->magic, 0,
                      sizeof(*state) - sizeof(state->lock));
-#endif
     state->magic = ORCHESTRA_ABI_MAGIC;
     state->abi_version = ORCHESTRA_CONTROL_ABI_VERSION;
     state->value_size = sizeof(*state);
@@ -447,45 +481,15 @@ orchestra_coord_prepare(uint32_t scope, uint32_t domain, uint64_t generation,
     return state;
 }
 
-static __always_inline uint32_t orchestra_coord_average_sum(uint64_t sum,
-                                                              uint64_t count)
-{
-    return orchestra_coord_ratio(sum, count);
-}
-
 static __always_inline void orchestra_coord_finalize_locked(
     struct orchestra_coordination_state_v10 *state,
     struct orchestra_coordination_metrics_v10 *metrics)
 {
-#ifdef __BPF__
-    uint32_t stability_penalty = orchestra_coord_ratio(
-        state->action_transition_count, state->eligible_observations);
-
-    state->s1_permille = orchestra_coord_ratio(
-        state->signal_freshness_sum, state->prediction_observations);
-    state->s2_permille = orchestra_coord_ratio(
-        state->policy_compliance_count, state->executed_observations);
-    state->s4_permille = stability_penalty >=
-        ORCHESTRA_V10_FIXED_POINT_SCALE ? 0u :
-        ORCHESTRA_V10_FIXED_POINT_SCALE - stability_penalty;
-    if (state->synchronized_mass_switch_count != 0)
-        state->flags |= ORCHESTRA_COORD_F_MASS_SWITCH;
-    if (state->prediction_stale_count != 0 ||
-        state->prediction_invalid_count != 0)
-        state->flags |= ORCHESTRA_COORD_F_SIGNAL_FALLBACK;
-#else
-    uint32_t freshness = orchestra_coord_average_sum(
-        state->signal_freshness_sum, state->prediction_observations);
-    uint32_t confidence = orchestra_coord_average_sum(
-        state->prediction_confidence_sum, state->prediction_observations);
-    uint32_t prediction_error = orchestra_coord_average_sum(
-        state->prediction_error_sum, state->prediction_observations);
-    uint32_t continuity = orchestra_coord_average_sum(
-        state->generation_continuity_sum, state->prediction_observations);
     uint32_t stability_penalty;
-
-    state->s1_permille = orchestra_coord_clamp(
-        (uint64_t)(freshness + confidence + prediction_error + continuity) / 4u);
+    state->s1_permille = orchestra_coord_signal_score(
+        state->signal_freshness_sum, state->prediction_confidence_sum,
+        state->prediction_error_sum, state->generation_continuity_sum,
+        state->prediction_observations);
     state->s2_permille = orchestra_coord_ratio(
         state->policy_compliance_count, state->executed_observations);
     stability_penalty = orchestra_coord_ratio(
@@ -517,7 +521,7 @@ static __always_inline void orchestra_coord_finalize_locked(
     if (state->prediction_stale_count != 0 ||
         state->prediction_invalid_count != 0)
         state->flags |= ORCHESTRA_COORD_F_SIGNAL_FALLBACK;
-#endif
+
 
     if (!metrics)
         return;
@@ -540,32 +544,6 @@ static __always_inline void orchestra_coord_finalize_locked(
         state->capability_adjustment_count;
 }
 
-#ifdef __BPF__
-static ORCHESTRA_COORD_NOINLINE uint32_t orchestra_coord_compute_s3(
-    const struct orchestra_coordination_state_v10 *state)
-{
-    uint64_t action0 = state->actual_action_count[0];
-    uint64_t action1 = state->actual_action_count[1];
-    uint64_t action2 = state->actual_action_count[2];
-    uint64_t action3 = state->actual_action_count[3];
-    uint64_t action4 = state->actual_action_count[4];
-    uint64_t total = action0 + action1 + action2 + action3 + action4;
-    uint64_t maximum = action0;
-
-    if (action1 > maximum)
-        maximum = action1;
-    if (action2 > maximum)
-        maximum = action2;
-    if (action3 > maximum)
-        maximum = action3;
-    if (action4 > maximum)
-        maximum = action4;
-    if (total == 0)
-        return 0;
-    return orchestra_coord_ratio(maximum, total);
-}
-#endif
-
 /* Defined by orchestra_controller.h after this header is included. */
 static ORCHESTRA_COORD_NOINLINE void orchestra_controller_update_from_coord(
     uint64_t now, const struct orchestra_coordination_metrics_v10 *metrics);
@@ -575,7 +553,7 @@ static ORCHESTRA_COORD_NOINLINE void orchestra_coord_begin_window(
     uint64_t *duration_ns)
 {
 #ifdef __BPF__
-    uint64_t duration = ORCHESTRA_COORD_DEFAULT_WINDOW_NS;
+    uint64_t duration = orchestra_coord_window_duration_ns();
     uint64_t current_generation = now / duration;
     uint64_t current_start = current_generation * duration;
 
@@ -588,7 +566,7 @@ static ORCHESTRA_COORD_NOINLINE void orchestra_coord_begin_window(
 #else
     struct orchestra_coordination_state_v10 *current;
     struct orchestra_coordination_state_v10 *previous = NULL;
-    struct orchestra_coordination_metrics_v10 metrics = {};
+    struct orchestra_coordination_metrics_v10 metrics = { 0 };
     uint64_t duration = orchestra_coord_window_duration_ns();
     uint64_t current_generation = now / duration;
     uint64_t current_start = current_generation * duration;
@@ -698,7 +676,8 @@ static __always_inline void orchestra_coord_record_signal_one(
     previous_sequence = __sync_lock_test_and_set(
         &state->last_signal_generation, sequence);
     if (previous_sequence != 0 &&
-        (sequence == 0 || sequence != previous_sequence + 1u)) {
+        (sequence == 0 || (sequence != previous_sequence &&
+         sequence != previous_sequence + 1u))) {
         continuity = 0;
         __sync_fetch_and_add(&state->signal_generation_break_count, 1);
     }
@@ -774,34 +753,6 @@ struct orchestra_coord_action_context {
 static ORCHESTRA_COORD_NOINLINE void orchestra_coord_record_action_state(
     const struct orchestra_coord_action_context *context)
 {
-#ifdef __BPF__
-    struct orchestra_coordination_state_v10 *state = context->state;
-
-    if (!state)
-        return;
-    __sync_fetch_and_add(&state->eligible_observations, 1);
-    if (context->policy_action < ORCHESTRA_ACTION_COUNT)
-        __sync_fetch_and_add(&state->policy_action_count[
-            context->policy_action], 1);
-    if (context->controller_action < ORCHESTRA_ACTION_COUNT)
-        __sync_fetch_and_add(&state->controller_action_count[
-            context->controller_action], 1);
-    if (context->capability_action < ORCHESTRA_ACTION_COUNT)
-        __sync_fetch_and_add(&state->capability_action_count[
-            context->capability_action], 1);
-    if (context->actual_action < ORCHESTRA_ACTION_COUNT)
-        __sync_fetch_and_add(&state->coherence_hist[context->state_index &
-            (ORCHESTRA_COORD_STATE_CLASS_COUNT - 1u)][context->actual_action], 1);
-    if (context->actual_action < ORCHESTRA_ACTION_COUNT)
-        __sync_fetch_and_add(&state->actual_action_count[
-            context->actual_action], 1);
-    if (context->fallback_reason != BRIDGE_FALLBACK_NONE)
-        __sync_fetch_and_add(&state->fallback_count, 1);
-    if (context->previous_action != context->actual_action)
-        __sync_fetch_and_add(&state->action_transition_count, 1);
-    if (context->previous_policy_state != context->state_index)
-        __sync_fetch_and_add(&state->policy_state_switch_count, 1);
-#else
     struct orchestra_coordination_state_v10 *state = context->state;
     uint32_t policy_action = context->policy_action;
     uint32_t controller_action = context->controller_action;
@@ -851,55 +802,20 @@ static ORCHESTRA_COORD_NOINLINE void orchestra_coord_record_action_state(
         __sync_fetch_and_add(&state->sleep_cycle_count, 1);
     if (previous_policy_state != state_index)
         __sync_fetch_and_add(&state->policy_state_switch_count, 1);
-#endif
+
 }
 
-#ifdef __BPF__
 static ORCHESTRA_COORD_NOINLINE void orchestra_coord_record_action(
     const struct orchestra_coord_action_context *input, uint64_t now)
 {
-    struct orchestra_coordination_state_v10 *cpu_state;
-    struct orchestra_coordination_state_v10 *numa_state;
-    struct orchestra_coordination_state_v10 *global_state;
-    struct orchestra_coord_action_context context = {
-        .state = NULL,
-        .policy_action = input->policy_action,
-        .controller_action = input->controller_action,
-        .capability_action = input->capability_action,
-        .actual_action = input->actual_action,
-        .state_index = input->state_index,
-        .previous_action = input->previous_action,
-        .previous_policy_state = input->previous_policy_state,
-        .fallback_reason = input->fallback_reason,
-    };
-    uint64_t generation;
-    uint64_t start_ns;
-    uint64_t duration_ns;
-
-    orchestra_coord_begin_window(now, &generation, &start_ns, &duration_ns);
-    cpu_state = orchestra_coord_prepare(ORCHESTRA_COORD_SCOPE_CPU,
-                                        orchestra_coord_cpu_domain(),
-                                        generation, start_ns, duration_ns);
-    numa_state = orchestra_coord_prepare(ORCHESTRA_COORD_SCOPE_NUMA,
-                                         orchestra_coord_numa_domain(),
-                                         generation, start_ns, duration_ns);
-    global_state = orchestra_coord_prepare(ORCHESTRA_COORD_SCOPE_GLOBAL,
-                                           ORCHESTRA_COORD_GLOBAL_DOMAIN_SLOT,
-                                           generation, start_ns, duration_ns);
-    context.state = cpu_state;
-    orchestra_coord_record_action_state(&context);
-    context.state = numa_state;
-    orchestra_coord_record_action_state(&context);
-    context.state = global_state;
-    orchestra_coord_record_action_state(&context);
-}
-#else
-static __always_inline void orchestra_coord_record_action(
-    uint32_t policy_action, uint32_t controller_action,
-    uint32_t capability_action, uint32_t actual_action, uint32_t state_index,
-    uint32_t previous_action, uint32_t previous_policy_state,
-    uint32_t fallback_reason, uint64_t now)
-{
+    uint32_t policy_action = input->policy_action;
+    uint32_t controller_action = input->controller_action;
+    uint32_t capability_action = input->capability_action;
+    uint32_t actual_action = input->actual_action;
+    uint32_t state_index = input->state_index;
+    uint32_t previous_action = input->previous_action;
+    uint32_t previous_policy_state = input->previous_policy_state;
+    uint32_t fallback_reason = input->fallback_reason;
     struct orchestra_coord_cpu_v10 *local;
     struct orchestra_coordination_state_v10 *cpu_state;
     struct orchestra_coordination_state_v10 *numa_state;
@@ -968,126 +884,8 @@ static __always_inline void orchestra_coord_record_action(
     orchestra_coord_record_action_state(&action_context);
     if (mass_switch)
         orchestra_coord_mark_mass_switch(cpu_state, numa_state, global_state);
-    return;
-    if (cpu_state) {
-        __sync_fetch_and_add(&cpu_state->eligible_observations, 1);
-        if (policy_action < ORCHESTRA_ACTION_COUNT)
-            __sync_fetch_and_add(&cpu_state->policy_action_count[policy_action], 1);
-        if (controller_action < ORCHESTRA_ACTION_COUNT)
-            __sync_fetch_and_add(&cpu_state->controller_action_count[controller_action], 1);
-        if (capability_action < ORCHESTRA_ACTION_COUNT)
-            __sync_fetch_and_add(&cpu_state->capability_action_count[capability_action], 1);
-        if (actual_action < ORCHESTRA_ACTION_COUNT)
-            __sync_fetch_and_add(&cpu_state->coherence_hist[state_index &
-                (ORCHESTRA_COORD_STATE_CLASS_COUNT - 1u)][actual_action], 1);
-        if (fallback_reason != BRIDGE_FALLBACK_NONE)
-            __sync_fetch_and_add(&cpu_state->fallback_count, 1);
-        if (controller_action != policy_action)
-            __sync_fetch_and_add(&cpu_state->controller_override_count, 1);
-        if (capability_action != controller_action)
-            __sync_fetch_and_add(&cpu_state->capability_adjustment_count, 1);
-        if (transitioned)
-            __sync_fetch_and_add(&cpu_state->action_transition_count, 1);
-        if (previous_action == ORCHESTRA_ACTION_MIGRATE &&
-            actual_action == ORCHESTRA_ACTION_MIGRATE)
-            __sync_fetch_and_add(&cpu_state->repeated_migration_count, 1);
-        if ((previous_action == ORCHESTRA_ACTION_RUN &&
-             actual_action == ORCHESTRA_ACTION_YIELD) ||
-            (previous_action == ORCHESTRA_ACTION_YIELD &&
-             actual_action == ORCHESTRA_ACTION_RUN))
-            __sync_fetch_and_add(&cpu_state->run_yield_oscillation_count, 1);
-        if (previous_action != actual_action &&
-            (previous_action == ORCHESTRA_ACTION_THROTTLE ||
-             actual_action == ORCHESTRA_ACTION_THROTTLE))
-            __sync_fetch_and_add(&cpu_state->throttle_cycle_count, 1);
-        if (previous_action != actual_action &&
-            (previous_action == ORCHESTRA_ACTION_SLEEP ||
-             actual_action == ORCHESTRA_ACTION_SLEEP))
-            __sync_fetch_and_add(&cpu_state->sleep_cycle_count, 1);
-        if (previous_policy_state != state_index)
-            __sync_fetch_and_add(&cpu_state->policy_state_switch_count, 1);
-    }
-    if (numa_state) {
-        __sync_fetch_and_add(&numa_state->eligible_observations, 1);
-        if (policy_action < ORCHESTRA_ACTION_COUNT)
-            __sync_fetch_and_add(&numa_state->policy_action_count[policy_action], 1);
-        if (controller_action < ORCHESTRA_ACTION_COUNT)
-            __sync_fetch_and_add(&numa_state->controller_action_count[controller_action], 1);
-        if (capability_action < ORCHESTRA_ACTION_COUNT)
-            __sync_fetch_and_add(&numa_state->capability_action_count[capability_action], 1);
-        if (actual_action < ORCHESTRA_ACTION_COUNT)
-            __sync_fetch_and_add(&numa_state->coherence_hist[state_index &
-                (ORCHESTRA_COORD_STATE_CLASS_COUNT - 1u)][actual_action], 1);
-        if (fallback_reason != BRIDGE_FALLBACK_NONE)
-            __sync_fetch_and_add(&numa_state->fallback_count, 1);
-        if (controller_action != policy_action)
-            __sync_fetch_and_add(&numa_state->controller_override_count, 1);
-        if (capability_action != controller_action)
-            __sync_fetch_and_add(&numa_state->capability_adjustment_count, 1);
-        if (transitioned)
-            __sync_fetch_and_add(&numa_state->action_transition_count, 1);
-        if (previous_action == ORCHESTRA_ACTION_MIGRATE &&
-            actual_action == ORCHESTRA_ACTION_MIGRATE)
-            __sync_fetch_and_add(&numa_state->repeated_migration_count, 1);
-        if ((previous_action == ORCHESTRA_ACTION_RUN &&
-             actual_action == ORCHESTRA_ACTION_YIELD) ||
-            (previous_action == ORCHESTRA_ACTION_YIELD &&
-             actual_action == ORCHESTRA_ACTION_RUN))
-            __sync_fetch_and_add(&numa_state->run_yield_oscillation_count, 1);
-        if (previous_action != actual_action &&
-            (previous_action == ORCHESTRA_ACTION_THROTTLE ||
-             actual_action == ORCHESTRA_ACTION_THROTTLE))
-            __sync_fetch_and_add(&numa_state->throttle_cycle_count, 1);
-        if (previous_action != actual_action &&
-            (previous_action == ORCHESTRA_ACTION_SLEEP ||
-             actual_action == ORCHESTRA_ACTION_SLEEP))
-            __sync_fetch_and_add(&numa_state->sleep_cycle_count, 1);
-        if (previous_policy_state != state_index)
-            __sync_fetch_and_add(&numa_state->policy_state_switch_count, 1);
-    }
-    if (global_state) {
-        __sync_fetch_and_add(&global_state->eligible_observations, 1);
-        if (policy_action < ORCHESTRA_ACTION_COUNT)
-            __sync_fetch_and_add(&global_state->policy_action_count[policy_action], 1);
-        if (controller_action < ORCHESTRA_ACTION_COUNT)
-            __sync_fetch_and_add(&global_state->controller_action_count[controller_action], 1);
-        if (capability_action < ORCHESTRA_ACTION_COUNT)
-            __sync_fetch_and_add(&global_state->capability_action_count[capability_action], 1);
-        if (actual_action < ORCHESTRA_ACTION_COUNT)
-            __sync_fetch_and_add(&global_state->coherence_hist[state_index &
-                (ORCHESTRA_COORD_STATE_CLASS_COUNT - 1u)][actual_action], 1);
-        if (fallback_reason != BRIDGE_FALLBACK_NONE)
-            __sync_fetch_and_add(&global_state->fallback_count, 1);
-        if (controller_action != policy_action)
-            __sync_fetch_and_add(&global_state->controller_override_count, 1);
-        if (capability_action != controller_action)
-            __sync_fetch_and_add(&global_state->capability_adjustment_count, 1);
-        if (transitioned)
-            __sync_fetch_and_add(&global_state->action_transition_count, 1);
-        if (previous_action == ORCHESTRA_ACTION_MIGRATE &&
-            actual_action == ORCHESTRA_ACTION_MIGRATE)
-            __sync_fetch_and_add(&global_state->repeated_migration_count, 1);
-        if ((previous_action == ORCHESTRA_ACTION_RUN &&
-             actual_action == ORCHESTRA_ACTION_YIELD) ||
-            (previous_action == ORCHESTRA_ACTION_YIELD &&
-             actual_action == ORCHESTRA_ACTION_RUN))
-            __sync_fetch_and_add(&global_state->run_yield_oscillation_count, 1);
-        if (previous_action != actual_action &&
-            (previous_action == ORCHESTRA_ACTION_THROTTLE ||
-             actual_action == ORCHESTRA_ACTION_THROTTLE))
-            __sync_fetch_and_add(&global_state->throttle_cycle_count, 1);
-        if (previous_action != actual_action &&
-            (previous_action == ORCHESTRA_ACTION_SLEEP ||
-             actual_action == ORCHESTRA_ACTION_SLEEP))
-            __sync_fetch_and_add(&global_state->sleep_cycle_count, 1);
-        if (previous_policy_state != state_index)
-            __sync_fetch_and_add(&global_state->policy_state_switch_count, 1);
-    }
-    if (mass_switch) {
-        orchestra_coord_mark_mass_switch(cpu_state, numa_state, global_state);
-    }
 }
-#endif
+
 
 static __always_inline void orchestra_coord_record_execution(
     uint32_t policy_action, uint32_t capability_action, uint32_t actual_action,
@@ -1124,349 +922,70 @@ static __always_inline void orchestra_coord_record_execution(
 }
 
 #ifdef __BPF__
-static ORCHESTRA_COORD_NOINLINE uint32_t orchestra_coord_geomean4_runtime(
-    uint32_t s1, uint32_t s2, uint32_t s3, uint32_t s4)
-{
-    uint64_t product = (uint64_t)s1 * (uint64_t)s2;
-    uint64_t estimate;
-
-    product *= (uint64_t)s3;
-    product *= (uint64_t)s4;
-    if (product == 0)
-        return 0;
-    estimate = ((uint64_t)s1 + (uint64_t)s2 + (uint64_t)s3 +
-                (uint64_t)s4) / 4u;
-    if (estimate == 0)
-        return 0;
-#pragma unroll
-    for (int iteration = 0; iteration < 4; iteration++) {
-        uint64_t cube = estimate * estimate * estimate;
-
-        if (cube == 0)
-            return 0;
-        estimate = (3u * estimate + product / cube) / 4u;
-    }
-    return orchestra_coord_clamp(estimate);
-}
-
-static ORCHESTRA_COORD_NOINLINE void orchestra_controller_record_live_v10(
-    const struct orchestra_coordination_state_v10 *coord, uint64_t now)
-{
-    struct orchestra_controller_state_v10 *controller;
-    struct orchestra_controller_telemetry_v10 *telemetry;
-    uint64_t next_generation;
-    uint32_t key = 0;
-    uint32_t state;
-    uint32_t previous_state;
-    uint32_t actuator_index = ORCH_ACTUATOR_COUNT;
-    uint32_t actuator_mask = 0;
-    uint32_t actuator_direction = 0;
-    uint32_t actuator_saturated = 0;
-    int actuator_changed = 0;
-
-    if (!coord)
-        return;
-    controller = bpf_map_lookup_elem(&orch_ctrl_v10, &key);
-    if (!controller)
-        return;
-    bpf_spin_lock(&controller->lock);
-    if (coord->window_generation <= controller->active.last_window_generation) {
-        controller->no_op_count++;
-        bpf_spin_unlock(&controller->lock);
-        return;
-    }
-    if (controller->next_update_ns != 0 && now < controller->next_update_ns) {
-        controller->no_op_count++;
-        controller->active.last_window_generation = coord->window_generation;
-        controller->active.last_q_permille = coord->q_permille;
-        bpf_spin_unlock(&controller->lock);
-        return;
-    }
-    if (controller->active_generation == ORCHESTRA_U64_MAX) {
-        controller->active_state = ORCHESTRA_CTRL_DISABLED;
-        controller->flags = ORCHESTRA_CONTROLLER_F_VALID;
-        controller->no_op_count++;
-        bpf_spin_unlock(&controller->lock);
-        return;
-    }
-    next_generation = controller->active_generation + 1u;
-    previous_state = controller->active_state;
-    state = coord->deficit_class == ORCH_DEFICIT_NONE ?
-        ORCHESTRA_CTRL_NORMAL : ORCHESTRA_CTRL_DEGRADED;
-    if (coord->deficit_class != ORCH_DEFICIT_NONE) {
-        actuator_mask = orchestra_deficit_actuator_mask(
-            coord->deficit_class);
-        if (actuator_mask & (1u << ORCH_ACTUATOR_JITTER))
-            actuator_index = ORCH_ACTUATOR_JITTER;
-        else if (actuator_mask & (1u << ORCH_ACTUATOR_SWITCHING_PENALTY))
-            actuator_index = ORCH_ACTUATOR_SWITCHING_PENALTY;
-        else if (actuator_mask & (1u << ORCH_ACTUATOR_CONSENSUS_BLEND))
-            actuator_index = ORCH_ACTUATOR_CONSENSUS_BLEND;
-        else if (actuator_mask & (1u << ORCH_ACTUATOR_MIGRATION_THRESHOLD))
-            actuator_index = ORCH_ACTUATOR_MIGRATION_THRESHOLD;
-        else if (actuator_mask & (1u << ORCH_ACTUATOR_YIELD_THRESHOLD))
-            actuator_index = ORCH_ACTUATOR_YIELD_THRESHOLD;
-        else if (actuator_mask & (1u << ORCH_ACTUATOR_THROTTLE_DURATION))
-            actuator_index = ORCH_ACTUATOR_THROTTLE_DURATION;
-        else if (actuator_mask & (1u << ORCH_ACTUATOR_SLEEP_DEFER))
-            actuator_index = ORCH_ACTUATOR_SLEEP_DEFER;
-        else if (actuator_mask &
-                 (1u << ORCH_ACTUATOR_PREDICTION_CONFIDENCE))
-            actuator_index = ORCH_ACTUATOR_PREDICTION_CONFIDENCE;
-        else if (actuator_mask & (1u << ORCH_ACTUATOR_PREDICTION_HORIZON))
-            actuator_index = ORCH_ACTUATOR_PREDICTION_HORIZON;
-        else if (actuator_mask & (1u << ORCH_ACTUATOR_SIGNAL_CADENCE))
-            actuator_index = ORCH_ACTUATOR_SIGNAL_CADENCE;
-        else if (actuator_mask &
-                 (1u << ORCH_ACTUATOR_COORDINATION_THRESHOLD))
-            actuator_index = ORCH_ACTUATOR_COORDINATION_THRESHOLD;
-        if (actuator_index < ORCH_ACTUATOR_COUNT)
-            actuator_direction = orchestra_deficit_pair_direction(
-                coord->deficit_class, coord->primary_deficit,
-                coord->secondary_deficit, actuator_index) > 0 ? 1u : 2u;
-    } else {
-        if (controller->active.actuators[ORCH_ACTUATOR_JITTER].current_value !=
-                controller->active.actuators[ORCH_ACTUATOR_JITTER].default_value)
-            actuator_index = ORCH_ACTUATOR_JITTER;
-        else if (controller->active.actuators[
-                     ORCH_ACTUATOR_SWITCHING_PENALTY].current_value !=
-                 controller->active.actuators[
-                     ORCH_ACTUATOR_SWITCHING_PENALTY].default_value)
-            actuator_index = ORCH_ACTUATOR_SWITCHING_PENALTY;
-        else if (controller->active.actuators[
-                     ORCH_ACTUATOR_CONSENSUS_BLEND].current_value !=
-                 controller->active.actuators[
-                     ORCH_ACTUATOR_CONSENSUS_BLEND].default_value)
-            actuator_index = ORCH_ACTUATOR_CONSENSUS_BLEND;
-        else if (controller->active.actuators[
-                     ORCH_ACTUATOR_MIGRATION_THRESHOLD].current_value !=
-                 controller->active.actuators[
-                     ORCH_ACTUATOR_MIGRATION_THRESHOLD].default_value)
-            actuator_index = ORCH_ACTUATOR_MIGRATION_THRESHOLD;
-        else if (controller->active.actuators[
-                     ORCH_ACTUATOR_YIELD_THRESHOLD].current_value !=
-                 controller->active.actuators[
-                     ORCH_ACTUATOR_YIELD_THRESHOLD].default_value)
-            actuator_index = ORCH_ACTUATOR_YIELD_THRESHOLD;
-        else if (controller->active.actuators[
-                     ORCH_ACTUATOR_THROTTLE_DURATION].current_value !=
-                 controller->active.actuators[
-                     ORCH_ACTUATOR_THROTTLE_DURATION].default_value)
-            actuator_index = ORCH_ACTUATOR_THROTTLE_DURATION;
-        else if (controller->active.actuators[
-                     ORCH_ACTUATOR_SLEEP_DEFER].current_value !=
-                 controller->active.actuators[
-                     ORCH_ACTUATOR_SLEEP_DEFER].default_value)
-            actuator_index = ORCH_ACTUATOR_SLEEP_DEFER;
-        else if (controller->active.actuators[
-                     ORCH_ACTUATOR_PREDICTION_CONFIDENCE].current_value !=
-                 controller->active.actuators[
-                     ORCH_ACTUATOR_PREDICTION_CONFIDENCE].default_value)
-            actuator_index = ORCH_ACTUATOR_PREDICTION_CONFIDENCE;
-        else if (controller->active.actuators[
-                     ORCH_ACTUATOR_PREDICTION_HORIZON].current_value !=
-                 controller->active.actuators[
-                     ORCH_ACTUATOR_PREDICTION_HORIZON].default_value)
-            actuator_index = ORCH_ACTUATOR_PREDICTION_HORIZON;
-        else if (controller->active.actuators[
-                     ORCH_ACTUATOR_SIGNAL_CADENCE].current_value !=
-                 controller->active.actuators[
-                     ORCH_ACTUATOR_SIGNAL_CADENCE].default_value)
-            actuator_index = ORCH_ACTUATOR_SIGNAL_CADENCE;
-        else if (controller->active.actuators[
-                     ORCH_ACTUATOR_COORDINATION_THRESHOLD].current_value !=
-                 controller->active.actuators[
-                     ORCH_ACTUATOR_COORDINATION_THRESHOLD].default_value)
-            actuator_index = ORCH_ACTUATOR_COORDINATION_THRESHOLD;
-        if (actuator_index < ORCH_ACTUATOR_COUNT)
-            actuator_direction = controller->active.actuators[
-                actuator_index].current_value < controller->active.actuators[
-                actuator_index].default_value ? 1u : 2u;
-    }
-    if (actuator_index < ORCH_ACTUATOR_COUNT && actuator_direction != 0) {
-        struct orchestra_actuator_v10 *actuator =
-            &controller->active.actuators[actuator_index];
-        uint64_t old_value = actuator->current_value;
-        uint64_t step = actuator->maximum_step == 0 ? 1 :
-            actuator->maximum_step;
-        uint64_t next_value = old_value;
-
-        actuator->flags &= ~ORCHESTRA_CONTROLLER_ACTUATOR_F_SATURATED;
-        if (actuator_direction == 1) {
-            if (old_value >= actuator->maximum ||
-                actuator->maximum - old_value < step) {
-                next_value = actuator->maximum;
-                actuator_saturated = 1;
-            } else {
-                next_value = old_value + step;
-            }
-        } else if (old_value <= actuator->minimum ||
-                   old_value - actuator->minimum < step) {
-            next_value = actuator->minimum;
-            actuator_saturated = 1;
-        } else {
-            next_value = old_value - step;
-        }
-        if (next_value != old_value &&
-            actuator->generation != ORCHESTRA_U64_MAX) {
-            actuator->previous_value = old_value;
-            actuator->rollback_value = old_value;
-            actuator->current_value = next_value;
-            actuator->generation++;
-            actuator->last_update_epoch = next_generation;
-            actuator->flags |= ORCHESTRA_CONTROLLER_ACTUATOR_F_UPDATED;
-            actuator_changed = 1;
-        } else if (next_value == old_value ||
-                   actuator->generation == ORCHESTRA_U64_MAX) {
-            actuator_saturated = 1;
-        }
-        if (actuator_saturated)
-            actuator->flags |= ORCHESTRA_CONTROLLER_ACTUATOR_F_SATURATED;
-    }
-    controller->active_state = state;
-    controller->active_primary_deficit = coord->primary_deficit;
-    controller->active_secondary_deficit = coord->secondary_deficit;
-    controller->active_deficit_class = coord->deficit_class;
-    controller->active_severity = coord->deficit_severity;
-    controller->active_persistence = coord->deficit_persistence;
-    controller->active_generation = next_generation;
-    controller->active.generation = next_generation;
-    controller->active.state = state;
-    controller->active.primary_deficit = coord->primary_deficit;
-    controller->active.secondary_deficit = coord->secondary_deficit;
-    controller->active.severity = coord->deficit_severity;
-    controller->active.persistence = coord->deficit_persistence;
-    controller->active.last_window_generation = coord->window_generation;
-    controller->active.last_q_permille = coord->q_permille;
-    controller->controller_epoch++;
-    if (controller->controller_epoch == 0)
-        controller->controller_epoch = 1;
-    controller->last_update_ns = now;
-    controller->last_q_permille = coord->q_permille;
-    controller->next_update_ns = ORCHESTRA_U64_MAX - now <
-        controller->update_period_ns ? ORCHESTRA_U64_MAX :
-        now + controller->update_period_ns;
-    controller->flags = ORCHESTRA_CONTROLLER_F_VALID;
-    bpf_spin_unlock(&controller->lock);
-    telemetry = bpf_map_lookup_elem(&orch_ctrl_tel, &key);
-    if (!telemetry)
-        return;
-    bpf_spin_lock(&telemetry->lock);
-    telemetry->update_count++;
-    telemetry->state_transition_count += previous_state != state;
-    telemetry->last_update_epoch = next_generation;
-    telemetry->last_window_generation = coord->window_generation;
-    telemetry->last_q_permille = coord->q_permille;
-    telemetry->last_state = state;
-    telemetry->last_primary_deficit = coord->primary_deficit;
-    telemetry->last_secondary_deficit = coord->secondary_deficit;
-    if (actuator_changed) {
-        telemetry->actuator_update_count[actuator_index]++;
-        telemetry->last_actuator = actuator_index;
-        telemetry->last_update_direction = actuator_direction;
-    }
-    if (actuator_saturated)
-        telemetry->saturation_count++;
-    if (coord->deficit_class < ORCH_DEFICIT_COUNT)
-        telemetry->deficit_count[coord->deficit_class]++;
-    bpf_spin_unlock(&telemetry->lock);
-}
-
-static ORCHESTRA_COORD_NOINLINE void orchestra_coord_finalize_global_live(
+/* A global scalar-only BPF subprogram is verified independently of enqueue
+ * and dispatch caller paths. Keep the complete metric/controller loop here;
+ * duplicating its analysis at each decision branch exhausts verifier work. */
+#ifndef ORCHESTRA_KERNEL_LOGIC_TEST
+ORCHESTRA_COORD_NOINLINE
+#else
+static ORCHESTRA_COORD_NOINLINE
+#endif
+void orchestra_coord_finalize_global_live(
     uint64_t now)
 {
     struct orchestra_coordination_state_v10 *state;
-    uint64_t generation = now / ORCHESTRA_COORD_DEFAULT_WINDOW_NS;
-    uint64_t previous_generation;
-    uint64_t total;
-    uint64_t maximum;
+    struct orchestra_coordination_metrics_v10 metrics = { 0 };
+    uint64_t duration = orchestra_coord_window_duration_ns();
+    uint64_t generation = now / duration;
     uint32_t key;
-    uint32_t s1;
-    uint32_t s2;
-    uint32_t s3;
-    uint32_t s4;
-    uint32_t q;
-    uint32_t primary = ORCH_DEFICIT_NONE;
-    uint32_t secondary = ORCH_DEFICIT_NONE;
-    uint32_t deficit_count = 0;
+    uint32_t threshold = orchestra_coordination_threshold_v10();
 
     if (generation == 0)
         return;
-    previous_generation = generation - 1u;
-    key = orchestra_coord_key(ORCHESTRA_COORD_GLOBAL_DOMAIN_SLOT,
-                              previous_generation);
+    generation--;
+    key = orchestra_coord_key(ORCHESTRA_COORD_GLOBAL_DOMAIN_SLOT, generation);
     state = bpf_map_lookup_elem(&orch_coord_v10, &key);
-    if (!state || state->window_generation != previous_generation)
+    if (!state)
         return;
     bpf_spin_lock(&state->lock);
-    if (state->flags & ORCHESTRA_COORD_F_FINALIZED) {
+    if (state->window_generation != generation ||
+        (state->flags & ORCHESTRA_COORD_F_FINALIZED)) {
         bpf_spin_unlock(&state->lock);
         return;
     }
-    s1 = orchestra_coord_ratio(state->signal_freshness_sum,
-                               state->prediction_observations);
-    s2 = orchestra_coord_ratio(state->policy_compliance_count,
-                               state->executed_observations);
-    total = state->actual_action_count[0] + state->actual_action_count[1] +
-        state->actual_action_count[2] + state->actual_action_count[3] +
-        state->actual_action_count[4];
-    maximum = state->actual_action_count[0];
-    if (state->actual_action_count[1] > maximum)
-        maximum = state->actual_action_count[1];
-    if (state->actual_action_count[2] > maximum)
-        maximum = state->actual_action_count[2];
-    if (state->actual_action_count[3] > maximum)
-        maximum = state->actual_action_count[3];
-    if (state->actual_action_count[4] > maximum)
-        maximum = state->actual_action_count[4];
-    s3 = orchestra_coord_ratio(maximum, total);
-    s4 = orchestra_coord_ratio(state->action_transition_count,
-                               state->eligible_observations);
-    s4 = s4 >= ORCHESTRA_V10_FIXED_POINT_SCALE ? 0u :
-        ORCHESTRA_V10_FIXED_POINT_SCALE - s4;
-    q = orchestra_coord_geomean4_runtime(s1, s2, s3, s4);
-    if (s1 < 700u) {
-        primary = ORCH_DEFICIT_SIGNAL;
-        deficit_count++;
+    orchestra_coord_finalize_locked(state, &metrics);
+    bpf_spin_unlock(&state->lock);
+    metrics.s3_permille = orchestra_coord_compute_s3(state);
+    metrics.q_permille = orchestra_coord_geomean4(
+        metrics.s1_permille, metrics.s2_permille,
+        metrics.s3_permille, metrics.s4_permille);
+    struct orchestra_deficit_result_v10 deficit = orchestra_classify_deficit_bpf(
+        metrics.s1_permille, metrics.s2_permille, metrics.s3_permille,
+        metrics.s4_permille, metrics.q_permille, threshold);
+    metrics.deficit_class = deficit.class_id;
+    metrics.primary_deficit = deficit.primary;
+    metrics.secondary_deficit = deficit.secondary;
+    metrics.deficit_severity = deficit.severity;
+    metrics.deficit_persistence = deficit.deficient_count == 0 ? 0u : 1u;
+    bpf_spin_lock(&state->lock);
+    if (state->window_generation != generation ||
+        (state->flags & ORCHESTRA_COORD_F_FINALIZED)) {
+        bpf_spin_unlock(&state->lock);
+        return;
     }
-    if (s2 < 700u) {
-        if (deficit_count == 0)
-            primary = ORCH_DEFICIT_COMPLIANCE;
-        else if (deficit_count == 1)
-            secondary = ORCH_DEFICIT_COMPLIANCE;
-        deficit_count++;
-    }
-    if (s3 < 700u) {
-        if (deficit_count == 0)
-            primary = ORCH_DEFICIT_COHERENCE;
-        else if (deficit_count == 1)
-            secondary = ORCH_DEFICIT_COHERENCE;
-        deficit_count++;
-    }
-    if (s4 < 700u) {
-        if (deficit_count == 0)
-            primary = ORCH_DEFICIT_STABILITY;
-        else if (deficit_count == 1)
-            secondary = ORCH_DEFICIT_STABILITY;
-        deficit_count++;
-    }
-    state->s1_permille = s1;
-    state->s2_permille = s2;
-    state->s3_permille = s3;
-    state->s4_permille = s4;
-    state->q_permille = q;
-    state->primary_deficit = primary;
-    state->secondary_deficit = secondary;
-    state->deficit_class = deficit_count == 0 ? ORCH_DEFICIT_NONE :
-        (deficit_count == 1 ? primary : ORCH_DEFICIT_MIXED);
-    state->deficit_severity = q >= ORCHESTRA_V10_FIXED_POINT_SCALE ? 0u :
-        ORCHESTRA_V10_FIXED_POINT_SCALE - q;
-    state->deficit_persistence = deficit_count == 0 ? 0u : 1u;
+    state->s3_permille = metrics.s3_permille;
+    state->q_permille = metrics.q_permille;
+    state->deficit_class = metrics.deficit_class;
+    state->primary_deficit = metrics.primary_deficit;
+    state->secondary_deficit = metrics.secondary_deficit;
+    state->deficit_severity = metrics.deficit_severity;
+    state->deficit_persistence = metrics.deficit_persistence;
     state->flags |= ORCHESTRA_COORD_F_FINALIZED;
     state->finalized_ns = now;
     bpf_spin_unlock(&state->lock);
-    orchestra_controller_record_live_v10(state, now);
+    orchestra_controller_update_from_coord(now, &metrics);
 }
+
 #endif
 
 static __always_inline int orchestra_coord_read_global_summary(

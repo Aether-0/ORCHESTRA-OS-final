@@ -5,6 +5,7 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <math.h>
+#include <poll.h>
 #include <sched.h>
 #include <signal.h>
 #include <stdatomic.h>
@@ -973,12 +974,38 @@ static uint64_t monotonic_ns(void) {
 static bool read_worker_snapshot(const worker_state_t *ws,
                                  worker_snapshot_t *out);
 
+#define BRIDGE_IO_TIMEOUT_NS UINT64_C(1000000000)
+
+static bool bridge_wait_fd(int fd, short events, uint64_t deadline) {
+    while (!g_stop) {
+        uint64_t now = monotonic_ns();
+        if (now >= deadline) { errno = ETIMEDOUT; return false; }
+        uint64_t remaining_ms = (deadline - now + UINT64_C(999999))
+                              / UINT64_C(1000000);
+        int wait_ms = remaining_ms > 50u ? 50 : (int)remaining_ms;
+        struct pollfd ready = { .fd = fd, .events = events };
+        int result = poll(&ready, 1, wait_ms);
+        if (result < 0 && errno == EINTR) continue;
+        if (result < 0) return false;
+        if (result > 0 && (ready.revents & (events | POLLHUP | POLLERR)))
+            return true;
+        if (result > 0 && (ready.revents & POLLNVAL)) {
+            errno = EBADF;
+            return false;
+        }
+    }
+    errno = EINTR;
+    return false;
+}
+
 static bool fd_write_full(int fd, const void *buffer, size_t size) {
     const uint8_t *cursor = buffer;
     size_t offset = 0;
+    uint64_t deadline = monotonic_ns() + BRIDGE_IO_TIMEOUT_NS;
     while (offset < size) {
+        if (!bridge_wait_fd(fd, POLLOUT, deadline)) return false;
         ssize_t count = write(fd, cursor + offset, size - offset);
-        if (count < 0 && errno == EINTR) continue;
+        if (count < 0 && (errno == EINTR || errno == EAGAIN)) continue;
         if (count <= 0) return false;
         offset += (size_t)count;
     }
@@ -988,9 +1015,11 @@ static bool fd_write_full(int fd, const void *buffer, size_t size) {
 static bool fd_read_full(int fd, void *buffer, size_t size) {
     uint8_t *cursor = buffer;
     size_t offset = 0;
+    uint64_t deadline = monotonic_ns() + BRIDGE_IO_TIMEOUT_NS;
     while (offset < size) {
+        if (!bridge_wait_fd(fd, POLLIN, deadline)) return false;
         ssize_t count = read(fd, cursor + offset, size - offset);
-        if (count < 0 && errno == EINTR) continue;
+        if (count < 0 && (errno == EINTR || errno == EAGAIN)) continue;
         if (count <= 0) return false;
         offset += (size_t)count;
     }
@@ -1003,6 +1032,8 @@ static void kernel_bridge_close_fds(kernel_bridge_session_t *session) {
     session->request_fd = -1;
     session->response_fd = -1;
 }
+
+static void kernel_bridge_stop(kernel_bridge_session_t *session);
 
 static bool kernel_bridge_start(kernel_bridge_session_t *session,
                                 const char *bridge_path) {
@@ -1042,6 +1073,13 @@ static bool kernel_bridge_start(kernel_bridge_session_t *session,
     session->pid = pid;
     session->next_sequence = 1;
     session->active = true;
+    if (fcntl(requests[1], F_SETFL, O_NONBLOCK) < 0 ||
+        fcntl(responses[0], F_SETFL, O_NONBLOCK) < 0) {
+        int saved_errno = errno;
+        kernel_bridge_stop(session);
+        errno = saved_errno;
+        return false;
+    }
     return true;
 }
 
@@ -1050,7 +1088,23 @@ static void kernel_bridge_stop(kernel_bridge_session_t *session) {
 
     if (!session->active) return;
     kernel_bridge_close_fds(session);
-    while (waitpid(session->pid, &status, 0) < 0 && errno == EINTR) {}
+    /* Closing stdin normally terminates the stream. A stopped or hung child
+     * gets a bounded grace period followed by termination and kill. */
+    for (unsigned int phase = 0; phase < 3u; phase++) {
+        uint64_t deadline = monotonic_ns() + UINT64_C(200000000);
+        if (phase == 1u) (void)kill(session->pid, SIGTERM);
+        if (phase == 2u) (void)kill(session->pid, SIGKILL);
+        do {
+            pid_t result = waitpid(session->pid, &status, WNOHANG);
+            if (result == session->pid || (result < 0 && errno == ECHILD)) {
+                session->active = false;
+                return;
+            }
+            struct timespec pause = { .tv_sec = 0, .tv_nsec = 1000000 };
+            (void)nanosleep(&pause, NULL);
+        } while (monotonic_ns() < deadline);
+    }
+    fprintf(stderr, "Bridge child did not reap within the shutdown deadline\n");
     session->active = false;
 }
 
