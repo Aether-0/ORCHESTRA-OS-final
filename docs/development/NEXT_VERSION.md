@@ -4,6 +4,12 @@ This roadmap proposes v1.2.0-rc1. It does not declare that release available or
 upgrade the scheduler beyond kernel-prototyped maturity. The current version
 remains 1.1.1; filename cleanup changes no scheduling or ABI semantics.
 
+For the proposed major architecture change, see the
+[major scheduler update plan](MAJOR_UPDATE_PLAN.md). It expands fair service,
+bounded adaptation, placement, group control, and release acceptance criteria.
+The v1.2 maintenance candidate below and the proposed v2 architecture are
+separate milestones; neither is an available release.
+
 ## Current-version cleanup
 
 - Put the scheduler implementation in `kernel/sched_ext/bpf/orchestra_sched.bpf.c`.
