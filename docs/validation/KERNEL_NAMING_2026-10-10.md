@@ -39,7 +39,7 @@ Host kernel: `7.1.5+kali-amd64`; exact source:
   existing staging-location warnings; package creation completed successfully.
 - Canonical/legacy bundle hash checks passed, including corruption rejection.
 
-Local command output is retained outside the source tree in
-`/home/aether/Downloads/ORCHESTRA-naming-20261010/`. This update does not provide
+Local command output is retained outside the source tree in the
+`ORCHESTRA-naming-20261010` evidence directory. This update does not provide
 new runtime action, fairness, stress, or performance evidence. Those remain
 explicit gates in the [next-version roadmap](../development/NEXT_VERSION.md).
